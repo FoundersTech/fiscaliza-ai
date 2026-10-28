@@ -11,7 +11,7 @@
     "lint": "eslint \"./src*/**/*.{ts,js,cjs,mjs,vue}\"",
     "typecheck": "vue-tsc --noEmit && tsc -p src-pwa/sw/tsconfig.json --noEmit",
     "test": "vitest run",
-    "postinstall": "quasar prepare --silent"
+    "postinstall": "pnpm --dir src-pwa install --frozen-lockfile && quasar prepare --silent"
   },
   "dependencies": {
     "@quasar/extras": "^2.1.0",
