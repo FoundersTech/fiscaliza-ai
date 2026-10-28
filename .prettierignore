@@ -1,0 +1,12 @@
+pnpm-lock.yaml
+node_modules
+dist
+coverage
+.quasar
+apps/web/public
+
+# Documentação do projeto (specs e arquivos originais)
+docs
+*.docx
+*.pptx
+*.png

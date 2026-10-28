@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+# apps/web/src-pwa fica fora: o Quasar instala as dependências do service worker
+# nessa pasta como projeto separado (lockfile próprio) no `quasar prepare` e no build.
+
+# Pacotes que podem rodar scripts de instalação (https://pnpm.io/settings)
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  lightningcss: true
+  rolldown: true
+  unrs-resolver: true

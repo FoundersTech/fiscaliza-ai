@@ -1,0 +1,16 @@
+{
+  "name": "@fiscaliza/contratos",
+  "version": "0.0.1",
+  "description": "Tipos TypeScript da API, gerados a partir do OpenAPI (T-03).",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

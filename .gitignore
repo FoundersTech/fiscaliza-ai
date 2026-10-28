@@ -1,0 +1,21 @@
+node_modules
+dist
+coverage
+*.tsbuildinfo
+
+# Variáveis de ambiente (versionar só o .env.example)
+.env*
+!.env.example
+
+# Quasar
+.quasar
+/apps/web/quasar.config.*.temporary.compiled*
+
+#Specs
+/docs/specs
+
+# Logs e sistema
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+.thumbs.db

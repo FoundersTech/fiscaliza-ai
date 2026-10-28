@@ -1,0 +1,7 @@
+# Fins de linha LF em todos os sistemas (o Prettier e o .editorconfig usam LF).
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.docx binary
+*.pptx binary
