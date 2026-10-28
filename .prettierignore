@@ -1,0 +1,16 @@
+pnpm-lock.yaml
+node_modules
+dist
+coverage
+.quasar
+apps/web/public
+
+# Contratos gerados (pnpm contratos:gerar)
+packages/contratos/openapi.json
+packages/contratos/src/api.ts
+
+# Documentação do projeto (specs e arquivos originais)
+docs
+*.docx
+*.pptx
+*.png

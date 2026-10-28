@@ -15,7 +15,7 @@ O Fiscaliza Aí! resolve isso concentrando tudo em um só lugar: o cidadão regi
 1. **Identificação do problema** — o cidadão encontra um problema de infraestrutura urbana (rua esburacada, poste sem funcionar, terreno sujo, iluminação pública, etc).
 2. **Registro da notificação** — tira uma foto do problema, escreve uma breve descrição e envia junto com a localização exata (geolocalização).
 3. **Centralização** — a notificação fica visível no app, gerando visibilidade e pressão pública por uma solução.
-4. **Resolução e pontuação** — conforme a prefeitura resolve os problemas reportados, ela acumula *score*.
+4. **Resolução e pontuação** — conforme a prefeitura resolve os problemas reportados, ela acumula _score_.
 5. **Avaliação pública** — esse score funciona como um indicador de desempenho da gestão pública municipal, acessível a todos.
 
 ## 🎯 Objetivo
@@ -35,22 +35,92 @@ Dar aos cidadãos uma ferramenta simples para reportar problemas urbanos e, ao m
 
 ## 🛠️ Stack
 
-Ainda em definição. Esta seção será atualizada assim que as tecnologias (frontend, backend, banco de dados, etc.) forem escolhidas.
+| Camada         | Tecnologia                                 |
+| -------------- | ------------------------------------------ |
+| Frontend (PWA) | Quasar 2 (app-vite 3) + Vue 3 + TypeScript |
+| Backend        | NestJS 12 (ESM) + Fastify, Node 24         |
+| Banco          | PostgreSQL 16 + PostGIS 3, Prisma 7        |
+| Fila e cache   | Redis 7 + BullMQ 5                         |
+| Storage        | Cloudflare R2                              |
+| Testes         | Vitest                                     |
+
+Monorepo pnpm, TypeScript 6 estrito, ESLint e Prettier.
+
+### Estrutura
+
+| Pasta                | Conteúdo                                                                                                                                                                              |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api`           | API NestJS + Fastify. Cada módulo em `src/modules/<modulo>/{domain,application,infrastructure,presentation}`.                                                                         |
+| `apps/web`           | PWA Quasar. O service worker e o manifest ficam em `apps/web/src-pwa`, que tem lockfile próprio: o Quasar instala as dependências dessa pasta sozinho no `quasar prepare` e no build. |
+| `packages/contratos` | Tipos da API gerados do OpenAPI.                                                                                                                                                      |
+
+### Regras que o lint garante
+
+- `domain/` não importa `@nestjs/*`, `@prisma/*` nem as outras camadas; `application/` não importa `@prisma/*`, `infrastructure/` nem `presentation/` (Arquitetura Limpa).
+- SQL cru só com `$queryRaw` / `$executeRaw` em template; `$queryRawUnsafe` e `$executeRawUnsafe` são proibidos.
+- `v-html` é proibido no PWA (proteção contra XSS).
+- Formatação pelo Prettier (`pnpm format`).
 
 ## 🚀 Como rodar o projeto
 
-Instruções de instalação e execução serão adicionadas aqui assim que a stack do projeto for definida.
+Requisitos: Node 24 (ver `.nvmrc`) e pnpm 12 (`npm install -g pnpm`).
+
+```bash
+pnpm install
+```
+
+```bash
+pnpm lint
+```
+
+```bash
+pnpm typecheck
+```
+
+```bash
+pnpm test
+```
+
+```bash
+pnpm build
+```
+
+### Banco e Redis locais
+
+Precisa do Docker. O `docker-compose.yml` da raiz sobe o PostgreSQL 16 + PostGIS e o Redis 7:
+
+```bash
+pnpm infra:up
+```
+
+Na primeira vez, copie `apps/api/.env.example` para `apps/api/.env`. Com o banco e o Redis de pé, rode também os testes de integração:
+
+```bash
+pnpm test:int
+```
+
+Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://localhost:3000/api/v1`, Swagger em `http://localhost:3000/docs`) e `pnpm --filter @fiscaliza/web dev` (PWA). Para desligar o banco e o Redis, use `pnpm infra:down`.
+
+### Contratos da API
+
+Depois de mudar qualquer rota ou DTO da API, regenere os tipos usados pelo PWA e commite `packages/contratos` junto (não precisa de banco nem Redis):
+
+```bash
+pnpm contratos:gerar
+```
+
+O CI falha se os contratos versionados não baterem com a API.
 
 ## 👥 Equipe
 
-| Nome | GitHub |
-|---|---|
-| Allan Felipe | [@AllanFelipeh](https://github.com/AllanFelipeh) |
-| Bruno Pocay | [@BrunoPocay](https://github.com/brunopocay) |
-| Giovane Vieira | [@GiovaneVieira](https://github.com/GiihVieira) |
-| Jorge Tardelli | [@JorgeTardelli]() |
-| Kauan Mello | [@KuanMello](https://github.com/nauakcode) |
-| Larissa ... | [@Larissa...](https://github.com/...) |
+| Nome           | GitHub                                           |
+| -------------- | ------------------------------------------------ |
+| Allan Felipe   | [@AllanFelipeh](https://github.com/AllanFelipeh) |
+| Bruno Pocay    | [@BrunoPocay](https://github.com/brunopocay)     |
+| Giovane Vieira | [@GiovaneVieira](https://github.com/GiihVieira)  |
+| Jorge Tardelli | [@JorgeTardelli](<>)                             |
+| Kauan Mello    | [@KuanMello](https://github.com/nauakcode)       |
+| Larissa ...    | [@Larissa...](https://github.com/...)            |
 
 ## 📄 Licença
 

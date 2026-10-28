@@ -1,0 +1,23 @@
+{
+  "name": "fiscaliza-ai",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "prettier --check . && pnpm -r lint",
+    "format": "prettier --write .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:int": "pnpm -r test:int",
+    "build": "pnpm -r build",
+    "contratos:gerar": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api openapi:exportar && pnpm --filter @fiscaliza/contratos gerar",
+    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose down"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}

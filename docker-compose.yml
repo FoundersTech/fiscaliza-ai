@@ -1,0 +1,33 @@
+# Ambiente local de desenvolvimento: PostgreSQL 16 + PostGIS 3 e Redis 7.
+# As credenciais servem só para a máquina local; staging e produção têm o Compose próprio (T-05).
+name: fiscaliza-ai
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: fiscaliza
+      POSTGRES_PASSWORD: fiscaliza
+      POSTGRES_DB: fiscaliza
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U fiscaliza -d fiscaliza']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-dados:
