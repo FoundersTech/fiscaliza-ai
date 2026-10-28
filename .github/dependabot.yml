@@ -11,6 +11,19 @@ updates:
     cooldown:
       default-days: 3
     open-pull-requests-limit: 5
+    # Majors que exigem migração planejada (ver design.md, Stack). Minor e patch continuam chegando.
+    ignore:
+      # BullMQ 5 + ioredis 5 são os suportados pelo @nestjs/bullmq 12.
+      - dependency-name: bullmq
+        update-types: ['version-update:semver-major']
+      - dependency-name: ioredis
+        update-types: ['version-update:semver-major']
+      # O typescript-eslint e o CLI do Nest ainda não suportam o TypeScript 7.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # Os tipos acompanham o Node em execução (.nvmrc = 24).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       nestjs:
         patterns: ['@nestjs/*']
