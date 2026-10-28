@@ -14,5 +14,5 @@
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false
   },
-  "include": ["src", "vitest.config.ts", "prisma7.config.ts"]
+  "include": ["src", "test", "vitest.config.ts", "prisma7.config.ts"]
 }

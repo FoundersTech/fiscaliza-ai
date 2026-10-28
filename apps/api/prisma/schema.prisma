@@ -1,4 +1,12 @@
-// Schema do banco (PostgreSQL 16 + PostGIS 3). As tabelas entram na T-06.
+// Schema do banco (PostgreSQL 16 + PostGIS 3). Modelo de dados: design.md.
+//
+// O Prisma não representa tudo o que o banco garante. Ficam só no SQL das migrations:
+// - a extensão PostGIS;
+// - os CHECKs (formato de slug e protocolo, tamanhos de texto, papel ⇒ vínculo, etc.);
+// - o índice UNIQUE em lower(email) de usuario;
+// - a coluna gerada ocorrencia.local_publico.
+// Ao mudar o schema, gere a migration com `pnpm db:migrar --create-only --name <descricao>`
+// e acrescente à mão o SQL dessas regras antes de aplicá-la.
 
 generator client {
   provider            = "prisma-client"
@@ -9,4 +17,423 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum PapelUsuario {
+  CIDADAO
+  AGENTE_ORGAO
+  ADMIN_MUNICIPIO
+  ADMIN_PLATAFORMA
+
+  @@map("papel_usuario")
+}
+
+enum StatusOcorrencia {
+  RECEBIDA
+  EM_ANALISE
+  EM_EXECUCAO
+  RESOLVIDA
+  RECUSADA
+  DUPLICADA
+
+  @@map("status_ocorrencia")
+}
+
+enum StatusModeracao {
+  PENDENTE
+  APROVADA
+  REJEITADA
+
+  @@map("status_moderacao")
+}
+
+enum TipoToken {
+  REDEFINIR_SENHA
+  CONVITE
+
+  @@map("tipo_token")
+}
+
+enum StatusExportacao {
+  PROCESSANDO
+  PRONTA
+  FALHOU
+  EXPIRADA
+
+  @@map("status_exportacao")
+}
+
+// ---------------------------------------------------------------------------
+// Território
+// ---------------------------------------------------------------------------
+
+/// O id é o código IBGE do município (Sorocaba = 3552205).
+model Municipio {
+  id       Int                                         @id
+  nome     String
+  /// CHECK: duas letras maiúsculas.
+  uf       String                                      @db.Char(2)
+  /// Usada no protocolo (RN-05). CHECK: três letras maiúsculas.
+  sigla    String                                      @unique @db.Char(3)
+  /// O registro só aceita pontos em município ativo (CA-02.7).
+  ativo    Boolean                                     @default(false)
+  area     Unsupported("geometry(MultiPolygon, 4326)")
+  criadoEm DateTime                                    @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  bairros             Bairro[]
+  orgao               Orgao?
+  usuarios            Usuario[]
+  ocorrencias         Ocorrencia[]
+  protocoloSequencias ProtocoloSequencia[]
+  desempenhos         DesempenhoOrgao[]
+
+  @@index([area], type: Gist)
+  @@map("municipio")
+}
+
+model Bairro {
+  id          Int                                         @id @default(autoincrement())
+  municipioId Int                                         @map("municipio_id")
+  /// Permite reimportar a malha do IBGE sem duplicar bairros.
+  codigoIbge  String                                      @unique @map("codigo_ibge")
+  nome        String
+  area        Unsupported("geometry(MultiPolygon, 4326)")
+
+  municipio   Municipio    @relation(fields: [municipioId], references: [id])
+  ocorrencias Ocorrencia[]
+
+  @@index([municipioId])
+  @@index([area], type: Gist)
+  @@map("bairro")
+}
+
+/// Um órgão por município (RN-14).
+model Orgao {
+  id          Int     @id @default(autoincrement())
+  municipioId Int     @unique @map("municipio_id")
+  nome        String
+  sigla       String
+  ativo       Boolean @default(true)
+
+  municipio   Municipio          @relation(fields: [municipioId], references: [id])
+  usuarios    Usuario[]
+  ocorrencias Ocorrencia[]
+  eventos     OcorrenciaEvento[]
+  desempenho  DesempenhoOrgao?
+
+  @@map("orgao")
+}
+
+/// Categorias globais, válidas para todos os municípios.
+model Categoria {
+  id              Int     @id @default(autoincrement()) @db.SmallInt
+  /// CHECK: ^[a-z0-9-]{2,40}$
+  slug            String  @unique
+  nome            String
+  /// Nome de um ícone do Material Icons.
+  icone           String
+  /// CHECK: > 0
+  slaDias         Int     @map("sla_dias") @db.SmallInt
+  /// Campos extras da ocorrência: [{ chave, rotulo, tipo, obrigatorio, ... }] (design.md).
+  schemaAtributos Json    @default("[]") @map("schema_atributos")
+  ativa           Boolean @default(true)
+
+  ocorrencias Ocorrencia[]
+
+  @@map("categoria")
+}
+
+// ---------------------------------------------------------------------------
+// Identidade
+// ---------------------------------------------------------------------------
+
+/// O e-mail é único sem diferenciar maiúsculas: índice UNIQUE em lower(email), só no SQL.
+/// CHECKs: apelido_publico de 2 a 30 caracteres; AGENTE_ORGAO ⇒ orgao_id; ADMIN_MUNICIPIO ⇒ municipio_id.
+model Usuario {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome             String
+  apelidoPublico   String       @map("apelido_publico")
+  email            String
+  /// argon2id. Nulo para agente convidado sem senha definida e para conta anonimizada.
+  senhaHash        String?      @map("senha_hash")
+  papel            PapelUsuario
+  municipioId      Int?         @map("municipio_id")
+  orgaoId          Int?         @map("orgao_id")
+  /// Conta desativada não entra (CA-12.6).
+  ativo            Boolean      @default(true)
+  politicaVersao   String?      @map("politica_versao")
+  politicaAceitaEm DateTime?    @map("politica_aceita_em") @db.Timestamptz(6)
+  /// Controla o indicador de avisos novos (CA-06.5).
+  alertasVistosEm  DateTime?    @map("alertas_vistos_em") @db.Timestamptz(6)
+  anonimizadoEm    DateTime?    @map("anonimizado_em") @db.Timestamptz(6)
+  criadoEm         DateTime     @default(now()) @map("criado_em") @db.Timestamptz(6)
+  atualizadoEm     DateTime     @default(now()) @updatedAt @map("atualizado_em") @db.Timestamptz(6)
+
+  municipio        Municipio?         @relation(fields: [municipioId], references: [id])
+  orgao            Orgao?             @relation(fields: [orgaoId], references: [id])
+  ocorrencias      Ocorrencia[]
+  eventos          OcorrenciaEvento[]
+  confirmacoes     Confirmacao[]
+  avaliacoes       Avaliacao[]
+  refreshTokens    RefreshToken[]
+  tokensAcesso     TokenAcesso[]
+  pushInscricoes   PushInscricao[]
+  exportacoesDados ExportacaoDados[]
+
+  @@index([municipioId])
+  @@index([orgaoId])
+  @@map("usuario")
+}
+
+/// Refresh token rotativo (RNF-05). Cada login abre uma família; reusar um token já usado
+/// revoga a família inteira. O job de limpeza apaga os expirados há mais de 30 dias (LGPD).
+model RefreshToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId  String    @map("usuario_id") @db.Uuid
+  familiaId  String    @map("familia_id") @db.Uuid
+  /// SHA-256 do token. O token em claro só vai no cookie.
+  tokenHash  String    @unique @map("token_hash")
+  criadoEm   DateTime  @default(now()) @map("criado_em") @db.Timestamptz(6)
+  expiraEm   DateTime  @map("expira_em") @db.Timestamptz(6)
+  /// Preenchido na rotação. Um reuso até 10 s depois ainda é aceito (duas abas).
+  usadoEm    DateTime? @map("usado_em") @db.Timestamptz(6)
+  revogadoEm DateTime? @map("revogado_em") @db.Timestamptz(6)
+  ip         String?   @db.Inet
+  userAgent  String?   @map("user_agent")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([familiaId])
+  @@index([expiraEm])
+  @@map("refresh_token")
+}
+
+/// Redefinição de senha e convite de agentes (RF-01 e RF-12). Uso único.
+model TokenAcesso {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId String    @map("usuario_id") @db.Uuid
+  tipo      TipoToken
+  /// SHA-256 de 32 bytes aleatórios. O token em claro só vai no e-mail.
+  tokenHash String    @unique @map("token_hash")
+  expiraEm  DateTime  @map("expira_em") @db.Timestamptz(6)
+  usadoEm   DateTime? @map("usado_em") @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("token_acesso")
+}
+
+/// Inscrição de Web Push (Q-11).
+model PushInscricao {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId    String    @map("usuario_id") @db.Uuid
+  endpoint     String    @unique
+  p256dh       String
+  auth         String
+  criadaEm     DateTime  @default(now()) @map("criada_em") @db.Timestamptz(6)
+  ultimoErroEm DateTime? @map("ultimo_erro_em") @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("push_inscricao")
+}
+
+/// Exportação dos dados pessoais (CA-13.1). O arquivo expira 7 dias depois de pronto.
+model ExportacaoDados {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  usuarioId    String           @map("usuario_id") @db.Uuid
+  status       StatusExportacao @default(PROCESSANDO)
+  /// Arquivo JSON no bucket privado.
+  storageKey   String?          @map("storage_key")
+  solicitadaEm DateTime         @default(now()) @map("solicitada_em") @db.Timestamptz(6)
+  prontaEm     DateTime?        @map("pronta_em") @db.Timestamptz(6)
+  expiraEm     DateTime?        @map("expira_em") @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("exportacao_dados")
+}
+
+// ---------------------------------------------------------------------------
+// Ocorrências
+// ---------------------------------------------------------------------------
+
+/// O id é gerado no aparelho, o que torna o envio idempotente (CA-03.6).
+/// local e local_publico são geography(Point, 4326); local_publico é coluna gerada (igual a
+/// local no MVP, RN-15). Como têm tipo não suportado, a gravação usa SQL ($executeRaw).
+/// CHECKs: protocolo ^FA-\d{4}-[A-Z]{3}-\d{6}$; descricao de 10 a 500 caracteres;
+/// duplicada_de_id <> id; precisao_m e reaberturas não negativos.
+model Ocorrencia {
+  id            String                                 @id @db.Uuid
+  protocolo     String                                 @unique
+  /// Fica nulo ao anonimizar o autor (RN-12).
+  autorId       String?                                @map("autor_id") @db.Uuid
+  publicarAutor Boolean                                @default(false) @map("publicar_autor")
+  categoriaId   Int                                    @map("categoria_id") @db.SmallInt
+  municipioId   Int                                    @map("municipio_id")
+  orgaoId       Int                                    @map("orgao_id")
+  /// Nulo quando nenhum polígono de bairro contém o ponto.
+  bairroId      Int?                                   @map("bairro_id")
+  descricao     String
+  atributos     Json                                   @default("{}")
+  local         Unsupported("geography(Point, 4326)")
+  localPublico  Unsupported("geography(Point, 4326)")? @default(dbgenerated("local")) @map("local_publico")
+  /// Precisão do GPS. Nulo quando o pino foi posicionado à mão.
+  precisaoM     Int?                                   @map("precisao_m") @db.SmallInt
+  /// Nulo enquanto a geocodificação estiver pendente.
+  endereco      String?
+  status        StatusOcorrencia                       @default(RECEBIDA)
+  duplicadaDeId String?                                @map("duplicada_de_id") @db.Uuid
+  /// Alimenta o selo "Reaberta" (CA-08.1).
+  reaberturas   Int                                    @default(0) @db.SmallInt
+  criadaEm      DateTime                               @default(now()) @map("criada_em") @db.Timestamptz(6)
+  triadaEm      DateTime?                              @map("triada_em") @db.Timestamptz(6)
+  resolvidaEm   DateTime?                              @map("resolvida_em") @db.Timestamptz(6)
+
+  autor        Usuario?           @relation(fields: [autorId], references: [id])
+  categoria    Categoria          @relation(fields: [categoriaId], references: [id])
+  municipio    Municipio          @relation(fields: [municipioId], references: [id])
+  orgao        Orgao              @relation(fields: [orgaoId], references: [id])
+  bairro       Bairro?            @relation(fields: [bairroId], references: [id])
+  duplicadaDe  Ocorrencia?        @relation("Duplicidade", fields: [duplicadaDeId], references: [id])
+  duplicatas   Ocorrencia[]       @relation("Duplicidade")
+  fotos        OcorrenciaFoto[]
+  eventos      OcorrenciaEvento[]
+  confirmacoes Confirmacao[]
+  avaliacoes   Avaliacao[]
+
+  // Feed do município (paginação por cursor).
+  @@index([municipioId, criadaEm(sort: Desc), id(sort: Desc)])
+  // Fila do agente.
+  @@index([orgaoId, status, criadaEm])
+  @@index([autorId])
+  @@index([local], type: Gist)
+  @@index([atributos], type: Gin)
+  @@map("ocorrencia")
+}
+
+/// CHECK: ordem 1 ou 2 (Q-14).
+model OcorrenciaFoto {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ocorrenciaId   String          @map("ocorrencia_id") @db.Uuid
+  ordem          Int             @db.SmallInt
+  /// Original no bucket privado. Fica nulo quando o original é apagado, depois do processamento.
+  uploadKey      String?         @map("upload_key")
+  /// Foto processada no bucket público. Preenchida só quando a foto é aprovada.
+  storageKey     String?         @unique @map("storage_key")
+  /// Miniatura de 400 px.
+  miniaturaKey   String?         @map("miniatura_key")
+  largura        Int?
+  altura         Int?
+  bytes          Int?
+  moderacao      StatusModeracao @default(PENDENTE)
+  motivoRejeicao String?         @map("motivo_rejeicao")
+  exifRemovidoEm DateTime?       @map("exif_removido_em") @db.Timestamptz(6)
+  criadaEm       DateTime        @default(now()) @map("criada_em") @db.Timestamptz(6)
+
+  ocorrencia Ocorrencia @relation(fields: [ocorrenciaId], references: [id], onDelete: Cascade)
+
+  @@unique([ocorrenciaId, ordem])
+  @@index([moderacao])
+  @@map("ocorrencia_foto")
+}
+
+/// Linha do tempo da ocorrência. O autor nunca é exposto em API pública.
+model OcorrenciaEvento {
+  id           Int               @id @default(autoincrement())
+  ocorrenciaId String            @map("ocorrencia_id") @db.Uuid
+  /// Nulo no evento de criação.
+  deStatus     StatusOcorrencia? @map("de_status")
+  paraStatus   StatusOcorrencia  @map("para_status")
+  /// Agente (transição) ou cidadão (criação e reabertura).
+  autorId      String?           @map("autor_id") @db.Uuid
+  /// Preenchido nas transições feitas por agente.
+  orgaoId      Int?              @map("orgao_id")
+  /// Resposta oficial, justificativa de recusa ou de reabertura.
+  comentario   String?
+  criadoEm     DateTime          @default(now()) @map("criado_em") @db.Timestamptz(6)
+
+  ocorrencia Ocorrencia @relation(fields: [ocorrenciaId], references: [id], onDelete: Cascade)
+  autor      Usuario?   @relation(fields: [autorId], references: [id])
+  orgao      Orgao?     @relation(fields: [orgaoId], references: [id])
+
+  @@index([ocorrenciaId, criadoEm])
+  @@map("ocorrencia_evento")
+}
+
+/// "Também vi" (RF-07). A PK garante uma confirmação por usuário.
+model Confirmacao {
+  ocorrenciaId String   @map("ocorrencia_id") @db.Uuid
+  usuarioId    String   @map("usuario_id") @db.Uuid
+  criadaEm     DateTime @default(now()) @map("criada_em") @db.Timestamptz(6)
+
+  ocorrencia Ocorrencia @relation(fields: [ocorrenciaId], references: [id], onDelete: Cascade)
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id])
+
+  @@id([ocorrenciaId, usuarioId])
+  @@index([usuarioId])
+  @@map("confirmacao")
+}
+
+/// Avaliação do atendimento (RF-09). A PK garante uma avaliação por usuário.
+/// CHECKs: nota de 1 a 5; comentario até 500 caracteres.
+model Avaliacao {
+  ocorrenciaId String   @map("ocorrencia_id") @db.Uuid
+  usuarioId    String   @map("usuario_id") @db.Uuid
+  nota         Int      @db.SmallInt
+  comentario   String?
+  criadaEm     DateTime @default(now()) @map("criada_em") @db.Timestamptz(6)
+
+  ocorrencia Ocorrencia @relation(fields: [ocorrenciaId], references: [id], onDelete: Cascade)
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id])
+
+  @@id([ocorrenciaId, usuarioId])
+  @@index([usuarioId])
+  @@map("avaliacao")
+}
+
+/// Sequência do protocolo por município e ano (RN-05). Incrementada com
+/// INSERT … ON CONFLICT DO UPDATE SET ultimo = ultimo + 1 RETURNING ultimo, na transação do registro.
+model ProtocoloSequencia {
+  municipioId Int @map("municipio_id")
+  ano         Int @db.SmallInt
+  ultimo      Int
+
+  municipio Municipio @relation(fields: [municipioId], references: [id])
+
+  @@id([municipioId, ano])
+  @@map("protocolo_sequencia")
+}
+
+// ---------------------------------------------------------------------------
+// Indicadores
+// ---------------------------------------------------------------------------
+
+/// Desempenho do órgão na janela (RF-10). Um job agrega em SQL e o CalculoScore (domínio)
+/// calcula o score. CHECK: score entre 0 e 10.
+model DesempenhoOrgao {
+  orgaoId         Int      @id @map("orgao_id")
+  municipioId     Int      @map("municipio_id")
+  janelaDias      Int      @map("janela_dias")
+  total           Int
+  resolvidas      Int
+  noPrazo         Int      @map("no_prazo")
+  avaliacoes      Int
+  diasMediana     Decimal? @map("dias_mediana") @db.Decimal
+  satisfacaoMedia Decimal? @map("satisfacao_media") @db.Decimal
+  /// Nulo quando total = 0.
+  score           Decimal? @db.Decimal(3, 1)
+  classificacao   String?
+  /// [{ categoria_id, nome, total, resolvidas }]
+  porCategoria    Json     @default("[]") @map("por_categoria")
+  calculadoEm     DateTime @map("calculado_em") @db.Timestamptz(6)
+
+  orgao     Orgao     @relation(fields: [orgaoId], references: [id])
+  municipio Municipio @relation(fields: [municipioId], references: [id])
+
+  @@map("desempenho_orgao")
 }

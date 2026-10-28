@@ -14,6 +14,7 @@
     "test:int": "pnpm -r test:int",
     "build": "pnpm -r build",
     "contratos:gerar": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api openapi:exportar && pnpm --filter @fiscaliza/contratos gerar",
+    "db:migrar": "pnpm --filter @fiscaliza/api prisma:migrar",
     "infra:up": "docker compose up -d --wait",
     "infra:down": "docker compose down"
   },

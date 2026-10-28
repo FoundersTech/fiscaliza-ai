@@ -93,7 +93,13 @@ Precisa do Docker. O `docker-compose.yml` da raiz sobe o PostgreSQL 16 + PostGIS
 pnpm infra:up
 ```
 
-Na primeira vez, copie `apps/api/.env.example` para `apps/api/.env`. Com o banco e o Redis de pé, rode também os testes de integração:
+Na primeira vez, copie `apps/api/.env.example` para `apps/api/.env`. Depois, e sempre que chegar uma migration nova, aplique as migrations no banco local:
+
+```bash
+pnpm db:migrar
+```
+
+Com o banco e o Redis de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução:
 
 ```bash
 pnpm test:int
@@ -110,6 +116,16 @@ pnpm contratos:gerar
 ```
 
 O CI falha se os contratos versionados não baterem com a API.
+
+### Mudanças no banco
+
+O schema fica em `apps/api/prisma/schema.prisma`. Ao mudá-lo, crie a migration sem aplicar:
+
+```bash
+pnpm db:migrar --create-only --name descricao-da-mudanca
+```
+
+O Prisma não gera CHECKs, índices de expressão (como o de `lower(email)`) nem colunas geradas. Se a mudança envolver uma dessas regras, escreva o SQL à mão no `migration.sql` gerado e depois rode `pnpm db:migrar` para aplicar. Os testes de integração falham se o `schema.prisma` e as migrations divergirem.
 
 ## 👥 Equipe
 
