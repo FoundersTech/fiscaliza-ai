@@ -1,0 +1,20 @@
+{
+  "score": {
+    "janela_dias": 90,
+    "pesos": { "resolucao": 0.5, "prazo": 0.3, "satisfacao": 0.2 },
+    "suavizacao_k": 10,
+    "prior": 0.5,
+    "faixas": [
+      { "min": 9.0, "rotulo": "Ótimo" },
+      { "min": 7.5, "rotulo": "Bom" },
+      { "min": 6.0, "rotulo": "Regular" },
+      { "min": 4.0, "rotulo": "Fraco" },
+      { "min": 0.0, "rotulo": "Ruim" }
+    ],
+    "recalculo_cron": "0 * * * *"
+  },
+  "urgente_min_confirmacoes": 10,
+  "duplicidade_raio_m": 60,
+  "janela_pos_resolucao_dias": 10,
+  "moderacao_estrategia": "APROVAR_TUDO"
+}

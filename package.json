@@ -11,7 +11,10 @@
     "format": "prettier --write .",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "build": "pnpm -r build"
+    "test:int": "pnpm -r test:int",
+    "build": "pnpm -r build",
+    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose down"
   },
   "devDependencies": {
     "prettier": "^3.9.10"

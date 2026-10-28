@@ -1,0 +1,12 @@
+// Schema do banco (PostgreSQL 16 + PostGIS 3). As tabelas entram na T-06.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

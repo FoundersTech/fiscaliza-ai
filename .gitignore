@@ -7,6 +7,9 @@ coverage
 .env*
 !.env.example
 
+# Prisma Client gerado (prisma generate)
+/apps/api/src/generated
+
 # Quasar
 .quasar
 /apps/web/quasar.config.*.temporary.compiled*

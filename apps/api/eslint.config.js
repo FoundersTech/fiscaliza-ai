@@ -5,7 +5,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  { ignores: ['dist/**', 'coverage/**'] },
+  { ignores: ['dist/**', 'coverage/**', 'src/generated/**'] },
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
   {
@@ -52,7 +52,7 @@ export default defineConfig(
               message: 'A camada domain não importa framework (RNF-09).',
             },
             {
-              group: ['@prisma/*', '.prisma/*'],
+              group: ['@prisma/*', '.prisma/*', '**/generated/prisma/**'],
               message: 'A camada domain não importa ORM (RNF-09).',
             },
             {
@@ -72,7 +72,7 @@ export default defineConfig(
         {
           patterns: [
             {
-              group: ['@prisma/*', '.prisma/*'],
+              group: ['@prisma/*', '.prisma/*', '**/generated/prisma/**'],
               message: 'A camada application acessa dados só por ports (RNF-09).',
             },
             {

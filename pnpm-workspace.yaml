@@ -7,7 +7,13 @@ packages:
 # Pacotes que podem rodar scripts de instalação (https://pnpm.io/settings)
 allowBuilds:
   '@parcel/watcher': true
+  '@prisma/engines': true
   esbuild: true
   lightningcss: true
+  prisma: true
   rolldown: true
   unrs-resolver: true
+  # Telemetria: não roda.
+  '@scarf/scarf': false
+  # Aceleração nativa opcional do msgpackr (BullMQ); sem ela, usa a versão em JS.
+  msgpackr-extract: false

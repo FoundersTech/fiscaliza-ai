@@ -39,8 +39,8 @@ Dar aos cidadãos uma ferramenta simples para reportar problemas urbanos e, ao m
 | -------------- | ------------------------------------------ |
 | Frontend (PWA) | Quasar 2 (app-vite 3) + Vue 3 + TypeScript |
 | Backend        | NestJS 12 (ESM) + Fastify, Node 24         |
-| Banco          | PostgreSQL 16 + PostGIS 3                  |
-| Fila e cache   | Redis + BullMQ                             |
+| Banco          | PostgreSQL 16 + PostGIS 3, Prisma 7        |
+| Fila e cache   | Redis 7 + BullMQ 5                         |
 | Storage        | Cloudflare R2                              |
 | Testes         | Vitest                                     |
 
@@ -85,7 +85,21 @@ pnpm test
 pnpm build
 ```
 
-Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API) e `pnpm --filter @fiscaliza/web dev` (PWA).
+### Banco e Redis locais
+
+Precisa do Docker. O `docker-compose.yml` da raiz sobe o PostgreSQL 16 + PostGIS e o Redis 7:
+
+```bash
+pnpm infra:up
+```
+
+Na primeira vez, copie `apps/api/.env.example` para `apps/api/.env`. Com o banco e o Redis de pé, rode também os testes de integração:
+
+```bash
+pnpm test:int
+```
+
+Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://localhost:3000/api/v1`, Swagger em `http://localhost:3000/docs`) e `pnpm --filter @fiscaliza/web dev` (PWA). Para desligar o banco e o Redis, use `pnpm infra:down`.
 
 ## 👥 Equipe
 
