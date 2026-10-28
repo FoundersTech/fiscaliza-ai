@@ -1,2 +1,7 @@
 # This file exists to force pnpm install deps here, regardless of upper workspaces
 # https://pnpm.io/settings
+
+# O arquivo precisa ter ao menos uma chave: só com comentários, o Dependabot falha ao lê-lo
+# ("undefined method '[]' for nil" em workspace_catalog_dependencies).
+packages:
+  - .
