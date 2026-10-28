@@ -101,6 +101,16 @@ pnpm test:int
 
 Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://localhost:3000/api/v1`, Swagger em `http://localhost:3000/docs`) e `pnpm --filter @fiscaliza/web dev` (PWA). Para desligar o banco e o Redis, use `pnpm infra:down`.
 
+### Contratos da API
+
+Depois de mudar qualquer rota ou DTO da API, regenere os tipos usados pelo PWA e commite `packages/contratos` junto (não precisa de banco nem Redis):
+
+```bash
+pnpm contratos:gerar
+```
+
+O CI falha se os contratos versionados não baterem com a API.
+
 ## 👥 Equipe
 
 | Nome           | GitHub                                           |

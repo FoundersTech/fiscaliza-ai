@@ -1,0 +1,93 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "SaudeController_verificar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Banco e Redis respondendo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatorioSaudeResposta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Banco ou Redis fora do ar.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelatorioSaudeResposta"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "saude"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Fiscaliza Aí! API",
+    "description": "",
+    "version": "v1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "RelatorioSaudeResposta": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "erro"
+            ],
+            "description": "ok quando banco e Redis respondem"
+          },
+          "versao": {
+            "type": "string",
+            "example": "abc1234",
+            "description": "Versão (commit) em execução"
+          },
+          "db": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "erro"
+            ]
+          },
+          "redis": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "erro"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "versao",
+          "db",
+          "redis"
+        ]
+      }
+    }
+  }
+}

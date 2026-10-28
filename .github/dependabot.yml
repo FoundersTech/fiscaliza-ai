@@ -1,0 +1,40 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # O pnpm recusa versões publicadas há menos de 1 dia (minimumReleaseAge);
+    # a carência evita PRs que o CI não consegue instalar.
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 5
+    groups:
+      nestjs:
+        patterns: ['@nestjs/*']
+      prisma:
+        patterns: ['prisma', '@prisma/*']
+      quasar-vue:
+        patterns: ['quasar', '@quasar/*', 'vue', 'vue-router', 'pinia']
+      lint-e-testes:
+        patterns:
+          ['eslint', '@eslint/*', 'typescript-eslint', 'eslint-*', 'prettier', 'vitest', '@vue/*']
+
+  - package-ecosystem: npm
+    directory: /apps/web/src-pwa
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    groups:
+      workbox:
+        patterns: ['workbox-*', 'register-service-worker']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday

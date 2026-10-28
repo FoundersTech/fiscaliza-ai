@@ -1,4 +1,3 @@
-// Ponto de entrada dos contratos da API.
-// O arquivo de tipos é gerado a partir do OpenAPI da API pelo openapi-typescript (T-03);
-// até lá, o pacote não exporta nada.
-export {};
+// Contratos da API. O arquivo api.ts é gerado a partir do OpenAPI com `pnpm contratos:gerar`
+// (na raiz do monorepo); o CI falha se ele estiver desatualizado.
+export type { components, operations, paths } from './api.js';
