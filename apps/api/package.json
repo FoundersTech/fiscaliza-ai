@@ -17,6 +17,8 @@
     "prisma:migrar": "prisma migrate dev",
     "prisma:aplicar": "prisma migrate deploy",
     "openapi:exportar": "node dist/cli/exportar-openapi.js",
+    "seed": "node dist/cli/seed.js",
+    "seed:dev": "node dist/cli/seed-dev.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

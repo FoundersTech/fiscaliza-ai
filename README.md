@@ -99,6 +99,12 @@ Na primeira vez, copie `apps/api/.env.example` para `apps/api/.env`. Depois, e s
 pnpm db:migrar
 ```
 
+Em seguida, carregue os dados. O `db:seed:dev` aplica a carga inicial (Sorocaba, o órgão e as 4 categorias) e cria 1 usuário de teste por papel (`cidadao@`, `agente@`, `gestor@` e `admin@fiscaliza.test`) e 50 ocorrências. Ele só roda com `NODE_ENV=development` ou `test`. Em staging e produção, use só `pnpm db:seed`, com a carga inicial. Os dois podem rodar de novo sem duplicar nada:
+
+```bash
+pnpm db:seed:dev
+```
+
 Com o banco e o Redis de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução:
 
 ```bash
