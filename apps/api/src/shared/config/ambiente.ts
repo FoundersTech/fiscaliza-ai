@@ -37,6 +37,10 @@ const esquemaAmbiente = z
     POLITICA_VERSAO: z.string().min(1).default('1'),
     // Atrás do Caddy: o IP do cliente vem do X-Forwarded-For. Sem proxy, deixe false.
     PROXY_CONFIAVEL: booleano.default(false),
+    // Endereço reverso. O servidor público aceita no máximo 1 requisição por segundo.
+    NOMINATIM_URL: z.url({ protocol: /^https?$/ }).default('https://nominatim.openstreetmap.org'),
+    // Map ID do Google Maps que o PWA recebe no /config/publica. DEMO_MAP_ID serve para testes.
+    GOOGLE_MAPS_MAP_ID: z.string().min(1).default('DEMO_MAP_ID'),
   })
   .superRefine((ambiente, contexto) => {
     if (ambiente.NODE_ENV === 'production' && !ambiente.JWT_SECRET) {
@@ -64,6 +68,7 @@ const esquemaAmbiente = z
   .transform((ambiente) => ({
     ...ambiente,
     WEB_URL: ambiente.WEB_URL.replace(/\/+$/, ''),
+    NOMINATIM_URL: ambiente.NOMINATIM_URL.replace(/\/+$/, ''),
     JWT_SECRET: ambiente.JWT_SECRET ?? JWT_SECRET_DESENVOLVIMENTO,
     SWAGGER_HABILITADO: ambiente.SWAGGER_HABILITADO ?? ambiente.NODE_ENV !== 'production',
   }));

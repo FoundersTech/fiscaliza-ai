@@ -3,6 +3,7 @@ import { LoggerModule } from 'nestjs-pino';
 
 import { IdentidadeModule } from './modules/identidade/identidade.module.js';
 import { NotificacoesModule } from './modules/notificacoes/notificacoes.module.js';
+import { TerritorioModule } from './modules/territorio/territorio.module.js';
 import { AMBIENTE, type Ambiente } from './shared/config/ambiente.js';
 import { ConfiguracaoModule } from './shared/config/configuracao.module.js';
 import { FilasModule } from './shared/filas/filas.module.js';
@@ -24,6 +25,7 @@ import { SaudeModule } from './shared/saude/saude.module.js';
     SaudeModule,
     NotificacoesModule,
     IdentidadeModule,
+    TerritorioModule,
   ],
 })
 export class AppModule {}

@@ -96,6 +96,7 @@ jobs:
           R2_URL_PUBLICA: ${{ vars.R2_URL_PUBLICA }}
           VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+          GOOGLE_MAPS_MAP_ID: ${{ vars.GOOGLE_MAPS_MAP_ID }}
         run: |
           umask 077
           cat > staging.env <<EOF
@@ -124,6 +125,7 @@ jobs:
           VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
           VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
           VAPID_SUBJECT=${VAPID_SUBJECT}
+          GOOGLE_MAPS_MAP_ID=${GOOGLE_MAPS_MAP_ID}
           EOF
 
       - name: Copiar compose, Caddyfile e .env para a VM

@@ -148,6 +148,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/config/publica": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TerritorioController_configPublica"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geo/reverso": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TerritorioController_geoReverso"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -226,6 +258,85 @@ export interface components {
              * @example 1
              */
             versao: string;
+        };
+        PontoResposta: {
+            lat: number;
+            lng: number;
+        };
+        BboxResposta: {
+            sul: number;
+            oeste: number;
+            norte: number;
+            leste: number;
+        };
+        MunicipioResposta: {
+            /**
+             * @description Código IBGE
+             * @example 3552205
+             */
+            id: number;
+            /** @example Sorocaba */
+            nome: string;
+            /** @example SP */
+            uf: string;
+            /** @description Onde o pino começa quando não há GPS */
+            centro: components["schemas"]["PontoResposta"];
+            /** @description Retângulo que contém o município */
+            bbox: components["schemas"]["BboxResposta"];
+        };
+        CampoAtributoResposta: {
+            /** @example numero_poste */
+            chave: string;
+            /** @example Número do poste */
+            rotulo: string;
+            /** @enum {string} */
+            tipo: "texto" | "numero" | "opcao";
+            obrigatorio: boolean;
+            /** @description Só em numero */
+            min?: number;
+            /** @description Tamanho máximo em texto; valor máximo em numero */
+            max?: number;
+            /** @description Só em opcao */
+            opcoes?: string[];
+        };
+        CategoriaResposta: {
+            id: number;
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
+            nome: string;
+            /**
+             * @description Nome de um ícone do Material Icons
+             * @example lightbulb
+             */
+            icone: string;
+            /** @description Campos extras do passo 2 */
+            schema_atributos: components["schemas"]["CampoAtributoResposta"][];
+        };
+        ConfigPublicaResposta: {
+            municipio: components["schemas"]["MunicipioResposta"];
+            categorias_ativas: components["schemas"]["CategoriaResposta"][];
+            /**
+             * @description Confirmações para uma ocorrência virar urgente
+             * @example 10
+             */
+            urgente_min_confirmacoes: number;
+            /**
+             * @description Versão vigente da política de privacidade
+             * @example 1
+             */
+            politica_versao: string;
+            /** @example DEMO_MAP_ID */
+            google_maps_map_id: string;
+        };
+        GeoReversoResposta: {
+            /**
+             * @description Null fora da área ou se o geocodificador falhar ou demorar mais de 2 s
+             * @example Rua Quinze de Novembro, 482 · Centro
+             */
+            endereco: string | null;
+            /** @description Falso fora de um município atendido: o envio fica bloqueado */
+            dentro_da_area: boolean;
         };
     };
     responses: never;
@@ -529,6 +640,75 @@ export interface operations {
                 content?: never;
             };
             /** @description POLITICA_DESATUALIZADA ou VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TerritorioController_configPublica: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigPublicaResposta"];
+                };
+            };
+            /** @description MUNICIPIO_NAO_CONFIGURADO */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TerritorioController_geoReverso: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeoReversoResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO */
             422: {
                 headers: {
                     [name: string]: unknown;
