@@ -6,12 +6,13 @@ import { MAX_FOTOS } from '@/services/registro';
 import { useRegistroStore } from '@/stores/registro';
 
 const registro = useRegistroStore();
-const seletor = ref<HTMLInputElement | null>(null);
+const camera = ref<HTMLInputElement | null>(null);
+const galeria = ref<HTMLInputElement | null>(null);
 const aviso = ref<string | null>(null);
 
-function escolher(): void {
+function abrir(seletor: HTMLInputElement | null): void {
   aviso.value = null;
-  seletor.value?.click();
+  seletor?.click();
 }
 
 async function aoEscolher(evento: Event): Promise<void> {
@@ -44,7 +45,16 @@ async function preparar(arquivo: File): Promise<void> {
 <template>
   <section class="passo-fotos">
     <input
-      ref="seletor"
+      ref="camera"
+      type="file"
+      accept="image/*"
+      capture="environment"
+      class="passo-fotos__seletor"
+      data-teste="seletor-camera"
+      @change="aoEscolher"
+    />
+    <input
+      ref="galeria"
       type="file"
       accept="image/*"
       :multiple="registro.vagasDeFoto > 1"
@@ -53,16 +63,29 @@ async function preparar(arquivo: File): Promise<void> {
       @change="aoEscolher"
     />
 
-    <button
-      v-if="registro.fotos.length === 0 && registro.preparando === 0"
-      type="button"
-      class="passo-fotos__vazio"
-      @click="escolher"
-    >
+    <div v-if="registro.fotos.length === 0 && registro.preparando === 0" class="passo-fotos__vazio">
       <q-icon name="sym_o_photo_camera" size="32px" />
-      <span class="passo-fotos__chamada">Tirar foto ou escolher da galeria</span>
-      <span class="fa-legenda">Até {{ MAX_FOTOS }} fotos do problema</span>
-    </button>
+      <span class="passo-fotos__chamada">Foto do problema</span>
+      <span class="fa-legenda">Até {{ MAX_FOTOS }} fotos</span>
+      <div class="passo-fotos__botoes">
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          icon="sym_o_photo_camera"
+          label="Tirar foto"
+          @click="abrir(camera)"
+        />
+        <q-btn
+          outline
+          no-caps
+          color="primary"
+          icon="sym_o_photo_library"
+          label="Escolher da galeria"
+          @click="abrir(galeria)"
+        />
+      </div>
+    </div>
 
     <div v-else class="passo-fotos__grade">
       <figure v-for="(foto, indice) in registro.fotos" :key="foto.id" class="passo-fotos__foto">
@@ -90,15 +113,25 @@ async function preparar(arquivo: File): Promise<void> {
         </div>
       </div>
 
-      <button
-        v-if="registro.vagasDeFoto > 0"
-        type="button"
-        class="passo-fotos__mais"
-        @click="escolher"
-      >
-        <q-icon name="sym_o_add_a_photo" size="24px" />
-        <span>Adicionar outra</span>
-      </button>
+      <div v-if="registro.vagasDeFoto > 0" class="passo-fotos__mais">
+        <span class="fa-legenda">Adicionar outra</span>
+        <q-btn
+          flat
+          no-caps
+          color="primary"
+          icon="sym_o_photo_camera"
+          label="Tirar foto"
+          @click="abrir(camera)"
+        />
+        <q-btn
+          flat
+          no-caps
+          color="primary"
+          icon="sym_o_photo_library"
+          label="Galeria"
+          @click="abrir(galeria)"
+        />
+      </div>
     </div>
 
     <p v-if="registro.vagasDeFoto === 0 && registro.preparando === 0" class="fa-legenda">
@@ -131,13 +164,19 @@ async function preparar(arquivo: File): Promise<void> {
   border: 1px solid var(--fa-borda);
   border-radius: var(--fa-raio-lg);
   color: var(--fa-texto-2);
-  font: inherit;
-  cursor: pointer;
   background: repeating-linear-gradient(
     135deg,
     var(--fa-superficie-2) 0 10px,
     var(--fa-superficie) 10px 20px
   );
+}
+
+.passo-fotos__botoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .passo-fotos__chamada {
@@ -192,13 +231,8 @@ async function preparar(arquivo: File): Promise<void> {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   border: 1px dashed var(--fa-borda-forte);
   border-radius: var(--fa-raio);
-  background: transparent;
-  color: var(--fa-azul);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
 }
 </style>
