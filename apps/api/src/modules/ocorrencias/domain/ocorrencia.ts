@@ -73,7 +73,7 @@ export interface ComandoReabertura {
  * persistir junto com o novo estado.
  */
 export class Ocorrencia {
-  private constructor(private dados: DadosOcorrencia) { }
+  private constructor(private dados: DadosOcorrencia) {}
 
   static reconstituir(dados: DadosOcorrencia): Ocorrencia {
     return new Ocorrencia({ ...dados });
