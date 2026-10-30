@@ -6,6 +6,9 @@ export const AMBIENTE = Symbol('AMBIENTE');
 
 const booleano = z.enum(['true', 'false']).transform((valor) => valor === 'true');
 
+/** Só para desenvolvimento e testes; em produção, JWT_SECRET é obrigatório. */
+const JWT_SECRET_DESENVOLVIMENTO = 'segredo-de-desenvolvimento-nao-use-em-producao-0001';
+
 const esquemaAmbiente = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -28,8 +31,21 @@ const esquemaAmbiente = z
       .regex(/^.+ <[^<>\s]+@[^<>\s]+>$/, 'use o formato Nome <endereco@dominio>')
       .default('Fiscaliza Aí! <nao-responda@fiscalizaai.app>'),
     RESEND_API_KEY: z.string().min(1).optional(),
+    // Assina os tokens de acesso (HS256). Quem tiver este valor consegue forjar um login.
+    JWT_SECRET: z.string().min(32, 'use pelo menos 32 caracteres').optional(),
+    // Versão vigente da política de privacidade que o usuário precisa ter aceitado.
+    POLITICA_VERSAO: z.string().min(1).default('1'),
+    // Atrás do Caddy: o IP do cliente vem do X-Forwarded-For. Sem proxy, deixe false.
+    PROXY_CONFIAVEL: booleano.default(false),
   })
   .superRefine((ambiente, contexto) => {
+    if (ambiente.NODE_ENV === 'production' && !ambiente.JWT_SECRET) {
+      contexto.addIssue({
+        code: 'custom',
+        path: ['JWT_SECRET'],
+        message: 'obrigatória em produção',
+      });
+    }
     if (ambiente.EMAIL_TRANSPORTE === 'resend' && !ambiente.RESEND_API_KEY) {
       contexto.addIssue({
         code: 'custom',
@@ -48,6 +64,7 @@ const esquemaAmbiente = z
   .transform((ambiente) => ({
     ...ambiente,
     WEB_URL: ambiente.WEB_URL.replace(/\/+$/, ''),
+    JWT_SECRET: ambiente.JWT_SECRET ?? JWT_SECRET_DESENVOLVIMENTO,
     SWAGGER_HABILITADO: ambiente.SWAGGER_HABILITADO ?? ambiente.NODE_ENV !== 'production',
   }));
 

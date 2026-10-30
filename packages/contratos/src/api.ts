@@ -20,6 +20,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/cadastro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_cadastrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeController_perfil"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -39,6 +87,48 @@ export interface components {
             db: "ok" | "erro";
             /** @enum {string} */
             redis: "ok" | "erro";
+        };
+        CadastroDto: {
+            /** @example Maria da Silva */
+            nome: string;
+            /**
+             * @description Nome que aparece nas ocorrências, se o cidadão quiser
+             * @example maria.s
+             */
+            apelido_publico: string;
+            /** @example maria@exemplo.com */
+            email: string;
+            /** Format: password */
+            senha: string;
+            /**
+             * @description Versão da política de privacidade aceita
+             * @example 1
+             */
+            politica_versao: string;
+        };
+        PerfilResposta: {
+            /** Format: uuid */
+            id: string;
+            nome: string;
+            apelido_publico: string;
+            email: string;
+            /** @enum {string} */
+            papel: "CIDADAO" | "AGENTE_ORGAO" | "ADMIN_MUNICIPIO" | "ADMIN_PLATAFORMA";
+            municipio_id: number | null;
+            orgao_id: number | null;
+            /** @description O PWA bloqueia o uso até o aceite da política vigente */
+            precisa_aceitar_politica: boolean;
+        };
+        SessaoResposta: {
+            /** @description JWT de 15 minutos, enviado no header Authorization: Bearer */
+            access_token: string;
+            usuario: components["schemas"]["PerfilResposta"];
+        };
+        LoginDto: {
+            /** @example maria@exemplo.com */
+            email: string;
+            /** Format: password */
+            senha: string;
         };
     };
     responses: never;
@@ -75,6 +165,114 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RelatorioSaudeResposta"];
                 };
+            };
+        };
+    };
+    AuthController_cadastrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CadastroDto"];
+            };
+        };
+        responses: {
+            /** @description Conta de cidadão criada e logada. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessaoResposta"];
+                };
+            };
+            /** @description EMAIL_EM_USO */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO ou POLITICA_DESATUALIZADA */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 5 tentativas em 3600 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessaoResposta"];
+                };
+            };
+            /** @description CREDENCIAIS_INVALIDAS */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 5 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MeController_perfil: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

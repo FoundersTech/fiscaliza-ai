@@ -3,7 +3,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { PrismaClient } from '../../generated/prisma/client.js';
 import { aplicarCargaInicial, SOROCABA } from './carga-inicial.js';
-import { aplicarDadosDev, TOTAL_OCORRENCIAS_DEV, USUARIOS_DEV } from './dados-dev.js';
+import { HasherArgon2 } from '../../modules/identidade/infrastructure/hasher-argon2.js';
+import { aplicarDadosDev, SENHA_DEV, TOTAL_OCORRENCIAS_DEV, USUARIOS_DEV } from './dados-dev.js';
 
 describe('Seed (carga inicial e dados de desenvolvimento)', () => {
   let prisma: PrismaClient;
@@ -71,6 +72,21 @@ describe('Seed (carga inicial e dados de desenvolvimento)', () => {
       expect(await prisma.municipio.count()).toBe(0);
     },
   );
+
+  it('os usuários do seed:dev entram com a senha de teste e já aceitaram a política', async () => {
+    await aplicarDadosDev(prisma, 'test');
+    // Simula um banco anterior à senha de teste: rodar de novo devolve a senha.
+    await prisma.usuario.updateMany({ data: { senhaHash: null } });
+    await aplicarDadosDev(prisma, 'test');
+
+    const hasher = new HasherArgon2();
+    const usuarios = await prisma.usuario.findMany();
+    expect(usuarios).toHaveLength(USUARIOS_DEV.length);
+    for (const usuario of usuarios) {
+      expect(await hasher.conferir(usuario.senhaHash!, SENHA_DEV)).toBe(true);
+    }
+    expect(usuarios.every((usuario) => usuario.politicaVersao === '1')).toBe(true);
+  });
 
   it('seed:dev cria 1 usuário por papel e 50 ocorrências dentro do município, sem duplicar', async () => {
     const primeira = await aplicarDadosDev(prisma, 'test');

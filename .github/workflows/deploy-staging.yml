@@ -110,6 +110,8 @@ jobs:
           DATABASE_URL=postgresql://fiscaliza:${POSTGRES_PASSWORD}@postgres:5432/fiscaliza
           REDIS_URL=redis://redis:6379
           JWT_SECRET=${JWT_SECRET}
+          POLITICA_VERSAO=1
+          PROXY_CONFIAVEL=true
           EMAIL_TRANSPORTE=resend
           RESEND_API_KEY=${RESEND_API_KEY}
           EMAIL_REMETENTE="${EMAIL_REMETENTE}"
