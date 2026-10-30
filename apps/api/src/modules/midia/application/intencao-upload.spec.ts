@@ -11,6 +11,9 @@ function montar() {
   const storage = {
     urlDeEnvio: vi.fn<StoragePort['urlDeEnvio']>().mockResolvedValue('https://s3.exemplo.test/u'),
     existeUpload: vi.fn<StoragePort['existeUpload']>(),
+    baixarUpload: vi.fn<StoragePort['baixarUpload']>(),
+    apagarUpload: vi.fn<StoragePort['apagarUpload']>(),
+    publicar: vi.fn<StoragePort['publicar']>(),
   };
   return { criar: new CriarIntencaoUpload(storage), storage };
 }

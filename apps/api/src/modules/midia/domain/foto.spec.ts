@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { chaveDoUpload, fotoAceita, prefixoDaOcorrencia, TAMANHO_MAXIMO_FOTO } from './foto.js';
+import {
+  chaveDoUpload,
+  chavesPublicas,
+  fotoAceita,
+  prefixoDaOcorrencia,
+  TAMANHO_MAXIMO_FOTO,
+} from './foto.js';
 
 const OCORRENCIA = '0b9f3c2e-5d1a-4f6b-9c8e-7a6d5c4b3a21';
 
@@ -21,5 +27,12 @@ describe('foto', () => {
 
     expect(chave).toBe(`ocorrencias/${OCORRENCIA}/2-abc.jpg`);
     expect(chave.startsWith(prefixoDaOcorrencia(OCORRENCIA))).toBe(true);
+  });
+
+  it('a foto publicada e a miniatura ficam no prefixo da ocorrência, pelo id da foto', () => {
+    expect(chavesPublicas(OCORRENCIA, 'f1')).toEqual({
+      foto: `ocorrencias/${OCORRENCIA}/f1.jpg`,
+      miniatura: `ocorrencias/${OCORRENCIA}/f1-400.jpg`,
+    });
   });
 });

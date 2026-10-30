@@ -2,6 +2,7 @@ import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import type { Job } from 'bullmq';
 
+import { registrarFalha } from '../../../shared/filas/registrar-falha.js';
 import {
   FILA_TERRITORIO,
   type JobPreencherEndereco,
@@ -23,12 +24,6 @@ export class EnderecoProcessor extends WorkerHost {
 
   @OnWorkerEvent('failed')
   aoFalhar(job: Job<JobPreencherEndereco> | undefined, erro: Error): void {
-    if (!job) return;
-    const tentativas = job.opts.attempts ?? 1;
-    const desistiu = job.attemptsMade >= tentativas;
-    this.logger[desistiu ? 'error' : 'warn'](
-      `Endereço de ${job.data.ocorrenciaId} falhou na tentativa ${job.attemptsMade} de ${tentativas}` +
-        `${desistiu ? ', sem novas tentativas' : ''}: ${erro.message}`,
-    );
+    if (job) registrarFalha(this.logger, `Endereço de ${job.data.ocorrenciaId}`, job, erro);
   }
 }

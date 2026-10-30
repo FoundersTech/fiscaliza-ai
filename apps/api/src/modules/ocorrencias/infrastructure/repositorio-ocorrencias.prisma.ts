@@ -122,4 +122,14 @@ export class RepositorioOcorrenciasPrisma implements RepositorioOcorrencias {
   async gravarEndereco(id: string, endereco: string): Promise<void> {
     await this.prisma.ocorrencia.updateMany({ where: { id, endereco: null }, data: { endereco } });
   }
+
+  async semEnderecoCriadasAntes(antesDe: Date, limite: number): Promise<string[]> {
+    const ocorrencias = await this.prisma.ocorrencia.findMany({
+      where: { endereco: null, criadaEm: { lt: antesDe } },
+      select: { id: true },
+      orderBy: { criadaEm: 'asc' },
+      take: limite,
+    });
+    return ocorrencias.map((ocorrencia) => ocorrencia.id);
+  }
 }

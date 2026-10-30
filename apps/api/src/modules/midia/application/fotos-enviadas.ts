@@ -37,6 +37,10 @@ export class ConferirUploads {
   }
 }
 
+export function jobIdDaFoto(fotoId: string): string {
+  return `foto-${fotoId}`;
+}
+
 /** Enfileira o processamento das fotos de uma ocorrência que acabou de ser gravada. */
 @Injectable()
 export class FilaFotos {
@@ -47,21 +51,38 @@ export class FilaFotos {
   /** Sem Redis, a foto fica PENDENTE, e a reconciliação a enfileira depois. */
   async processar(fotoIds: readonly string[]): Promise<void> {
     try {
-      await this.fila.addBulk(
-        fotoIds.map((fotoId) => ({
-          name: JOB_PROCESSAR_FOTO,
-          data: { fotoId },
-          opts: {
-            jobId: `foto-${fotoId}`,
-            attempts: 5,
-            backoff: { type: 'exponential', delay: 10_000 },
-            removeOnComplete: true,
-            removeOnFail: { age: SETE_DIAS_S },
-          },
-        })),
-      );
+      await this.adicionar(fotoIds);
     } catch (erro) {
       this.logger.warn(`Fotos ${fotoIds.join(', ')} sem processamento agendado: ${String(erro)}`);
     }
+  }
+
+  /** Cria o job que falta e dá uma nova rodada de tentativas ao job que já desistiu. */
+  async reenfileirar(fotoIds: readonly string[]): Promise<void> {
+    for (const fotoId of fotoIds) {
+      const job = await this.fila.getJob(jobIdDaFoto(fotoId));
+      if (job && (await job.isFailed())) {
+        await job.retry('failed', { resetAttemptsMade: true, resetAttemptsStarted: true });
+      }
+    }
+    await this.adicionar(fotoIds);
+  }
+
+  /** Um job com o mesmo id que ainda está na fila não é duplicado. */
+  private async adicionar(fotoIds: readonly string[]): Promise<void> {
+    if (!fotoIds.length) return;
+    await this.fila.addBulk(
+      fotoIds.map((fotoId) => ({
+        name: JOB_PROCESSAR_FOTO,
+        data: { fotoId },
+        opts: {
+          jobId: jobIdDaFoto(fotoId),
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 10_000 },
+          removeOnComplete: true,
+          removeOnFail: { age: SETE_DIAS_S },
+        },
+      })),
+    );
   }
 }

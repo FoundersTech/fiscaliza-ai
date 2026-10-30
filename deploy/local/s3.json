@@ -4,6 +4,10 @@
       "name": "fiscaliza",
       "credentials": [{ "accessKey": "fiscaliza", "secretKey": "fiscaliza-local" }],
       "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    },
+    {
+      "name": "anonymous",
+      "actions": ["Read:fa-fotos", "Read:fa-fotos-teste"]
     }
   ]
 }

@@ -101,13 +101,13 @@ Na primeira vez, copie `apps/api/.env.example` para `apps/api/.env`. Depois, e s
 pnpm db:migrar
 ```
 
-Em seguida, carregue os dados. O `db:seed:dev` aplica a carga inicial (Sorocaba, o órgão e as 4 categorias) e cria 1 usuário de teste por papel (`cidadao@`, `agente@`, `gestor@` e `admin@fiscaliza.test`, todos com a senha `fiscaliza123`) e 50 ocorrências, além do bucket `fa-uploads` no storage local. Ele só roda com `NODE_ENV=development` ou `test`. Em staging e produção, use só `pnpm db:seed`, com a carga inicial. Os dois podem rodar de novo sem duplicar nada:
+Em seguida, carregue os dados. O `db:seed:dev` aplica a carga inicial (Sorocaba, o órgão e as 4 categorias) e cria 1 usuário de teste por papel (`cidadao@`, `agente@`, `gestor@` e `admin@fiscaliza.test`, todos com a senha `fiscaliza123`) e 50 ocorrências, além dos buckets `fa-uploads` e `fa-fotos` no storage local. Ele só roda com `NODE_ENV=development` ou `test`. Em staging e produção, use só `pnpm db:seed`, com a carga inicial. Os dois podem rodar de novo sem duplicar nada:
 
 ```bash
 pnpm db:seed:dev
 ```
 
-Com o banco, o Redis e o storage de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução, e um bucket à parte (`fa-uploads-teste`):
+Com o banco, o Redis e o storage de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução, buckets à parte (`fa-uploads-teste` e `fa-fotos-teste`) e o banco 1 do Redis, para que uma API de desenvolvimento ligada não pegue os jobs dos testes:
 
 ```bash
 pnpm test:int
@@ -118,6 +118,8 @@ Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://
 ### Fotos em desenvolvimento
 
 O PWA envia cada foto direto ao storage, sem passar pela API: `POST /api/v1/uploads/intencao` devolve uma URL de PUT válida por 5 minutos, assinada para o tipo `image/jpeg` e para o tamanho exato informado (até 300 KB). Um PUT com outro tipo, outro tamanho ou depois do prazo é recusado com 403. Em desenvolvimento e nos testes, sem as variáveis `R2_*` no `.env`, a API usa o storage local do `docker-compose.yml`, com as credenciais de `deploy/local/s3.json`. Staging usa o R2 da Cloudflare.
+
+Depois do registro da ocorrência, um job da própria API recodifica cada foto com o `sharp` (até 1600 px, miniatura de 400 px, sem EXIF nem GPS), publica no bucket `fa-fotos` e apaga o original do `fa-uploads`. Um arquivo que não é imagem fica `REJEITADA`. No storage local, o `fa-fotos` é público para leitura, como em staging: a foto fica em `http://localhost:9100/fa-fotos/<storage_key>`. A cada 10 minutos, um job de reconciliação põe de volta na fila as fotos e os endereços que ficaram para trás.
 
 ### E-mails em desenvolvimento
 

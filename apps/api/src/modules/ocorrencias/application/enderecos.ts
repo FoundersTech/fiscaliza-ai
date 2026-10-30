@@ -27,20 +27,31 @@ export class FilaEnderecos {
   /** Sem Redis, o endereço fica nulo, e a reconciliação o enfileira depois. */
   async preencher(ocorrenciaId: string): Promise<void> {
     try {
-      await this.fila.add(
-        JOB_PREENCHER_ENDERECO,
-        { ocorrenciaId },
-        {
+      await this.reenfileirar([ocorrenciaId]);
+    } catch (erro) {
+      this.logger.warn(`Endereço de ${ocorrenciaId} sem busca agendada: ${String(erro)}`);
+    }
+  }
+
+  /**
+   * Um job com o mesmo id que ainda está na fila não é duplicado. O que desistiu fica guardado
+   * por 7 dias e só depois disso ganha outra rodada: há pontos que não têm endereço.
+   */
+  async reenfileirar(ocorrenciaIds: readonly string[]): Promise<void> {
+    if (!ocorrenciaIds.length) return;
+    await this.fila.addBulk(
+      ocorrenciaIds.map((ocorrenciaId) => ({
+        name: JOB_PREENCHER_ENDERECO,
+        data: { ocorrenciaId },
+        opts: {
           jobId: `endereco-${ocorrenciaId}`,
           attempts: TENTATIVAS_ENDERECO,
           backoff: { type: 'exponential', delay: ATRASO_INICIAL_MS },
           removeOnComplete: true,
           removeOnFail: { age: SETE_DIAS_S },
         },
-      );
-    } catch (erro) {
-      this.logger.warn(`Endereço de ${ocorrenciaId} sem busca agendada: ${String(erro)}`);
-    }
+      })),
+    );
   }
 }
 
@@ -59,5 +70,22 @@ export class PreencherEndereco {
     const endereco = await this.enderecoReverso.executar(local);
     if (!endereco) throw new Error('endereço ainda indisponível');
     await this.ocorrencias.gravarEndereco(ocorrenciaId, endereco);
+  }
+}
+
+const LOTE = 500;
+
+@Injectable()
+export class ReconciliarEnderecos {
+  constructor(
+    @Inject(REPOSITORIO_OCORRENCIAS) private readonly ocorrencias: RepositorioOcorrencias,
+    private readonly filaEnderecos: FilaEnderecos,
+  ) {}
+
+  /** Reenfileira as ocorrências criadas antes de `antesDe` que continuam sem endereço. */
+  async executar(antesDe: Date): Promise<number> {
+    const ids = await this.ocorrencias.semEnderecoCriadasAntes(antesDe, LOTE);
+    await this.filaEnderecos.reenfileirar(ids);
+    return ids.length;
   }
 }

@@ -2,7 +2,10 @@ import {
   BucketAlreadyExists,
   BucketAlreadyOwnedByYou,
   CreateBucketCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
+  NoSuchKey,
   NotFound,
   PutObjectCommand,
   S3Client,
@@ -18,7 +21,11 @@ export interface ConfigStorage {
   chave: string;
   segredo: string;
   bucketUploads: string;
+  bucketFotos: string;
 }
+
+// Uma foto rejeitada depois de publicada sai do cache da CDN em até 10 min.
+const CACHE_PUBLICO = 'public, max-age=600';
 
 export function configStorage(ambiente: Ambiente): ConfigStorage {
   return {
@@ -26,6 +33,7 @@ export function configStorage(ambiente: Ambiente): ConfigStorage {
     chave: ambiente.R2_ACCESS_KEY_ID,
     segredo: ambiente.R2_SECRET_ACCESS_KEY,
     bucketUploads: ambiente.R2_BUCKET_UPLOADS,
+    bucketFotos: ambiente.R2_BUCKET_FOTOS,
   };
 }
 
@@ -77,6 +85,34 @@ export class StorageR2Adapter implements StoragePort, OnModuleDestroy {
       if (erro instanceof NotFound) return false;
       throw erro;
     }
+  }
+
+  async baixarUpload(chave: string): Promise<Buffer | null> {
+    try {
+      const resposta = await this.s3.send(
+        new GetObjectCommand({ Bucket: this.config.bucketUploads, Key: chave }),
+      );
+      return resposta.Body ? Buffer.from(await resposta.Body.transformToByteArray()) : null;
+    } catch (erro) {
+      if (erro instanceof NoSuchKey) return null;
+      throw erro;
+    }
+  }
+
+  async apagarUpload(chave: string): Promise<void> {
+    await this.s3.send(new DeleteObjectCommand({ Bucket: this.config.bucketUploads, Key: chave }));
+  }
+
+  async publicar(chave: string, jpeg: Buffer): Promise<void> {
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.config.bucketFotos,
+        Key: chave,
+        Body: jpeg,
+        ContentType: 'image/jpeg',
+        CacheControl: CACHE_PUBLICO,
+      }),
+    );
   }
 
   onModuleDestroy(): void {
