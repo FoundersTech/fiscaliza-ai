@@ -10,11 +10,21 @@ export interface PartesProtocolo {
 const FORMATO = /^FA-(\d{4})-([A-Z]{3})-(\d{6})$/;
 const NUMERO_MAXIMO = 999_999;
 
+// O ano do protocolo é o do calendário de quem registra, não o de UTC.
+const ANO_EM_SAO_PAULO = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Sao_Paulo',
+  year: 'numeric',
+});
+
 /**
  * Protocolo da ocorrência: `FA-<ano de criação>-<sigla do município>-<sequencial>`.
  * O sequencial é por município e ano, e vem de `protocolo_sequencia`; aqui só se monta e se lê.
  */
 export const Protocolo = {
+  anoDe(data: Date): number {
+    return Number(ANO_EM_SAO_PAULO.format(data));
+  },
+
   formatar(ano: number, sigla: string, numero: number): string {
     if (!Number.isInteger(ano) || ano < 1000 || ano > 9999) {
       throw new ErroDominio('PROTOCOLO_INVALIDO', `Ano inválido para o protocolo: ${ano}.`);

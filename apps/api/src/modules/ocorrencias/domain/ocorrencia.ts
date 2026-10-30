@@ -22,7 +22,7 @@ export const TRANSICOES_AGENTE: Readonly<Record<StatusOcorrencia, readonly Statu
   DUPLICADA: [],
 };
 
-const ABERTAS: readonly StatusOcorrencia[] = [RECEBIDA, EM_ANALISE, EM_EXECUCAO];
+export const ABERTAS: readonly StatusOcorrencia[] = [RECEBIDA, EM_ANALISE, EM_EXECUCAO];
 const EXIGEM_COMENTARIO: readonly StatusOcorrencia[] = [RECUSADA, RESOLVIDA];
 
 const UM_DIA_MS = 24 * 60 * 60 * 1000;

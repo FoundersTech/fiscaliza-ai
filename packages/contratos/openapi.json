@@ -410,6 +410,71 @@
           "midia"
         ]
       }
+    },
+    "/api/v1/ocorrencias": {
+      "post": {
+        "operationId": "OcorrenciasController_registrar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistroDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reenvio do mesmo id pelo mesmo autor: a ocorrência que já existia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OcorrenciaCriadaResposta"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Ocorrência criada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OcorrenciaCriadaResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "409": {
+            "description": "DUPLICATA_POSSIVEL: há ocorrência aberta da categoria por perto (reenvie com forcar_criacao para criar assim mesmo). ID_EM_USO: o id é de outra pessoa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroDuplicidadeResposta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "FORA_DA_AREA, CATEGORIA_INATIVA, ATRIBUTOS_INVALIDOS, FOTO_NAO_ENVIADA ou VALIDACAO"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ocorrencias"
+        ]
+      }
     }
   },
   "info": {
@@ -901,6 +966,222 @@
           "upload_url",
           "upload_key",
           "expira_em"
+        ]
+      },
+      "LocalDto": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "example": -23.5015
+          },
+          "lng": {
+            "type": "number",
+            "example": -47.4526
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ]
+      },
+      "FotoDto": {
+        "type": "object",
+        "properties": {
+          "upload_key": {
+            "type": "string",
+            "description": "A upload_key devolvida por POST /uploads/intencao"
+          },
+          "ordem": {
+            "type": "number",
+            "enum": [
+              1,
+              2
+            ]
+          }
+        },
+        "required": [
+          "upload_key",
+          "ordem"
+        ]
+      },
+      "RegistroDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Gerado no aparelho; reenviar o mesmo id não duplica"
+          },
+          "categoria_id": {
+            "type": "number",
+            "example": 2
+          },
+          "descricao": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "atributos": {
+            "type": "object",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "description": "Campos extras da categoria (schema_atributos)"
+          },
+          "local": {
+            "$ref": "#/components/schemas/LocalDto"
+          },
+          "precisao_m": {
+            "type": "number",
+            "nullable": true,
+            "description": "Precisão do GPS em metros; null quando o pino foi posto à mão"
+          },
+          "publicar_autor": {
+            "type": "boolean",
+            "default": false,
+            "description": "Mostrar o apelido do autor na ocorrência"
+          },
+          "fotos": {
+            "minItems": 1,
+            "maxItems": 2,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FotoDto"
+            }
+          },
+          "origem": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE"
+            ],
+            "description": "OFFLINE: pendente enviada depois; não passa pela duplicidade"
+          },
+          "forcar_criacao": {
+            "type": "boolean",
+            "default": false,
+            "description": "Criar mesmo com candidatas a duplicata (\"É outro problema\")"
+          }
+        },
+        "required": [
+          "id",
+          "categoria_id",
+          "descricao",
+          "local",
+          "fotos",
+          "origem"
+        ]
+      },
+      "OcorrenciaCriadaResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "protocolo": {
+            "type": "string",
+            "example": "FA-2026-SOR-000123"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECEBIDA",
+              "EM_ANALISE",
+              "EM_EXECUCAO",
+              "RESOLVIDA",
+              "RECUSADA",
+              "DUPLICADA"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "protocolo",
+          "status"
+        ]
+      },
+      "CandidataDuplicidadeResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "protocolo": {
+            "type": "string",
+            "example": "FA-2026-SOR-000045"
+          },
+          "resumo": {
+            "type": "string",
+            "description": "Começo da descrição"
+          },
+          "distancia_m": {
+            "type": "number",
+            "example": 42
+          },
+          "confirmacoes": {
+            "type": "number",
+            "example": 3
+          }
+        },
+        "required": [
+          "id",
+          "protocolo",
+          "resumo",
+          "distancia_m",
+          "confirmacoes"
+        ]
+      },
+      "DetalhesDuplicidade": {
+        "type": "object",
+        "properties": {
+          "candidatas": {
+            "description": "Até 3, da mais próxima",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidataDuplicidadeResposta"
+            }
+          }
+        },
+        "required": [
+          "candidatas"
+        ]
+      },
+      "ErroDuplicidadeResposta": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "enum": [
+              "DUPLICATA_POSSIVEL",
+              "ID_EM_USO"
+            ]
+          },
+          "mensagem": {
+            "type": "string"
+          },
+          "detalhes": {
+            "description": "Vazio no ID_EM_USO",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DetalhesDuplicidade"
+              }
+            ]
+          }
+        },
+        "required": [
+          "codigo",
+          "mensagem",
+          "detalhes"
         ]
       }
     }

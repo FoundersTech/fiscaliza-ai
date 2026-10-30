@@ -196,6 +196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ocorrencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OcorrenciasController_registrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -377,6 +393,82 @@ export interface components {
             upload_key: string;
             /** Format: date-time */
             expira_em: string;
+        };
+        LocalDto: {
+            /** @example -23.5015 */
+            lat: number;
+            /** @example -47.4526 */
+            lng: number;
+        };
+        FotoDto: {
+            /** @description A upload_key devolvida por POST /uploads/intencao */
+            upload_key: string;
+            /** @enum {number} */
+            ordem: 1 | 2;
+        };
+        RegistroDto: {
+            /**
+             * Format: uuid
+             * @description Gerado no aparelho; reenviar o mesmo id não duplica
+             */
+            id: string;
+            /** @example 2 */
+            categoria_id: number;
+            descricao: string;
+            /** @description Campos extras da categoria (schema_atributos) */
+            atributos?: {
+                [key: string]: string | number;
+            };
+            local: components["schemas"]["LocalDto"];
+            /** @description Precisão do GPS em metros; null quando o pino foi posto à mão */
+            precisao_m?: number | null;
+            /**
+             * @description Mostrar o apelido do autor na ocorrência
+             * @default false
+             */
+            publicar_autor: boolean;
+            fotos: components["schemas"]["FotoDto"][];
+            /**
+             * @description OFFLINE: pendente enviada depois; não passa pela duplicidade
+             * @enum {string}
+             */
+            origem: "ONLINE" | "OFFLINE";
+            /**
+             * @description Criar mesmo com candidatas a duplicata ("É outro problema")
+             * @default false
+             */
+            forcar_criacao: boolean;
+        };
+        OcorrenciaCriadaResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @example FA-2026-SOR-000123 */
+            protocolo: string;
+            /** @enum {string} */
+            status: "RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA";
+        };
+        CandidataDuplicidadeResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @example FA-2026-SOR-000045 */
+            protocolo: string;
+            /** @description Começo da descrição */
+            resumo: string;
+            /** @example 42 */
+            distancia_m: number;
+            /** @example 3 */
+            confirmacoes: number;
+        };
+        DetalhesDuplicidade: {
+            /** @description Até 3, da mais próxima */
+            candidatas: components["schemas"]["CandidataDuplicidadeResposta"][];
+        };
+        ErroDuplicidadeResposta: {
+            /** @enum {string} */
+            codigo: "DUPLICATA_POSSIVEL" | "ID_EM_USO";
+            mensagem: string;
+            /** @description Vazio no ID_EM_USO */
+            detalhes: components["schemas"]["DetalhesDuplicidade"];
         };
     };
     responses: never;
@@ -794,6 +886,69 @@ export interface operations {
                 content?: never;
             };
             /** @description FOTO_INVALIDA ou VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OcorrenciasController_registrar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistroDto"];
+            };
+        };
+        responses: {
+            /** @description Reenvio do mesmo id pelo mesmo autor: a ocorrência que já existia */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OcorrenciaCriadaResposta"];
+                };
+            };
+            /** @description Ocorrência criada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OcorrenciaCriadaResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description DUPLICATA_POSSIVEL: há ocorrência aberta da categoria por perto (reenvie com forcar_criacao para criar assim mesmo). ID_EM_USO: o id é de outra pessoa. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDuplicidadeResposta"];
+                };
+            };
+            /** @description FORA_DA_AREA, CATEGORIA_INATIVA, ATRIBUTOS_INVALIDOS, FOTO_NAO_ENVIADA ou VALIDACAO */
             422: {
                 headers: {
                     [name: string]: unknown;
