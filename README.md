@@ -123,6 +123,16 @@ O PWA envia cada foto direto ao storage, sem passar pela API: `POST /api/v1/uplo
 
 Depois do registro da ocorrência, um job da própria API recodifica cada foto com o `sharp` (até 1600 px, miniatura de 400 px, sem EXIF nem GPS), publica no bucket `fa-fotos` e apaga o original do `fa-uploads`. Um arquivo que não é imagem fica `REJEITADA`. No storage local, o `fa-fotos` é público para leitura, como em staging: a foto fica em `http://localhost:9100/fa-fotos/<storage_key>`. A cada 10 minutos, um job de reconciliação põe de volta na fila as fotos e os endereços que ficaram para trás.
 
+### Mapa em desenvolvimento
+
+O mapa do registro usa o Google Maps JavaScript API com a chave de desenvolvimento (`maps-dev`, liberada para `http://localhost:9000`). A chave entra no build do PWA pela variável `GOOGLE_MAPS_API_KEY`; defina-a no terminal antes de subir o PWA, sem gravar em arquivo do repositório:
+
+```bash
+GOOGLE_MAPS_API_KEY=<chave maps-dev> pnpm --filter @fiscaliza/web dev
+```
+
+Sem a chave, o passo 3 mostra "Mapa indisponível" e o envio segue com o ponto do GPS. O Map ID vem da API, em `GET /api/v1/config/publica` (`DEMO_MAP_ID` no seu computador).
+
 ### E-mails em desenvolvimento
 
 Em desenvolvimento, a API não envia e-mails: grava cada um em `apps/api/tmp/emails` (fora do Git). Abra o `.html` no navegador para ver o e-mail e clicar no link. Para conferir o envio real pelo Resend, defina `EMAIL_TRANSPORTE=resend` e `RESEND_API_KEY` no terminal, sem colocar a chave no `.env`, e rode:

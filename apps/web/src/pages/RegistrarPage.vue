@@ -1,20 +1,71 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import EstadoVazio from '@/components/EstadoVazio.vue';
+import { useApi } from '@/boot/api';
+import ModalDuplicidade from '@/components/registro/ModalDuplicidade.vue';
 import PassoDescricao from '@/components/registro/PassoDescricao.vue';
 import PassoFotos from '@/components/registro/PassoFotos.vue';
+import PassoLocal from '@/components/registro/PassoLocal.vue';
+import RegistroConcluido from '@/components/registro/RegistroConcluido.vue';
+import type { Candidata } from '@/services/envio';
 import { TOTAL_PASSOS } from '@/services/registro';
 import { useRegistroStore } from '@/stores/registro';
 
 const TITULOS = ['Foto do problema', 'Categoria e descrição', 'Localização'] as const;
 
 const router = useRouter();
+const api = useApi();
 const registro = useRegistroStore();
+
+const erroEnvio = ref<string | null>(null);
+const candidatas = ref<Candidata[]>([]);
+const duplicidadeAberta = ref(false);
+const erroConfirmacao = ref<string | null>(null);
 
 const titulo = computed(() => TITULOS[registro.passo - 1]);
 const progresso = computed(() => `${(registro.passo / TOTAL_PASSOS) * 100}%`);
+
+async function enviar(forcarCriacao = false): Promise<void> {
+  erroEnvio.value = null;
+  erroConfirmacao.value = null;
+  const resultado = await registro.enviar(api, forcarCriacao);
+  if (resultado.tipo === 'DUPLICATA') {
+    candidatas.value = resultado.candidatas;
+    duplicidadeAberta.value = true;
+    return;
+  }
+  duplicidadeAberta.value = false;
+  if (resultado.tipo === 'ERRO') erroEnvio.value = resultado.mensagem;
+}
+
+async function tambemVi(candidata: Candidata): Promise<void> {
+  erroConfirmacao.value = null;
+  const resultado = await registro.confirmar(api, candidata);
+  if (resultado.tipo === 'ERRO') {
+    erroConfirmacao.value = resultado.mensagem;
+  } else {
+    duplicidadeAberta.value = false;
+  }
+}
+
+function aoContinuar(): void {
+  if (registro.passo < TOTAL_PASSOS) {
+    registro.avancar();
+  } else {
+    void enviar();
+  }
+}
+
+function concluir(destino: 'inicio' | 'outra'): void {
+  registro.limpar();
+  if (destino === 'inicio') void router.push('/');
+}
+
+// Depois do protocolo, quem sai e volta começa um registro novo.
+onBeforeUnmount(() => {
+  if (registro.conclusao) registro.limpar();
+});
 
 /** No primeiro passo, a seta sai do registro; o que foi preenchido continua na store. */
 function voltar(): void {
@@ -30,56 +81,76 @@ function voltar(): void {
 
 <template>
   <q-layout view="hHh lpR fFf">
-    <q-header class="registro__topo">
-      <div class="registro__cabecalho">
-        <q-btn
-          round
-          flat
-          dense
-          icon="sym_o_arrow_back"
-          :aria-label="registro.passo > 1 ? 'Voltar ao passo anterior' : 'Sair do registro'"
-          @click="voltar"
-        />
-        <div>
-          <p class="registro__passo">Passo {{ registro.passo }} de {{ TOTAL_PASSOS }}</p>
-          <h1 class="registro__titulo">{{ titulo }}</h1>
-        </div>
-      </div>
-      <div
-        class="registro__progresso"
-        role="progressbar"
-        :aria-valuenow="registro.passo"
-        aria-valuemin="1"
-        :aria-valuemax="TOTAL_PASSOS"
-      >
-        <span :style="{ width: progresso }" />
-      </div>
-    </q-header>
-
-    <q-page-container>
+    <q-page-container v-if="registro.conclusao">
       <q-page class="registro__pagina">
-        <PassoFotos v-if="registro.passo === 1" />
-        <PassoDescricao v-else-if="registro.passo === 2" />
-        <EstadoVazio
-          v-else
-          icone="sym_o_location_on"
-          titulo="Localização"
-          texto="Em breve: o mapa para confirmar o ponto do problema e enviar a notificação."
+        <RegistroConcluido
+          :conclusao="registro.conclusao"
+          @inicio="concluir('inicio')"
+          @outra="concluir('outra')"
         />
       </q-page>
     </q-page-container>
 
-    <q-footer class="registro__rodape">
-      <q-btn
-        unelevated
-        no-caps
-        color="primary"
-        class="fa-botao-largo"
-        :label="registro.passo < TOTAL_PASSOS ? 'Continuar' : 'Enviar notificação'"
-        :disable="!registro.passoCompleto"
-        @click="registro.avancar"
+    <template v-else>
+      <q-header class="registro__topo">
+        <div class="registro__cabecalho">
+          <q-btn
+            round
+            flat
+            dense
+            icon="sym_o_arrow_back"
+            :aria-label="registro.passo > 1 ? 'Voltar ao passo anterior' : 'Sair do registro'"
+            @click="voltar"
+          />
+          <div>
+            <p class="registro__passo">Passo {{ registro.passo }} de {{ TOTAL_PASSOS }}</p>
+            <h1 class="registro__titulo">{{ titulo }}</h1>
+          </div>
+        </div>
+        <div
+          class="registro__progresso"
+          role="progressbar"
+          :aria-valuenow="registro.passo"
+          aria-valuemin="1"
+          :aria-valuemax="TOTAL_PASSOS"
+        >
+          <span :style="{ width: progresso }" />
+        </div>
+      </q-header>
+
+      <q-page-container>
+        <q-page class="registro__pagina">
+          <PassoFotos v-if="registro.passo === 1" />
+          <PassoDescricao v-else-if="registro.passo === 2" />
+          <PassoLocal v-else />
+        </q-page>
+      </q-page-container>
+
+      <q-footer class="registro__rodape">
+        <p v-if="erroEnvio" class="fa-mensagem fa-mensagem--erro registro__erro" role="alert">
+          {{ erroEnvio }}
+        </p>
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          class="fa-botao-largo"
+          :label="registro.passo < TOTAL_PASSOS ? 'Continuar' : 'Enviar notificação'"
+          :disable="!registro.passoCompleto"
+          :loading="registro.enviando"
+          @click="aoContinuar"
+        />
+      </q-footer>
+
+      <ModalDuplicidade
+        v-model="duplicidadeAberta"
+        :candidatas="candidatas"
+        :enviando="registro.enviando"
+        :erro="erroConfirmacao"
+        @tambem-vi="tambemVi"
+        @outro-problema="enviar(true)"
       />
-    </q-footer>
+    </template>
   </q-layout>
 </template>
 
@@ -135,6 +206,11 @@ function voltar(): void {
 
 .registro__pagina {
   padding: 20px var(--fa-pagina) var(--fa-secao);
+}
+
+.registro__erro {
+  max-width: 560px;
+  margin: 0 auto 12px;
 }
 
 .registro__rodape {

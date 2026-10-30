@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 /**
  * Tipos das variáveis de ambiente do PWA (import.meta.env).
  * https://quasar.dev/quasar-cli-vite/handling-import-meta-env#type-inference

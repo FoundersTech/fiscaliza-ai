@@ -1,5 +1,7 @@
 import type { components } from '@fiscaliza/contratos';
 
+import type { Ponto } from './localizacao';
+
 export type Categoria = components['schemas']['CategoriaResposta'];
 export type CampoAtributo = components['schemas']['CampoAtributoResposta'];
 /** Como os campos guardam o que foi digitado: número vazio é null. */
@@ -81,4 +83,25 @@ export function atributosParaEnvio(
     envio[campo.chave] = typeof valor === 'string' ? valor.trim() : (valor as number);
   }
   return envio;
+}
+
+/** De onde veio o ponto. CENTRO é o centro do município, posto quando não há GPS. */
+export type OrigemPonto = 'GPS' | 'MAPA' | 'CENTRO';
+
+export interface EstadoLocal {
+  ponto: Ponto | null;
+  origem: OrigemPonto | null;
+  /** null quando a consulta falhou: quem decide é a API, no envio. */
+  dentroDaArea: boolean | null;
+  consultando: boolean;
+}
+
+/** O pino no centro do município ainda não foi posto por ninguém: precisa ser movido. */
+export function passoLocalCompleto(local: EstadoLocal): boolean {
+  return (
+    local.ponto !== null &&
+    local.origem !== 'CENTRO' &&
+    !local.consultando &&
+    local.dentroDaArea !== false
+  );
 }

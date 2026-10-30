@@ -6,6 +6,7 @@ import {
   type Categoria,
   passoDescricaoCompleto,
   passoFotosCompleto,
+  passoLocalCompleto,
   problemaDaDescricao,
   problemaDoAtributo,
 } from './registro';
@@ -92,5 +93,32 @@ describe('passo 2: categoria, descrição e atributos', () => {
     expect(
       atributosParaEnvio(ILUMINACAO, { numero_poste: '  P-123 ', lampadas: null, turno: '' }),
     ).toEqual({ numero_poste: 'P-123' });
+  });
+});
+
+describe('passo 3: localização', () => {
+  const PONTO = { lat: -23.5015, lng: -47.4526 };
+  const pronto = { ponto: PONTO, origem: 'GPS' as const, dentroDaArea: true, consultando: false };
+
+  it('com o ponto do GPS dentro da área, pode enviar', () => {
+    expect(passoLocalCompleto(pronto)).toBe(true);
+  });
+
+  it('sem GPS, o pino no centro do município só vale depois de movido', () => {
+    expect(passoLocalCompleto({ ...pronto, origem: 'CENTRO' })).toBe(false);
+    expect(passoLocalCompleto({ ...pronto, origem: 'MAPA' })).toBe(true);
+  });
+
+  it('fora da área, ou enquanto o endereço é conferido, não envia', () => {
+    expect(passoLocalCompleto({ ...pronto, dentroDaArea: false })).toBe(false);
+    expect(passoLocalCompleto({ ...pronto, consultando: true })).toBe(false);
+  });
+
+  it('se a consulta do endereço falhou, quem decide a área é a API, no envio', () => {
+    expect(passoLocalCompleto({ ...pronto, dentroDaArea: null })).toBe(true);
+  });
+
+  it('sem ponto, não envia', () => {
+    expect(passoLocalCompleto({ ...pronto, ponto: null })).toBe(false);
   });
 });
