@@ -1,0 +1,201 @@
+name: Deploy staging
+
+# Publica a main em staging depois que o CI passa nela. Também pode ser disparado à mão.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# Um deploy por vez; um novo espera o anterior terminar em vez de cancelá-lo no meio.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Commit publicado: o do CI que disparou o deploy, ou o atual num disparo manual.
+  VERSAO: ${{ github.event.workflow_run.head_sha || github.sha }}
+  IMAGEM: ghcr.io/founderstech/fiscaliza-api
+
+jobs:
+  imagem-api:
+    name: Imagem da API (arm64)
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    # Máquina ARM, como a VM da Oracle: a imagem é gerada sem emulação.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.VERSAO }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGEM }}:${{ env.VERSAO }}
+            ${{ env.IMAGEM }}:staging
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  api:
+    name: API na VM
+    needs: imagem-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: staging
+      url: https://api-staging.fiscalizaai.app/api/v1/health
+    permissions:
+      contents: read
+      # A VM baixa a imagem do GHCR com o token deste job, que expira quando ele termina.
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.VERSAO }}
+
+      - name: Preparar a chave SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          # Só aceita a VM cuja impressão digital foi cadastrada: evita falar com um impostor.
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Gerar o .env do servidor
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          EMAIL_REMETENTE: ${{ vars.EMAIL_REMETENTE }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET_UPLOADS: ${{ vars.R2_BUCKET_UPLOADS }}
+          R2_BUCKET_FOTOS: ${{ vars.R2_BUCKET_FOTOS }}
+          R2_URL_PUBLICA: ${{ vars.R2_URL_PUBLICA }}
+          VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
+          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+        run: |
+          umask 077
+          cat > staging.env <<EOF
+          API_IMAGEM=${IMAGEM}:${VERSAO}
+          APP_VERSAO=${VERSAO}
+          NODE_ENV=production
+          LOG_LEVEL=info
+          PORT=3000
+          SWAGGER_HABILITADO=true
+          WEB_URL=https://app-staging.fiscalizaai.app
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          DATABASE_URL=postgresql://fiscaliza:${POSTGRES_PASSWORD}@postgres:5432/fiscaliza
+          REDIS_URL=redis://redis:6379
+          JWT_SECRET=${JWT_SECRET}
+          EMAIL_TRANSPORTE=resend
+          RESEND_API_KEY=${RESEND_API_KEY}
+          EMAIL_REMETENTE="${EMAIL_REMETENTE}"
+          R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+          R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+          R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+          R2_BUCKET_UPLOADS=${R2_BUCKET_UPLOADS}
+          R2_BUCKET_FOTOS=${R2_BUCKET_FOTOS}
+          R2_URL_PUBLICA=${R2_URL_PUBLICA}
+          VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+          VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+          VAPID_SUBJECT=${VAPID_SUBJECT}
+          EOF
+
+      - name: Copiar compose, Caddyfile e .env para a VM
+        env:
+          DESTINO: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+        run: |
+          scp -i ~/.ssh/deploy -r deploy/staging/. "$DESTINO:/opt/fiscaliza/"
+          scp -i ~/.ssh/deploy staging.env "$DESTINO:/opt/fiscaliza/.env"
+          rm staging.env
+
+      - name: Subir a versão nova
+        env:
+          DESTINO: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # O heredoc sem aspas é proposital: o token entra no script aqui, e não como argumento
+        # visível na lista de processos da VM.
+        run: |
+          # shellcheck disable=SC2087
+          ssh -i ~/.ssh/deploy "$DESTINO" bash -s -- "${{ github.actor }}" <<EOF
+          set -euo pipefail
+          cd /opt/fiscaliza
+          chmod 600 .env
+          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "\$1" --password-stdin
+          docker compose pull api caddy redis
+          docker logout ghcr.io
+          docker compose build postgres
+          docker compose up -d --wait postgres redis
+          # Migrations e carga inicial antes de a API nova subir; se falharem, a antiga continua no ar.
+          docker compose run --rm migracao
+          docker compose up -d --wait --remove-orphans api caddy
+          docker image prune -f
+          EOF
+
+      - name: Conferir a versão publicada
+        run: |
+          # shellcheck disable=SC2153 # VERSAO vem do env do workflow
+          for tentativa in $(seq 1 30); do
+            versao=$(curl -fsS https://api-staging.fiscalizaai.app/api/v1/health | jq -r .versao || true)
+            if [ "$versao" = "$VERSAO" ]; then
+              echo "No ar: $versao"
+              exit 0
+            fi
+            echo "Tentativa $tentativa: versão no ar '${versao:-nenhuma}', esperando $VERSAO"
+            sleep 5
+          done
+          echo "::error::A API não respondeu com a versão $VERSAO em 2,5 min."
+          exit 1
+
+  web:
+    name: PWA no Cloudflare Pages
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: staging
+      url: https://app-staging.fiscalizaai.app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.VERSAO }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @fiscaliza/web
+      - run: pnpm --filter @fiscaliza/web build
+      - name: Publicar no Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        # A branch main é a de produção do projeto: é ela que responde em app-staging.
+        run: >-
+          pnpm dlx wrangler@4 pages deploy apps/web/dist/pwa
+          --project-name fiscaliza-staging
+          --branch main
+          --commit-hash "$VERSAO"

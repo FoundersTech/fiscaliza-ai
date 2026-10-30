@@ -1,0 +1,88 @@
+# Staging na VM da Oracle (/opt/fiscaliza). O workflow de deploy copia esta pasta e gera o .env,
+# com API_IMAGEM, as credenciais e a configuração da API.
+name: fiscaliza
+
+services:
+  postgres:
+    build: ./postgres
+    image: fiscaliza-postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fiscaliza
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: fiscaliza
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U fiscaliza -d fiscaliza']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    # Persistência em disco, e o BullMQ exige que o Redis nunca descarte chaves.
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Roda só quando chamado (docker compose run --rm migracao): aplica as migrations e a carga
+  # inicial, que não duplica nada se rodar de novo.
+  migracao:
+    image: ${API_IMAGEM:?defina API_IMAGEM no .env}
+    profiles: [migracao]
+    env_file: .env
+    command: ['sh', '-c', './node_modules/.bin/prisma migrate deploy && node dist/cli/seed.js']
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: ${API_IMAGEM:?defina API_IMAGEM no .env}
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000/api/v1/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 6
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres:
+  redis:
+  # Certificados emitidos; sem este volume, cada deploy pediria um novo ao Let's Encrypt.
+  caddy_data:
+  caddy_config:

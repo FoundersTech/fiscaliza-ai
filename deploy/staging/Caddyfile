@@ -1,0 +1,6 @@
+# O Caddy emite e renova sozinho o certificado HTTPS (Let's Encrypt) e redireciona HTTP para HTTPS.
+# O DNS de api-staging fica sem o proxy do Cloudflare (nuvem cinza) para a emissão funcionar.
+api-staging.fiscalizaai.app {
+	encode zstd gzip
+	reverse_proxy api:3000
+}
