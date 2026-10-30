@@ -50,7 +50,18 @@ describe('validarAmbiente', () => {
       PARAMETROS_CAMINHO: 'config/parametros.json',
       SWAGGER_HABILITADO: true,
       APP_VERSAO: 'dev',
+      NOMINATIM_URL: 'https://nominatim.openstreetmap.org',
+      GOOGLE_MAPS_MAP_ID: 'DEMO_MAP_ID',
     });
+  });
+
+  it('tira a barra final da NOMINATIM_URL', () => {
+    const ambiente = validarAmbiente({
+      ...OBRIGATORIAS,
+      NOMINATIM_URL: 'https://geo.exemplo.test/nominatim/',
+    });
+
+    expect(ambiente.NOMINATIM_URL).toBe('https://geo.exemplo.test/nominatim');
   });
 
   it('converte PORT para número', () => {

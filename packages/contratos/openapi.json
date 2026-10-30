@@ -283,6 +283,88 @@
           "me"
         ]
       }
+    },
+    "/api/v1/config/publica": {
+      "get": {
+        "operationId": "TerritorioController_configPublica",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigPublicaResposta"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "MUNICIPIO_NAO_CONFIGURADO"
+          }
+        },
+        "tags": [
+          "territorio"
+        ]
+      }
+    },
+    "/api/v1/geo/reverso": {
+      "get": {
+        "operationId": "TerritorioController_geoReverso",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "example": -23.5015,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "example": -47.4526,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeoReversoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "territorio"
+        ]
+      }
     }
   },
   "info": {
@@ -506,6 +588,219 @@
         },
         "required": [
           "versao"
+        ]
+      },
+      "PontoResposta": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "lat",
+          "lng"
+        ]
+      },
+      "BboxResposta": {
+        "type": "object",
+        "properties": {
+          "sul": {
+            "type": "number"
+          },
+          "oeste": {
+            "type": "number"
+          },
+          "norte": {
+            "type": "number"
+          },
+          "leste": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "sul",
+          "oeste",
+          "norte",
+          "leste"
+        ]
+      },
+      "MunicipioResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 3552205,
+            "description": "Código IBGE"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Sorocaba"
+          },
+          "uf": {
+            "type": "string",
+            "example": "SP"
+          },
+          "centro": {
+            "description": "Onde o pino começa quando não há GPS",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PontoResposta"
+              }
+            ]
+          },
+          "bbox": {
+            "description": "Retângulo que contém o município",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BboxResposta"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "uf",
+          "centro",
+          "bbox"
+        ]
+      },
+      "CampoAtributoResposta": {
+        "type": "object",
+        "properties": {
+          "chave": {
+            "type": "string",
+            "example": "numero_poste"
+          },
+          "rotulo": {
+            "type": "string",
+            "example": "Número do poste"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "texto",
+              "numero",
+              "opcao"
+            ]
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "min": {
+            "type": "number",
+            "description": "Só em numero"
+          },
+          "max": {
+            "type": "number",
+            "description": "Tamanho máximo em texto; valor máximo em numero"
+          },
+          "opcoes": {
+            "description": "Só em opcao",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "chave",
+          "rotulo",
+          "tipo",
+          "obrigatorio"
+        ]
+      },
+      "CategoriaResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "slug": {
+            "type": "string",
+            "example": "iluminacao"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação"
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb",
+            "description": "Nome de um ícone do Material Icons"
+          },
+          "schema_atributos": {
+            "description": "Campos extras do passo 2",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAtributoResposta"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "icone",
+          "schema_atributos"
+        ]
+      },
+      "ConfigPublicaResposta": {
+        "type": "object",
+        "properties": {
+          "municipio": {
+            "$ref": "#/components/schemas/MunicipioResposta"
+          },
+          "categorias_ativas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoriaResposta"
+            }
+          },
+          "urgente_min_confirmacoes": {
+            "type": "number",
+            "example": 10,
+            "description": "Confirmações para uma ocorrência virar urgente"
+          },
+          "politica_versao": {
+            "type": "string",
+            "example": "1",
+            "description": "Versão vigente da política de privacidade"
+          },
+          "google_maps_map_id": {
+            "type": "string",
+            "example": "DEMO_MAP_ID"
+          }
+        },
+        "required": [
+          "municipio",
+          "categorias_ativas",
+          "urgente_min_confirmacoes",
+          "politica_versao",
+          "google_maps_map_id"
+        ]
+      },
+      "GeoReversoResposta": {
+        "type": "object",
+        "properties": {
+          "endereco": {
+            "type": "string",
+            "nullable": true,
+            "example": "Rua Quinze de Novembro, 482 · Centro",
+            "description": "Null fora da área ou se o geocodificador falhar ou demorar mais de 2 s"
+          },
+          "dentro_da_area": {
+            "type": "boolean",
+            "description": "Falso fora de um município atendido: o envio fica bloqueado"
+          }
+        },
+        "required": [
+          "endereco",
+          "dentro_da_area"
         ]
       }
     }
