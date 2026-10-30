@@ -83,6 +83,8 @@ pnpm typecheck
 pnpm test
 ```
 
+No PWA, os testes que dependem de canvas e de decodificar imagens (arquivos `*.navegador.spec.ts`, como o da compressão das fotos) rodam no Google Chrome instalado na máquina, pelo modo navegador do Vitest. O Chrome precisa estar instalado; nenhum navegador é baixado.
+
 ```bash
 pnpm build
 ```
@@ -120,6 +122,16 @@ Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://
 O PWA envia cada foto direto ao storage, sem passar pela API: `POST /api/v1/uploads/intencao` devolve uma URL de PUT válida por 5 minutos, assinada para o tipo `image/jpeg` e para o tamanho exato informado (até 300 KB). Um PUT com outro tipo, outro tamanho ou depois do prazo é recusado com 403. Em desenvolvimento e nos testes, sem as variáveis `R2_*` no `.env`, a API usa o storage local do `docker-compose.yml`, com as credenciais de `deploy/local/s3.json`. Staging usa o R2 da Cloudflare.
 
 Depois do registro da ocorrência, um job da própria API recodifica cada foto com o `sharp` (até 1600 px, miniatura de 400 px, sem EXIF nem GPS), publica no bucket `fa-fotos` e apaga o original do `fa-uploads`. Um arquivo que não é imagem fica `REJEITADA`. No storage local, o `fa-fotos` é público para leitura, como em staging: a foto fica em `http://localhost:9100/fa-fotos/<storage_key>`. A cada 10 minutos, um job de reconciliação põe de volta na fila as fotos e os endereços que ficaram para trás.
+
+### Mapa em desenvolvimento
+
+O mapa do registro usa o Google Maps JavaScript API com a chave de desenvolvimento (`maps-dev`, liberada para `http://localhost:9000`). A chave entra no build do PWA pela variável `GOOGLE_MAPS_API_KEY`; defina-a no terminal antes de subir o PWA, sem gravar em arquivo do repositório:
+
+```bash
+GOOGLE_MAPS_API_KEY=<chave maps-dev> pnpm --filter @fiscaliza/web dev
+```
+
+Sem a chave, o passo 3 mostra "Mapa indisponível" e o envio segue com o ponto do GPS. O Map ID vem da API, em `GET /api/v1/config/publica` (`DEMO_MAP_ID` no seu computador).
 
 ### E-mails em desenvolvimento
 

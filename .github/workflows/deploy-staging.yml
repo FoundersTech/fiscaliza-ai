@@ -180,6 +180,7 @@ jobs:
       - run: pnpm --filter @fiscaliza/web build
         env:
           API_URL: https://api-staging.fiscalizaai.app
+          GOOGLE_MAPS_API_KEY: ${{ vars.GOOGLE_MAPS_API_KEY }}
       - name: Publicar no Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
