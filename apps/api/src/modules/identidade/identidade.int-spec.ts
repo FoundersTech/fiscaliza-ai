@@ -4,24 +4,73 @@ import { Controller, Get } from '@nestjs/common';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 import type { Redis } from 'ioredis';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppModule } from '../../app.module.js';
 import { configurarApp, PREFIXO_API } from '../../app.setup.js';
+import { aplicarCargaInicial, SOROCABA } from '../../cli/seed/carga-inicial.js';
+import { AMBIENTE, validarAmbiente } from '../../shared/config/ambiente.js';
 import { PrismaService } from '../../shared/prisma/prisma.service.js';
 import { REDIS } from '../../shared/redis/redis.module.js';
+import { ServicoEmail } from '../notificacoes/application/servico-email.js';
+import { CriarAdminPlataforma } from './application/criar-admin.js';
 import { EMISSOR_TOKEN, type EmissorToken } from './application/portas.js';
 import { Papel } from './domain/papel.js';
 import { Autenticado } from './presentation/autenticacao.js';
 
-/** Uma rota só de agente, para testar o guard de papel antes de existirem as rotas reais. */
-@Controller('teste-agente')
-class RotaDeAgente {
-  @Get()
+/** Rotas para testar o guard antes de existirem as rotas reais. */
+@Controller()
+class RotasDeTeste {
+  @Get('teste-agente')
   @Autenticado(Papel.AGENTE_ORGAO)
-  responder(): { ok: true } {
+  deAgente(): { ok: true } {
     return { ok: true };
   }
+
+  @Get('teste-logado')
+  @Autenticado()
+  deQualquerLogado(): { ok: true } {
+    return { ok: true };
+  }
+}
+
+/** Os e-mails não saem: os testes leem daqui o token do link. */
+const emails = {
+  enviarRedefinicaoSenha: vi.fn<ServicoEmail['enviarRedefinicaoSenha']>(),
+  enviarConvite: vi.fn<ServicoEmail['enviarConvite']>(),
+};
+
+async function criarApp(variaveis: Record<string, string> = {}): Promise<NestFastifyApplication> {
+  const modulo = await Test.createTestingModule({
+    imports: [AppModule],
+    controllers: [RotasDeTeste],
+  })
+    .overrideProvider(ServicoEmail)
+    .useValue(emails)
+    .overrideProvider(AMBIENTE)
+    .useValue(validarAmbiente({ ...process.env, ...variaveis }))
+    .compile();
+  const app = modulo.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
+  await configurarApp(app);
+  await app.init();
+  await app.getHttpAdapter().getInstance().ready();
+  return app;
+}
+
+interface CookieResposta {
+  name: string;
+  value: string;
+  path?: string;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: string;
+  expires?: Date;
+}
+
+function cookieRefresh(resposta: { cookies: CookieResposta[] }): CookieResposta {
+  const cookie = resposta.cookies.find((item) => item.name === 'fa_refresh');
+  if (!cookie) throw new Error('a resposta não gravou o cookie fa_refresh');
+  return cookie;
 }
 
 const IP = '203.0.113.10';
@@ -43,14 +92,7 @@ describe('Cadastro, login e autorização', () => {
   let redis: Redis;
 
   beforeAll(async () => {
-    const modulo = await Test.createTestingModule({
-      imports: [AppModule],
-      controllers: [RotaDeAgente],
-    }).compile();
-    app = modulo.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-    await configurarApp(app);
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
+    app = await criarApp();
     prisma = app.get(PrismaService);
     redis = app.get<Redis>(REDIS);
   });
@@ -63,6 +105,7 @@ describe('Cadastro, login e autorização', () => {
     await prisma.$executeRaw`TRUNCATE usuario RESTART IDENTITY CASCADE`;
     const chaves = await redis.keys('limite:*');
     if (chaves.length) await redis.del(...chaves);
+    vi.clearAllMocks();
   });
 
   function post(rota: string, corpo: object, ip = IP) {
@@ -74,12 +117,34 @@ describe('Cadastro, login e autorização', () => {
     });
   }
 
-  function get(rota: string, token?: string) {
-    return app.inject({
+  function get(rota: string, token?: string, alvo = app) {
+    return alvo.inject({
       method: 'GET',
       url: `/${PREFIXO_API}/${rota}`,
       headers: token ? { authorization: `Bearer ${token}` } : {},
     });
+  }
+
+  function postLogado(rota: string, corpo: object, token: string, alvo = app) {
+    return alvo.inject({
+      method: 'POST',
+      url: `/${PREFIXO_API}/${rota}`,
+      payload: corpo,
+      headers: { authorization: `Bearer ${token}` },
+    });
+  }
+
+  function renovar(refresh?: string, comCsrf = true, alvo = app) {
+    return alvo.inject({
+      method: 'POST',
+      url: `/${PREFIXO_API}/auth/refresh`,
+      headers: comCsrf ? { 'x-fa-csrf': '1' } : {},
+      cookies: refresh ? { fa_refresh: refresh } : {},
+    });
+  }
+
+  async function entrar(): Promise<string> {
+    return cookieRefresh(await post('auth/cadastro', cadastro())).value;
   }
 
   describe('POST /auth/cadastro', () => {
@@ -243,12 +308,31 @@ describe('Cadastro, login e autorização', () => {
   });
 
   describe('Autorização', () => {
-    function token(papel: Papel): Promise<string> {
+    let orgaoId: number;
+
+    beforeAll(async () => {
+      ({ orgaoId } = await aplicarCargaInicial(prisma));
+    });
+
+    /** O guard confere a conta no banco, então o token precisa ser de alguém que existe. */
+    async function token(papel: Papel): Promise<string> {
+      const usuario = await prisma.usuario.create({
+        data: {
+          nome: 'Pessoa de Teste',
+          apelidoPublico: 'pessoa',
+          email: `${randomUUID()}@exemplo.test`,
+          senhaHash: 'sem-uso',
+          papel,
+          municipioId: SOROCABA.id,
+          orgaoId: papel === Papel.AGENTE_ORGAO ? orgaoId : null,
+          politicaVersao: '1',
+        },
+      });
       return app.get<EmissorToken>(EMISSOR_TOKEN).emitir({
-        usuarioId: randomUUID(),
+        usuarioId: usuario.id,
         papel,
-        municipioId: 3552205,
-        orgaoId: papel === Papel.AGENTE_ORGAO ? 1 : null,
+        municipioId: usuario.municipioId,
+        orgaoId: usuario.orgaoId,
       });
     }
 
@@ -264,6 +348,15 @@ describe('Cadastro, login e autorização', () => {
       expect(resposta.statusCode).toBe(200);
     });
 
+    it('um token ainda válido de conta desativada recebe 401', async () => {
+      const valido = await token(Papel.AGENTE_ORGAO);
+      await prisma.usuario.updateMany({ data: { ativo: false } });
+
+      const resposta = await get('teste-agente', valido);
+      expect(resposta.statusCode).toBe(401);
+      expect(resposta.json()).toMatchObject({ codigo: 'NAO_AUTENTICADO' });
+    });
+
     it.each([
       ['sem token', undefined],
       ['com token inválido', 'abc.def.ghi'],
@@ -276,35 +369,6 @@ describe('Cadastro, login e autorização', () => {
   });
 
   describe('Sessão com refresh rotativo', () => {
-    interface CookieResposta {
-      name: string;
-      value: string;
-      path?: string;
-      httpOnly?: boolean;
-      secure?: boolean;
-      sameSite?: string;
-      expires?: Date;
-    }
-
-    function cookieRefresh(resposta: { cookies: CookieResposta[] }): CookieResposta {
-      const cookie = resposta.cookies.find((item) => item.name === 'fa_refresh');
-      if (!cookie) throw new Error('a resposta não gravou o cookie fa_refresh');
-      return cookie;
-    }
-
-    function renovar(refresh?: string, comCsrf = true) {
-      return app.inject({
-        method: 'POST',
-        url: `/${PREFIXO_API}/auth/refresh`,
-        headers: comCsrf ? { 'x-fa-csrf': '1' } : {},
-        cookies: refresh ? { fa_refresh: refresh } : {},
-      });
-    }
-
-    async function entrar(): Promise<string> {
-      return cookieRefresh(await post('auth/cadastro', cadastro())).value;
-    }
-
     it('cadastro e login gravam o cookie HttpOnly, Secure e SameSite=Strict, só para /api/v1/auth, por 30 dias', async () => {
       await post('auth/cadastro', cadastro());
       const login = await post('auth/login', {
@@ -415,6 +479,261 @@ describe('Cadastro, login e autorização', () => {
 
       expect((await renovar(refresh)).statusCode).toBe(401);
       expect(await prisma.refreshToken.count({ where: { revogadoEm: null } })).toBe(0);
+    });
+  });
+
+  describe('Recuperação de acesso', () => {
+    const EMAIL = 'maria@exemplo.test';
+
+    async function pedirLink(): Promise<string> {
+      expect((await post('auth/esqueci-senha', { email: EMAIL })).statusCode).toBe(202);
+      const [dados] = emails.enviarRedefinicaoSenha.mock.lastCall ?? [];
+      if (!dados) throw new Error('o e-mail de redefinição não foi enviado');
+      return dados.token;
+    }
+
+    function definirSenha(token: string, senha = 'senha-nova-22') {
+      return post('auth/definir-senha', { token, senha });
+    }
+
+    function login(senha: string) {
+      return post('auth/login', { email: EMAIL, senha });
+    }
+
+    it('esqueci-senha responde 202 para e-mail existente e inexistente, e só a conta existente recebe o link', async () => {
+      await entrar();
+
+      const existente = await post('auth/esqueci-senha', { email: ' MARIA@exemplo.test ' });
+      const inexistente = await post('auth/esqueci-senha', { email: 'ninguem@exemplo.test' });
+
+      expect(existente.statusCode).toBe(202);
+      expect(inexistente.statusCode).toBe(202);
+      expect(existente.body).toBe(inexistente.body);
+      expect(emails.enviarRedefinicaoSenha).toHaveBeenCalledOnce();
+      expect(emails.enviarRedefinicaoSenha).toHaveBeenCalledWith({
+        para: EMAIL,
+        nome: 'Maria da Silva',
+        token: expect.any(String) as string,
+      });
+
+      const [{ token }] = emails.enviarRedefinicaoSenha.mock.lastCall!;
+      const gravado = await prisma.tokenAcesso.findFirstOrThrow();
+      expect(gravado.tipo).toBe('REDEFINIR_SENHA');
+      expect(gravado.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(gravado.tokenHash).not.toBe(token);
+      const minutos = (gravado.expiraEm.getTime() - Date.now()) / 60_000;
+      expect(minutos).toBeGreaterThan(59.9);
+      expect(minutos).toBeLessThanOrEqual(60);
+    });
+
+    it('depois de definir-senha, a senha nova entra, a antiga não, e o refresh antigo devolve 401', async () => {
+      const doCadastro = await entrar();
+      const deOutroAparelho = cookieRefresh(await login('senha-forte-1')).value;
+      const token = await pedirLink();
+
+      expect((await definirSenha(token)).statusCode).toBe(204);
+
+      expect((await renovar(doCadastro)).statusCode).toBe(401);
+      expect((await renovar(deOutroAparelho)).statusCode).toBe(401);
+      expect((await login('senha-forte-1')).statusCode).toBe(401);
+      expect((await login('senha-nova-22')).statusCode).toBe(200);
+    });
+
+    it('um token usado duas vezes devolve 400, e a senha fica a do primeiro uso', async () => {
+      await entrar();
+      const token = await pedirLink();
+      expect((await definirSenha(token)).statusCode).toBe(204);
+
+      const segunda = await definirSenha(token, 'outra-senha-33');
+
+      expect(segunda.statusCode).toBe(400);
+      expect(segunda.json()).toMatchObject({ codigo: 'TOKEN_INVALIDO' });
+      expect((await login('senha-nova-22')).statusCode).toBe(200);
+    });
+
+    it('definir a senha invalida os outros links pendentes', async () => {
+      await entrar();
+      const primeiro = await pedirLink();
+      const segundo = await pedirLink();
+
+      expect((await definirSenha(segundo)).statusCode).toBe(204);
+      expect((await definirSenha(primeiro, 'outra-senha-33')).statusCode).toBe(400);
+    });
+
+    it('um link com mais de 1 hora devolve 400', async () => {
+      await entrar();
+      const token = await pedirLink();
+      await prisma.tokenAcesso.updateMany({ data: { expiraEm: new Date(Date.now() - 1000) } });
+
+      const resposta = await definirSenha(token);
+
+      expect(resposta.statusCode).toBe(400);
+      expect(resposta.json()).toMatchObject({ codigo: 'TOKEN_INVALIDO' });
+    });
+
+    it('um token que não existe devolve 400', async () => {
+      const resposta = await definirSenha('token-inventado');
+
+      expect(resposta.statusCode).toBe(400);
+      expect(resposta.json()).toMatchObject({ codigo: 'TOKEN_INVALIDO' });
+    });
+
+    it('recusa senha nova com 7 caracteres com 422', async () => {
+      const resposta = await definirSenha('qualquer', '1234567');
+
+      expect(resposta.statusCode).toBe(422);
+      expect(resposta.json()).toMatchObject({
+        detalhes: { campos: { senha: ['a senha deve ter de 8 a 128 caracteres'] } },
+      });
+    });
+
+    it('conta desativada não recebe o link', async () => {
+      await entrar();
+      await prisma.usuario.updateMany({ data: { ativo: false } });
+
+      expect((await post('auth/esqueci-senha', { email: EMAIL })).statusCode).toBe(202);
+      expect(emails.enviarRedefinicaoSenha).not.toHaveBeenCalled();
+    });
+
+    it('o 4º pedido do mesmo e-mail em 1 hora recebe 429, exista ou não a conta', async () => {
+      await entrar();
+
+      for (const email of [EMAIL, 'ninguem@exemplo.test']) {
+        for (const variante of [email, email.toUpperCase(), email]) {
+          expect((await post('auth/esqueci-senha', { email: variante })).statusCode).toBe(202);
+        }
+        const quarto = await post('auth/esqueci-senha', { email }, '192.0.2.50');
+        expect(quarto.statusCode).toBe(429);
+        expect(quarto.json()).toMatchObject({ codigo: 'MUITAS_REQUISICOES' });
+      }
+      expect(emails.enviarRedefinicaoSenha).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('Política de privacidade', () => {
+    let appPoliticaNova: NestFastifyApplication;
+
+    beforeAll(async () => {
+      appPoliticaNova = await criarApp({ POLITICA_VERSAO: '2' });
+    });
+
+    afterAll(async () => {
+      await appPoliticaNova.close();
+    });
+
+    async function cadastrarNaVersao1(): Promise<{ accessToken: string; refresh: string }> {
+      const resposta = await post('auth/cadastro', cadastro());
+      return {
+        accessToken: resposta.json<{ access_token: string }>().access_token,
+        refresh: cookieRefresh(resposta).value,
+      };
+    }
+
+    it('com POLITICA_VERSAO nova, as rotas autenticadas devolvem 403 até o POST /me/politica', async () => {
+      const { accessToken } = await cadastrarNaVersao1();
+
+      const bloqueada = await get('teste-logado', accessToken, appPoliticaNova);
+      expect(bloqueada.statusCode).toBe(403);
+      expect(bloqueada.json()).toMatchObject({
+        codigo: 'POLITICA_PENDENTE',
+        detalhes: { versao_vigente: '2' },
+      });
+
+      const perfil = await get('me', accessToken, appPoliticaNova);
+      expect(perfil.statusCode).toBe(200);
+      expect(perfil.json()).toMatchObject({ precisa_aceitar_politica: true });
+
+      const antiga = await postLogado('me/politica', { versao: '1' }, accessToken, appPoliticaNova);
+      expect(antiga.statusCode).toBe(422);
+      expect(antiga.json()).toMatchObject({ codigo: 'POLITICA_DESATUALIZADA' });
+
+      const aceite = await postLogado('me/politica', { versao: '2' }, accessToken, appPoliticaNova);
+      expect(aceite.statusCode).toBe(204);
+
+      expect((await get('teste-logado', accessToken, appPoliticaNova)).statusCode).toBe(200);
+      expect((await get('me', accessToken, appPoliticaNova)).json()).toMatchObject({
+        precisa_aceitar_politica: false,
+      });
+      const gravado = await prisma.usuario.findFirstOrThrow();
+      expect(gravado.politicaVersao).toBe('2');
+      expect(gravado.politicaAceitaEm!.getTime()).toBeGreaterThan(gravado.criadoEm.getTime());
+    });
+
+    it('com o aceite pendente, o refresh e o logout continuam funcionando', async () => {
+      const { refresh } = await cadastrarNaVersao1();
+
+      const renovada = await renovar(refresh, true, appPoliticaNova);
+      expect(renovada.statusCode).toBe(200);
+      expect(renovada.json()).toMatchObject({ usuario: { precisa_aceitar_politica: true } });
+
+      const logout = await appPoliticaNova.inject({
+        method: 'POST',
+        url: `/${PREFIXO_API}/auth/logout`,
+        cookies: { fa_refresh: cookieRefresh(renovada).value },
+      });
+      expect(logout.statusCode).toBe(204);
+    });
+
+    it('aceitar de novo a versão vigente mantém a data do primeiro aceite', async () => {
+      const { accessToken } = await cadastrarNaVersao1();
+      const antes = await prisma.usuario.findFirstOrThrow();
+
+      expect((await postLogado('me/politica', { versao: '1' }, accessToken)).statusCode).toBe(204);
+
+      const depois = await prisma.usuario.findFirstOrThrow();
+      expect(depois.politicaAceitaEm).toEqual(antes.politicaAceitaEm);
+    });
+  });
+
+  describe('Administrador inicial', () => {
+    const EMAIL_ADMIN = 'admin@exemplo.test';
+
+    function criarAdmin(email = EMAIL_ADMIN) {
+      return app.get(CriarAdminPlataforma).executar({ email });
+    }
+
+    it('criar-admin envia o convite, e o admin consegue entrar depois de definir a senha', async () => {
+      await criarAdmin();
+
+      const admin = await prisma.usuario.findFirstOrThrow();
+      expect(admin).toMatchObject({
+        papel: 'ADMIN_PLATAFORMA',
+        senhaHash: null,
+        email: EMAIL_ADMIN,
+      });
+      expect(emails.enviarConvite).toHaveBeenCalledWith({
+        para: EMAIL_ADMIN,
+        nome: 'Administração da plataforma',
+        token: expect.any(String) as string,
+        papel: 'ADMIN_PLATAFORMA',
+      });
+      const convite = await prisma.tokenAcesso.findFirstOrThrow();
+      expect(convite.tipo).toBe('CONVITE');
+      const horas = (convite.expiraEm.getTime() - Date.now()) / 3_600_000;
+      expect(horas).toBeGreaterThan(71.9);
+      expect(horas).toBeLessThanOrEqual(72);
+
+      const credenciais = { email: EMAIL_ADMIN, senha: 'senha-do-admin-1' };
+      expect((await post('auth/login', credenciais)).statusCode).toBe(401);
+
+      const [{ token }] = emails.enviarConvite.mock.lastCall!;
+      const definida = await post('auth/definir-senha', { token, senha: credenciais.senha });
+      expect(definida.statusCode).toBe(204);
+
+      const login = await post('auth/login', credenciais);
+      expect(login.statusCode).toBe(200);
+      expect(login.json()).toMatchObject({
+        usuario: { papel: 'ADMIN_PLATAFORMA', precisa_aceitar_politica: true },
+      });
+    });
+
+    it('criar-admin recusa um e-mail que já tem conta', async () => {
+      await entrar();
+
+      await expect(criarAdmin('MARIA@exemplo.test')).rejects.toMatchObject({
+        codigo: 'EMAIL_EM_USO',
+      });
+      expect(emails.enviarConvite).not.toHaveBeenCalled();
     });
   });
 });

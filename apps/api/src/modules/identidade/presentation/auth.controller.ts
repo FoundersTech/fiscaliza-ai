@@ -1,5 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
 import {
+  ApiAcceptedResponse,
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
@@ -16,9 +18,11 @@ import { Cadastrar } from '../application/cadastrar.js';
 import { Entrar } from '../application/entrar.js';
 import { erroCsrf } from '../application/erros.js';
 import { ObterPerfil } from '../application/obter-perfil.js';
+import { AceitarPolitica } from '../application/politica.js';
 import type { DadosToken } from '../application/portas.js';
 import { RenovarSessao, Sair } from '../application/sessoes.js';
-import { Autenticado, UsuarioAtual } from './autenticacao.js';
+import { DefinirSenha, PedirRedefinicaoSenha } from '../application/tokens-acesso.js';
+import { AutenticadoSemPolitica, UsuarioAtual } from './autenticacao.js';
 import {
   lerCookieRefresh,
   limparCookieRefresh,
@@ -27,9 +31,17 @@ import {
   type RespostaHttp,
   responderSessao,
 } from './cookie-refresh.js';
-import { CadastroDto, LoginDto, PerfilResposta, SessaoResposta } from './dto.js';
+import {
+  AceitePoliticaDto,
+  CadastroDto,
+  DefinirSenhaDto,
+  EsqueciSenhaDto,
+  LoginDto,
+  PerfilResposta,
+  SessaoResposta,
+} from './dto.js';
 
-/** E-mail do corpo do login, para o limite contar por IP e conta. */
+/** E-mail do corpo, para o limite contar por conta. */
 function emailDoCorpo({ body }: RequisicaoLimitada): string {
   const email = (body as { email?: unknown } | undefined)?.email;
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -43,6 +55,8 @@ export class AuthController {
     private readonly entrar: Entrar,
     private readonly renovarSessao: RenovarSessao,
     private readonly sair: Sair,
+    private readonly pedirRedefinicao: PedirRedefinicaoSenha,
+    private readonly definirSenhaComToken: DefinirSenha,
   ) {}
 
   @Post('cadastro')
@@ -127,17 +141,55 @@ export class AuthController {
     await this.sair.executar(lerCookieRefresh(requisicao));
     limparCookieRefresh(resposta);
   }
+
+  @Post('esqueci-senha')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @LimiteTaxa({ nome: 'esqueci-senha', maximo: 3, janelaSegundos: 3600, chave: emailDoCorpo })
+  @ApiAcceptedResponse({
+    description:
+      'Sempre 202, exista ou não a conta. Se existir, ela recebe o link de redefinição, que vale por 1 hora.',
+  })
+  @ApiUnprocessableEntityResponse({ description: 'VALIDACAO' })
+  async esqueciSenha(@Body() dto: EsqueciSenhaDto): Promise<void> {
+    await this.pedirRedefinicao.executar(dto.email);
+  }
+
+  @Post('definir-senha')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({
+    description: 'Senha definida (redefinição ou convite). Todas as sessões do usuário acabam.',
+  })
+  @ApiBadRequestResponse({ description: 'TOKEN_INVALIDO: inválido, já usado ou expirado' })
+  @ApiUnprocessableEntityResponse({ description: 'VALIDACAO' })
+  async definirSenha(@Body() dto: DefinirSenhaDto): Promise<void> {
+    await this.definirSenhaComToken.executar(dto.token, dto.senha);
+  }
 }
 
 @ApiTags('me')
 @Controller('me')
 export class MeController {
-  constructor(private readonly obterPerfil: ObterPerfil) {}
+  constructor(
+    private readonly obterPerfil: ObterPerfil,
+    private readonly aceitarPolitica: AceitarPolitica,
+  ) {}
 
   @Get()
-  @Autenticado()
+  @AutenticadoSemPolitica()
   @ApiOkResponse({ type: PerfilResposta })
   async perfil(@UsuarioAtual() usuario: DadosToken): Promise<PerfilResposta> {
     return PerfilResposta.de(await this.obterPerfil.executar(usuario.usuarioId));
+  }
+
+  @Post('politica')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @AutenticadoSemPolitica()
+  @ApiNoContentResponse({ description: 'Aceite da versão vigente gravado, com a data.' })
+  @ApiUnprocessableEntityResponse({ description: 'POLITICA_DESATUALIZADA ou VALIDACAO' })
+  async politica(
+    @UsuarioAtual() usuario: DadosToken,
+    @Body() dto: AceitePoliticaDto,
+  ): Promise<void> {
+    await this.aceitarPolitica.executar(usuario.usuarioId, dto.versao);
   }
 }

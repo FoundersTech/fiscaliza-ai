@@ -27,8 +27,12 @@ export function montarPerfil(usuario: Usuario, politicaVigente: string): Perfil 
     papel: usuario.papel,
     municipioId: usuario.municipioId,
     orgaoId: usuario.orgaoId,
-    precisaAceitarPolitica: usuario.politicaVersao !== politicaVigente,
+    precisaAceitarPolitica: precisaAceitarPolitica(usuario, politicaVigente),
   };
+}
+
+export function precisaAceitarPolitica(usuario: Usuario, politicaVigente: string): boolean {
+  return usuario.politicaVersao !== politicaVigente;
 }
 
 export function podeEntrar(usuario: Usuario): usuario is Usuario & { senhaHash: string } {

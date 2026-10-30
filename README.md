@@ -118,8 +118,20 @@ Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://
 Em desenvolvimento, a API não envia e-mails: grava cada um em `apps/api/tmp/emails` (fora do Git). Abra o `.html` no navegador para ver o e-mail e clicar no link. Para conferir o envio real pelo Resend, defina `EMAIL_TRANSPORTE=resend` e `RESEND_API_KEY` no terminal, sem colocar a chave no `.env`, e rode:
 
 ```bash
-pnpm email:teste -- --para voce@exemplo.com
+pnpm email:teste --para voce@exemplo.com
 ```
+
+O argumento vai direto depois do nome do script, sem `--`: com ele, o comando recusa o `--para`.
+
+### Administrador da plataforma
+
+O primeiro `ADMIN_PLATAFORMA` nasce sem senha e recebe um convite por e-mail, válido por 72 horas, para definir a própria (em desenvolvimento, o e-mail fica em `apps/api/tmp/emails`):
+
+```bash
+pnpm criar-admin --email voce@exemplo.com --nome "Seu Nome"
+```
+
+O `--nome` é opcional. No container da API, rode `node dist/cli/criar-admin.js --email voce@exemplo.com`.
 
 ### Contratos da API
 

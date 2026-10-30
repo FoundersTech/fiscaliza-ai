@@ -160,6 +160,66 @@
         ]
       }
     },
+    "/api/v1/auth/esqueci-senha": {
+      "post": {
+        "operationId": "AuthController_esqueciSenha",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EsqueciSenhaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Sempre 202, exista ou não a conta. Se existir, ela recebe o link de redefinição, que vale por 1 hora."
+          },
+          "422": {
+            "description": "VALIDACAO"
+          },
+          "429": {
+            "description": "Mais de 3 tentativas em 3600 s."
+          }
+        },
+        "tags": [
+          "autenticacao"
+        ]
+      }
+    },
+    "/api/v1/auth/definir-senha": {
+      "post": {
+        "operationId": "AuthController_definirSenha",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinirSenhaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Senha definida (redefinição ou convite). Todas as sessões do usuário acabam."
+          },
+          "400": {
+            "description": "TOKEN_INVALIDO: inválido, já usado ou expirado"
+          },
+          "422": {
+            "description": "VALIDACAO"
+          }
+        },
+        "tags": [
+          "autenticacao"
+        ]
+      }
+    },
     "/api/v1/me": {
       "get": {
         "operationId": "MeController_perfil",
@@ -177,6 +237,41 @@
           },
           "401": {
             "description": "Sem token, ou token inválido ou expirado."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/politica": {
+      "post": {
+        "operationId": "MeController_politica",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AceitePoliticaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Aceite da versão vigente gravado, com a data."
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "422": {
+            "description": "POLITICA_DESATUALIZADA ou VALIDACAO"
           }
         },
         "security": [
@@ -366,6 +461,51 @@
         "required": [
           "email",
           "senha"
+        ]
+      },
+      "EsqueciSenhaDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "maria@exemplo.com",
+            "maxLength": 254
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "DefinirSenhaDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "O valor de ?token= do link de redefinição ou de convite"
+          },
+          "senha": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "format": "password"
+          }
+        },
+        "required": [
+          "token",
+          "senha"
+        ]
+      },
+      "AceitePoliticaDto": {
+        "type": "object",
+        "properties": {
+          "versao": {
+            "type": "string",
+            "example": "1",
+            "description": "Versão da política de privacidade aceita"
+          }
+        },
+        "required": [
+          "versao"
         ]
       }
     }
