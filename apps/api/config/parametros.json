@@ -1,34 +1,15 @@
 {
   "score": {
     "janela_dias": 90,
-    "pesos": {
-      "resolucao": 0.5,
-      "prazo": 0.3,
-      "satisfacao": 0.2
-    },
+    "pesos": { "resolucao": 0.5, "prazo": 0.3, "satisfacao": 0.2 },
     "suavizacao_k": 10,
     "prior": 0.7,
     "faixas": [
-      {
-        "min": 9.0,
-        "rotulo": "Ótimo"
-      },
-      {
-        "min": 7.5,
-        "rotulo": "Bom"
-      },
-      {
-        "min": 6.0,
-        "rotulo": "Regular"
-      },
-      {
-        "min": 4.0,
-        "rotulo": "Fraco"
-      },
-      {
-        "min": 0.0,
-        "rotulo": "Ruim"
-      }
+      { "min": 9.0, "rotulo": "Ótimo" },
+      { "min": 7.5, "rotulo": "Bom" },
+      { "min": 6.0, "rotulo": "Regular" },
+      { "min": 4.0, "rotulo": "Fraco" },
+      { "min": 0.0, "rotulo": "Ruim" }
     ],
     "recalculo_cron": "0 * * * *"
   },
