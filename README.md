@@ -141,6 +141,15 @@ pnpm db:migrar --create-only --name descricao-da-mudanca
 
 O Prisma não gera CHECKs, índices de expressão (como o de `lower(email)`) nem colunas geradas. Se a mudança envolver uma dessas regras, escreva o SQL à mão no `migration.sql` gerado e depois rode `pnpm db:migrar` para aplicar. Os testes de integração falham se o `schema.prisma` e as migrations divergirem.
 
+### Staging
+
+Todo merge na `main` que passa no CI é publicado sozinho pelo workflow **Deploy staging**:
+
+- API: <https://api-staging.fiscalizaai.app/api/v1/health> (o campo `versao` mostra o commit no ar) e Swagger em `/docs`;
+- PWA: <https://app-staging.fiscalizaai.app>.
+
+A API roda numa VM ARM do Oracle Cloud com o Docker Compose de `deploy/staging` (API, PostgreSQL com PostGIS, Redis e Caddy). As migrations rodam antes de a API nova subir; se falharem, a versão anterior continua no ar. Para publicar de novo sem um merge, use **Actions → Deploy staging → Run workflow**. Os segredos ficam no environment `staging` do GitHub; nenhum vai para o repositório.
+
 ## 👥 Equipe
 
 | Nome           | GitHub                                           |
