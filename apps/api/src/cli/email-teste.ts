@@ -2,7 +2,7 @@
  * Envia um e-mail de redefinição de senha de exemplo pelo transporte configurado, sem passar
  * pela fila. Serve para conferir o Resend num ambiente com RESEND_API_KEY.
  *
- * Uso: pnpm email:teste -- --para voce@exemplo.com (na raiz do monorepo).
+ * Uso: pnpm email:teste --para voce@exemplo.com (na raiz do monorepo).
  */
 import { existsSync } from 'node:fs';
 import { parseArgs } from 'node:util';

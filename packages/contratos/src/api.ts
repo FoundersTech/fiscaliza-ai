@@ -84,6 +84,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/esqueci-senha": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_esqueciSenha"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/definir-senha": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_definirSenha"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -94,6 +126,22 @@ export interface paths {
         get: operations["MeController_perfil"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/politica": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MeController_politica"];
         delete?: never;
         options?: never;
         head?: never;
@@ -161,6 +209,23 @@ export interface components {
             email: string;
             /** Format: password */
             senha: string;
+        };
+        EsqueciSenhaDto: {
+            /** @example maria@exemplo.com */
+            email: string;
+        };
+        DefinirSenhaDto: {
+            /** @description O valor de ?token= do link de redefinição ou de convite */
+            token: string;
+            /** Format: password */
+            senha: string;
+        };
+        AceitePoliticaDto: {
+            /**
+             * @description Versão da política de privacidade aceita
+             * @example 1
+             */
+            versao: string;
         };
     };
     responses: never;
@@ -338,6 +403,78 @@ export interface operations {
             };
         };
     };
+    AuthController_esqueciSenha: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EsqueciSenhaDto"];
+            };
+        };
+        responses: {
+            /** @description Sempre 202, exista ou não a conta. Se existir, ela recebe o link de redefinição, que vale por 1 hora. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 3 tentativas em 3600 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_definirSenha: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefinirSenhaDto"];
+            };
+        };
+        responses: {
+            /** @description Senha definida (redefinição ou convite). Todas as sessões do usuário acabam. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description TOKEN_INVALIDO: inválido, já usado ou expirado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     MeController_perfil: {
         parameters: {
             query?: never;
@@ -357,6 +494,42 @@ export interface operations {
             };
             /** @description Sem token, ou token inválido ou expirado. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MeController_politica: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AceitePoliticaDto"];
+            };
+        };
+        responses: {
+            /** @description Aceite da versão vigente gravado, com a data. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description POLITICA_DESATUALIZADA ou VALIDACAO */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

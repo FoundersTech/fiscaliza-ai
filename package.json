@@ -18,6 +18,7 @@
     "db:seed": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api seed",
     "db:seed:dev": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api seed:dev",
     "email:teste": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api email:teste",
+    "criar-admin": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api criar-admin",
     "infra:up": "docker compose up -d --wait",
     "infra:down": "docker compose down"
   },

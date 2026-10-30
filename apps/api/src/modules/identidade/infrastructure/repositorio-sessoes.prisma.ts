@@ -42,4 +42,11 @@ export class RepositorioSessoesPrisma implements RepositorioSessoes {
       data: { revogadoEm: agora },
     });
   }
+
+  async revogarDoUsuario(usuarioId: string, agora: Date): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { usuarioId, revogadoEm: null },
+      data: { revogadoEm: agora },
+    });
+  }
 }

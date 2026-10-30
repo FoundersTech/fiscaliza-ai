@@ -26,6 +26,19 @@ export function erroPoliticaDesatualizada(vigente: string): ErroAplicacao {
   );
 }
 
+export function erroPoliticaPendente(vigente: string): ErroAplicacao {
+  return new ErroAplicacao(
+    'POLITICA_PENDENTE',
+    'Aceite a nova versão da política de privacidade para continuar.',
+    403,
+    { versao_vigente: vigente },
+  );
+}
+
+export function erroTokenInvalido(): ErroAplicacao {
+  return new ErroAplicacao('TOKEN_INVALIDO', 'Este link é inválido ou expirou. Peça um novo.', 400);
+}
+
 export function erroNaoAutenticado(): ErroAplicacao {
   return new ErroAplicacao('NAO_AUTENTICADO', 'Sessão inválida ou expirada. Entre de novo.', 401);
 }

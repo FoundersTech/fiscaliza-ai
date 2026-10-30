@@ -4,6 +4,7 @@ export const HASHER_SENHA = Symbol('HASHER_SENHA');
 export const EMISSOR_TOKEN = Symbol('EMISSOR_TOKEN');
 export const REPOSITORIO_USUARIOS = Symbol('REPOSITORIO_USUARIOS');
 export const REPOSITORIO_SESSOES = Symbol('REPOSITORIO_SESSOES');
+export const REPOSITORIO_TOKENS_ACESSO = Symbol('REPOSITORIO_TOKENS_ACESSO');
 
 export interface HasherSenha {
   gerar(senha: string): Promise<string>;
@@ -42,10 +43,19 @@ export interface NovoCidadao {
   politicaAceitaEm: Date;
 }
 
+export interface NovoConvidado {
+  nome: string;
+  apelidoPublico: string;
+  email: string;
+  papel: Papel;
+}
+
 export interface RepositorioUsuarios {
   buscarPorEmail(email: string): Promise<Usuario | null>;
   buscarPorId(id: string): Promise<Usuario | null>;
   criarCidadao(dados: NovoCidadao): Promise<Usuario>;
+  criarConvidado(dados: NovoConvidado): Promise<Usuario>;
+  registrarAceitePolitica(id: string, versao: string, agora: Date): Promise<void>;
 }
 
 /** De onde veio a requisição; fica gravado no refresh token. */
@@ -79,4 +89,31 @@ export interface RepositorioSessoes {
    */
   rotacionar(id: string, sucessor: NovoRefresh, agora: Date): Promise<boolean>;
   revogarFamilia(familiaId: string, agora: Date): Promise<void>;
+  revogarDoUsuario(usuarioId: string, agora: Date): Promise<void>;
+}
+
+export type TipoTokenAcesso = 'REDEFINIR_SENHA' | 'CONVITE';
+
+export interface NovoTokenAcesso {
+  usuarioId: string;
+  tipo: TipoTokenAcesso;
+  tokenHash: string;
+  expiraEm: Date;
+}
+
+export interface TokenAcessoGravado {
+  id: string;
+  usuarioId: string;
+  expiraEm: Date;
+  usadoEm: Date | null;
+}
+
+export interface RepositorioTokensAcesso {
+  criar(dados: NovoTokenAcesso): Promise<void>;
+  buscarPorHash(tokenHash: string): Promise<TokenAcessoGravado | null>;
+  /**
+   * Marca o token como usado, grava a senha nova e invalida os outros links pendentes do
+   * usuário, juntos. Devolve false se outra requisição usou o token primeiro.
+   */
+  definirSenha(token: TokenAcessoGravado, senhaHash: string, agora: Date): Promise<boolean>;
 }

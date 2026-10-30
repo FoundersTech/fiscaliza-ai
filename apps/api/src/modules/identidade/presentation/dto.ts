@@ -7,6 +7,7 @@ import { PAPEIS, type Papel } from '../domain/papel.js';
 import { SENHA_MAX, SENHA_MIN } from '../domain/senha.js';
 
 const TAMANHO_EMAIL = 254;
+const TAMANHO_TOKEN = 100;
 
 const aparar = Transform(({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value,
@@ -64,6 +65,39 @@ export class LoginDto {
   @IsNotEmpty({ message: 'informe a senha' })
   @MaxLength(SENHA_MAX, { message: `a senha aceita até ${SENHA_MAX} caracteres` })
   senha!: string;
+}
+
+/** Corpo do POST /auth/esqueci-senha. */
+export class EsqueciSenhaDto {
+  @ApiProperty({ example: 'maria@exemplo.com', maxLength: TAMANHO_EMAIL })
+  @aparar
+  @IsEmail({}, { message: 'informe um e-mail válido' })
+  @MaxLength(TAMANHO_EMAIL, { message: `o e-mail aceita até ${TAMANHO_EMAIL} caracteres` })
+  email!: string;
+}
+
+/** Corpo do POST /auth/definir-senha: o token vem do link do e-mail. */
+export class DefinirSenhaDto {
+  @ApiProperty({ description: 'O valor de ?token= do link de redefinição ou de convite' })
+  @IsString({ message: 'informe o token do link' })
+  @IsNotEmpty({ message: 'informe o token do link' })
+  @MaxLength(TAMANHO_TOKEN, { message: `o token aceita até ${TAMANHO_TOKEN} caracteres` })
+  token!: string;
+
+  @ApiProperty({ minLength: SENHA_MIN, maxLength: SENHA_MAX, format: 'password' })
+  @IsString({ message: 'informe a senha' })
+  @Length(SENHA_MIN, SENHA_MAX, {
+    message: `a senha deve ter de ${SENHA_MIN} a ${SENHA_MAX} caracteres`,
+  })
+  senha!: string;
+}
+
+/** Corpo do POST /me/politica. */
+export class AceitePoliticaDto {
+  @ApiProperty({ example: '1', description: 'Versão da política de privacidade aceita' })
+  @IsString({ message: 'informe a versão da política aceita' })
+  @IsNotEmpty({ message: 'informe a versão da política aceita' })
+  versao!: string;
 }
 
 export class PerfilResposta {

@@ -7,7 +7,12 @@ import {
 } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { erroEmailEmUso } from '../application/erros.js';
-import type { NovoCidadao, RepositorioUsuarios, Usuario } from '../application/portas.js';
+import type {
+  NovoCidadao,
+  NovoConvidado,
+  RepositorioUsuarios,
+  Usuario,
+} from '../application/portas.js';
 
 @Injectable()
 export class RepositorioUsuariosPrisma implements RepositorioUsuarios {
@@ -25,12 +30,24 @@ export class RepositorioUsuariosPrisma implements RepositorioUsuarios {
     return usuario && paraUsuario(usuario);
   }
 
-  async criarCidadao(dados: NovoCidadao): Promise<Usuario> {
+  criarCidadao(dados: NovoCidadao): Promise<Usuario> {
+    return this.criar({ ...dados, papel: PapelUsuario.CIDADAO });
+  }
+
+  criarConvidado(dados: NovoConvidado): Promise<Usuario> {
+    return this.criar(dados);
+  }
+
+  async registrarAceitePolitica(id: string, versao: string, agora: Date): Promise<void> {
+    await this.prisma.usuario.updateMany({
+      where: { id, OR: [{ politicaVersao: null }, { politicaVersao: { not: versao } }] },
+      data: { politicaVersao: versao, politicaAceitaEm: agora },
+    });
+  }
+
+  private async criar(data: Prisma.UsuarioCreateInput): Promise<Usuario> {
     try {
-      const usuario = await this.prisma.usuario.create({
-        data: { ...dados, papel: PapelUsuario.CIDADAO },
-      });
-      return paraUsuario(usuario);
+      return paraUsuario(await this.prisma.usuario.create({ data }));
     } catch (erro) {
       // O índice único em lower(email) pega o cadastro simultâneo que passou pela checagem.
       if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === 'P2002') {

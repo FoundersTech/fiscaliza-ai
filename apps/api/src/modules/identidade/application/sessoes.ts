@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
 
@@ -16,15 +16,12 @@ import {
   type RepositorioUsuarios,
   type Usuario,
 } from './portas.js';
+import { gerarSegredo, resumirSegredo } from './segredo.js';
 
 export const DURACAO_REFRESH_DIAS = 30;
 export const TOLERANCIA_REUSO_MS = 10_000;
 
 const UM_DIA_MS = 24 * 60 * 60 * 1000;
-
-export function resumirRefresh(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
-}
 
 function novoRefresh(
   usuarioId: string,
@@ -32,11 +29,11 @@ function novoRefresh(
   origem: Origem,
   agora: Date,
 ): { token: string; dados: NovoRefresh } {
-  const token = randomBytes(32).toString('base64url');
+  const token = gerarSegredo();
   const expiraEm = new Date(agora.getTime() + DURACAO_REFRESH_DIAS * UM_DIA_MS);
   return {
     token,
-    dados: { usuarioId, familiaId, tokenHash: resumirRefresh(token), expiraEm, ...origem },
+    dados: { usuarioId, familiaId, tokenHash: resumirSegredo(token), expiraEm, ...origem },
   };
 }
 
@@ -69,7 +66,7 @@ export class RenovarSessao {
   ) {}
 
   async executar(token: string | undefined, origem: Origem, agora = new Date()): Promise<Sessao> {
-    const atual = token ? await this.sessoes.buscarPorHash(resumirRefresh(token)) : null;
+    const atual = token ? await this.sessoes.buscarPorHash(resumirSegredo(token)) : null;
     if (!atual || atual.revogadoEm || atual.expiraEm <= agora) {
       throw erroSessaoInvalida();
     }
@@ -106,7 +103,7 @@ export class Sair {
   constructor(@Inject(REPOSITORIO_SESSOES) private readonly sessoes: RepositorioSessoes) {}
 
   async executar(token: string | undefined, agora = new Date()): Promise<void> {
-    const atual = token ? await this.sessoes.buscarPorHash(resumirRefresh(token)) : null;
+    const atual = token ? await this.sessoes.buscarPorHash(resumirSegredo(token)) : null;
     if (atual && !atual.revogadoEm) {
       await this.sessoes.revogarFamilia(atual.familiaId, agora);
     }
