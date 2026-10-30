@@ -5,6 +5,7 @@ import {
   StatusOcorrencia,
   type PrismaClient,
 } from '../../generated/prisma/client.js';
+import { HasherArgon2 } from '../../modules/identidade/infrastructure/hasher-argon2.js';
 import { Protocolo } from '../../modules/ocorrencias/domain/protocolo.js';
 import { aplicarCargaInicial, CATEGORIAS, SOROCABA } from './carga-inicial.js';
 
@@ -18,7 +19,12 @@ const AMBIENTES_PERMITIDOS = ['development', 'test'];
 
 export const TOTAL_OCORRENCIAS_DEV = 50;
 
-/** Os usuários entram sem senha; a senha de teste chega junto com o cadastro e login. */
+/** Senha dos usuários de teste. Só existe em desenvolvimento e testes */
+export const SENHA_DEV = 'fiscaliza123';
+
+/** Versão da política já aceita pelos usuários de teste, para o app não pedir o aceite. */
+const POLITICA_VERSAO_DEV = '1';
+
 export const USUARIOS_DEV = [
   {
     papel: PapelUsuario.CIDADAO,
@@ -121,7 +127,7 @@ export async function aplicarDadosDev(
   }
 
   const { orgaoId } = await aplicarCargaInicial(prisma);
-  const usuarios = await garantirUsuarios(prisma, orgaoId);
+  const usuarios = await garantirUsuarios(prisma, orgaoId, agora);
 
   const cidadaoId = usuarios.get(PapelUsuario.CIDADAO)!;
   const jaCriadas = await prisma.ocorrencia.count({ where: { autorId: cidadaoId } });
@@ -156,18 +162,33 @@ export async function aplicarDadosDev(
 async function garantirUsuarios(
   prisma: PrismaClient,
   orgaoId: number,
+  agora: Date,
 ): Promise<Map<PapelUsuario, string>> {
+  const senhaHash = await new HasherArgon2().gerar(SENHA_DEV);
   const ids = new Map<PapelUsuario, string>();
   for (const usuario of USUARIOS_DEV) {
     const existente = await prisma.usuario.findFirst({
       where: { email: { equals: usuario.email, mode: 'insensitive' } },
-      select: { id: true },
+      select: { id: true, senhaHash: true },
     });
-    const vinculo = {
-      municipioId: usuario.papel === PapelUsuario.ADMIN_PLATAFORMA ? null : SOROCABA.id,
-      orgaoId: usuario.papel === PapelUsuario.AGENTE_ORGAO ? orgaoId : null,
-    };
-    const { id } = existente ?? (await prisma.usuario.create({ data: { ...usuario, ...vinculo } }));
+    if (existente) {
+      // Bancos criados antes da senha de teste: os usuários ganham a senha sem serem recriados.
+      if (!existente.senhaHash) {
+        await prisma.usuario.update({ where: { id: existente.id }, data: { senhaHash } });
+      }
+      ids.set(usuario.papel, existente.id);
+      continue;
+    }
+    const { id } = await prisma.usuario.create({
+      data: {
+        ...usuario,
+        senhaHash,
+        politicaVersao: POLITICA_VERSAO_DEV,
+        politicaAceitaEm: agora,
+        municipioId: usuario.papel === PapelUsuario.ADMIN_PLATAFORMA ? null : SOROCABA.id,
+        orgaoId: usuario.papel === PapelUsuario.AGENTE_ORGAO ? orgaoId : null,
+      },
+    });
     ids.set(usuario.papel, id);
   }
   return ids;

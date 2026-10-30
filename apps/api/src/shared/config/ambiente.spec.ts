@@ -8,7 +8,36 @@ const OBRIGATORIAS = {
   REDIS_URL: 'redis://localhost:6379',
 };
 
-const PRODUCAO = { NODE_ENV: 'production', EMAIL_TRANSPORTE: 'resend', RESEND_API_KEY: 're_teste' };
+const PRODUCAO = {
+  NODE_ENV: 'production',
+  EMAIL_TRANSPORTE: 'resend',
+  RESEND_API_KEY: 're_teste',
+  JWT_SECRET: 'a'.repeat(64),
+};
+
+describe('validarAmbiente: autenticação', () => {
+  it('exige JWT_SECRET em produção', () => {
+    expect(() => validarAmbiente({ ...OBRIGATORIAS, ...PRODUCAO, JWT_SECRET: undefined })).toThrow(
+      /JWT_SECRET: obrigatória em produção/,
+    );
+  });
+
+  it('recusa JWT_SECRET curto', () => {
+    expect(() => validarAmbiente({ ...OBRIGATORIAS, JWT_SECRET: 'curto' })).toThrow(
+      /JWT_SECRET: use pelo menos 32 caracteres/,
+    );
+  });
+
+  it('fora de produção, usa um segredo de desenvolvimento e confia no proxy só se pedido', () => {
+    const ambiente = validarAmbiente(OBRIGATORIAS);
+
+    expect(ambiente.JWT_SECRET.length).toBeGreaterThanOrEqual(32);
+    expect(ambiente).toMatchObject({ POLITICA_VERSAO: '1', PROXY_CONFIAVEL: false });
+    expect(validarAmbiente({ ...OBRIGATORIAS, PROXY_CONFIAVEL: 'true' }).PROXY_CONFIAVEL).toBe(
+      true,
+    );
+  });
+});
 
 describe('validarAmbiente', () => {
   it('aplica os valores padrão', () => {

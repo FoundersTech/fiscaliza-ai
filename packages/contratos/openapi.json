@@ -31,6 +31,112 @@
           "saude"
         ]
       }
+    },
+    "/api/v1/auth/cadastro": {
+      "post": {
+        "operationId": "AuthController_cadastrar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CadastroDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Conta de cidadão criada e logada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoResposta"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "EMAIL_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou POLITICA_DESATUALIZADA"
+          },
+          "429": {
+            "description": "Mais de 5 tentativas em 3600 s."
+          }
+        },
+        "tags": [
+          "autenticacao"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "CREDENCIAIS_INVALIDAS"
+          },
+          "429": {
+            "description": "Mais de 5 tentativas em 60 s."
+          }
+        },
+        "tags": [
+          "autenticacao"
+        ]
+      }
+    },
+    "/api/v1/me": {
+      "get": {
+        "operationId": "MeController_perfil",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerfilResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me"
+        ]
+      }
     }
   },
   "info": {
@@ -86,6 +192,129 @@
           "versao",
           "db",
           "redis"
+        ]
+      },
+      "CadastroDto": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "example": "Maria da Silva",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "apelido_publico": {
+            "type": "string",
+            "example": "maria.s",
+            "minLength": 2,
+            "maxLength": 30,
+            "description": "Nome que aparece nas ocorrências, se o cidadão quiser"
+          },
+          "email": {
+            "type": "string",
+            "example": "maria@exemplo.com",
+            "maxLength": 254
+          },
+          "senha": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "format": "password"
+          },
+          "politica_versao": {
+            "type": "string",
+            "example": "1",
+            "description": "Versão da política de privacidade aceita"
+          }
+        },
+        "required": [
+          "nome",
+          "apelido_publico",
+          "email",
+          "senha",
+          "politica_versao"
+        ]
+      },
+      "PerfilResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "apelido_publico": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "papel": {
+            "type": "string",
+            "enum": [
+              "CIDADAO",
+              "AGENTE_ORGAO",
+              "ADMIN_MUNICIPIO",
+              "ADMIN_PLATAFORMA"
+            ]
+          },
+          "municipio_id": {
+            "type": "number",
+            "nullable": true
+          },
+          "orgao_id": {
+            "type": "number",
+            "nullable": true
+          },
+          "precisa_aceitar_politica": {
+            "type": "boolean",
+            "description": "O PWA bloqueia o uso até o aceite da política vigente"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "apelido_publico",
+          "email",
+          "papel",
+          "municipio_id",
+          "orgao_id",
+          "precisa_aceitar_politica"
+        ]
+      },
+      "SessaoResposta": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "JWT de 15 minutos, enviado no header Authorization: Bearer"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/PerfilResposta"
+          }
+        },
+        "required": [
+          "access_token",
+          "usuario"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "maria@exemplo.com"
+          },
+          "senha": {
+            "type": "string",
+            "format": "password"
+          }
+        },
+        "required": [
+          "email",
+          "senha"
         ]
       }
     }
