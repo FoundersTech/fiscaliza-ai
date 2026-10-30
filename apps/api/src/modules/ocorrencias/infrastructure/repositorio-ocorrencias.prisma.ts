@@ -12,7 +12,7 @@ import type {
   RepositorioOcorrencias,
   ResultadoGravacao,
 } from '../application/portas.js';
-import { ABERTAS, StatusOcorrencia } from '../domain/ocorrencia.js';
+import { ABERTAS, type DadosOcorrencia, StatusOcorrencia } from '../domain/ocorrencia.js';
 import { Protocolo } from '../domain/protocolo.js';
 
 const CAMPOS = { id: true, autorId: true, protocolo: true, status: true } as const;
@@ -121,6 +121,33 @@ export class RepositorioOcorrenciasPrisma implements RepositorioOcorrencias {
 
   async gravarEndereco(id: string, endereco: string): Promise<void> {
     await this.prisma.ocorrencia.updateMany({ where: { id, endereco: null }, data: { endereco } });
+  }
+
+  carregar(id: string): Promise<DadosOcorrencia | null> {
+    return this.prisma.ocorrencia.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        municipioId: true,
+        autorId: true,
+        status: true,
+        criadaEm: true,
+        triadaEm: true,
+        resolvidaEm: true,
+        duplicadaDeId: true,
+        reaberturas: true,
+      },
+    });
+  }
+
+  async confirmar(ocorrenciaId: string, usuarioId: string, criadaEm: Date): Promise<number | null> {
+    // A chave (ocorrencia_id, usuario_id) barra a segunda confirmação, mesmo em paralelo.
+    const { count } = await this.prisma.confirmacao.createMany({
+      data: [{ ocorrenciaId, usuarioId, criadaEm }],
+      skipDuplicates: true,
+    });
+    if (!count) return null;
+    return this.prisma.confirmacao.count({ where: { ocorrenciaId } });
   }
 
   async semEnderecoCriadasAntes(antesDe: Date, limite: number): Promise<string[]> {

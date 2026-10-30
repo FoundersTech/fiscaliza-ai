@@ -139,6 +139,11 @@ export class OcorrenciaCriadaResposta {
   }
 }
 
+export class ConfirmacaoResposta {
+  @ApiProperty({ example: 4, description: 'Total de confirmações, já com esta' })
+  confirmacoes!: number;
+}
+
 export class CandidataDuplicidadeResposta {
   @ApiProperty({ format: 'uuid' })
   id!: string;

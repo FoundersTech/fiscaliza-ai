@@ -475,6 +475,56 @@
           "ocorrencias"
         ]
       }
+    },
+    "/api/v1/ocorrencias/{id}/confirmacoes": {
+      "post": {
+        "operationId": "OcorrenciasController_confirmar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "\"Também vi\" registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmacaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.\n\nAUTOR_NAO_CONFIRMA: quem registrou não confirma a própria. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADA"
+          },
+          "409": {
+            "description": "JA_CONFIRMADA: o usuário já confirmou esta ocorrência"
+          },
+          "422": {
+            "description": "OCORRENCIA_FECHADA: resolvida"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ocorrencias"
+        ]
+      }
     }
   },
   "info": {
@@ -1182,6 +1232,19 @@
           "codigo",
           "mensagem",
           "detalhes"
+        ]
+      },
+      "ConfirmacaoResposta": {
+        "type": "object",
+        "properties": {
+          "confirmacoes": {
+            "type": "number",
+            "example": 4,
+            "description": "Total de confirmações, já com esta"
+          }
+        },
+        "required": [
+          "confirmacoes"
         ]
       }
     }

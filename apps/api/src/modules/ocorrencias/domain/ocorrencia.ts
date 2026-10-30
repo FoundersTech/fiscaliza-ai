@@ -23,6 +23,8 @@ export const TRANSICOES_AGENTE: Readonly<Record<StatusOcorrencia, readonly Statu
 };
 
 export const ABERTAS: readonly StatusOcorrencia[] = [RECEBIDA, EM_ANALISE, EM_EXECUCAO];
+
+const OCULTAS: readonly StatusOcorrencia[] = [RECUSADA, DUPLICADA];
 const EXIGEM_COMENTARIO: readonly StatusOcorrencia[] = [RECUSADA, RESOLVIDA];
 
 const UM_DIA_MS = 24 * 60 * 60 * 1000;
@@ -91,9 +93,32 @@ export class Ocorrencia {
     return ABERTAS.includes(this.dados.status);
   }
 
+  visivelPara(usuarioId: string | null): boolean {
+    return !OCULTAS.includes(this.dados.status) || this.ehAutor(usuarioId);
+  }
+
+  /** "Também vi": de outra pessoa e só enquanto a ocorrência está aberta. */
+  validarConfirmacao(usuarioId: string): void {
+    if (this.ehAutor(usuarioId)) {
+      throw new ErroDominio(
+        'AUTOR_NAO_CONFIRMA',
+        'Você registrou esta ocorrência e não pode confirmá-la.',
+      );
+    }
+    if (!this.estaAberta()) {
+      throw new ErroDominio('OCORRENCIA_FECHADA', 'Só uma ocorrência aberta pode ser confirmada.', {
+        status: this.dados.status,
+      });
+    }
+  }
+
   /** Autor ou quem confirmou: pode avaliar e reabrir*/
   temVinculo(usuarioId: string, confirmou: boolean): boolean {
-    return confirmou || (this.dados.autorId !== null && this.dados.autorId === usuarioId);
+    return confirmou || this.ehAutor(usuarioId);
+  }
+
+  private ehAutor(usuarioId: string | null): boolean {
+    return this.dados.autorId !== null && this.dados.autorId === usuarioId;
   }
 
   dentroDaJanelaPosResolucao(agora: Date, janelaDias: number): boolean {
