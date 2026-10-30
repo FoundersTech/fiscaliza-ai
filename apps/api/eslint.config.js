@@ -39,7 +39,7 @@ export default defineConfig(
     },
   },
 
-  // RNF-09: as dependências entre camadas apontam para dentro.
+  // Arquitetura limpa: as dependências entre camadas apontam para dentro.
   {
     files: ['src/**/domain/**/*.ts'],
     rules: {
@@ -49,15 +49,15 @@ export default defineConfig(
           patterns: [
             {
               group: ['@nestjs/*'],
-              message: 'A camada domain não importa framework (RNF-09).',
+              message: 'A camada domain não importa framework.',
             },
             {
               group: ['@prisma/*', '.prisma/*', '**/generated/prisma/**'],
-              message: 'A camada domain não importa ORM (RNF-09).',
+              message: 'A camada domain não importa ORM.',
             },
             {
               group: ['**/application/**', '**/infrastructure/**', '**/presentation/**'],
-              message: 'A camada domain não depende de outras camadas (RNF-09).',
+              message: 'A camada domain não depende de outras camadas.',
             },
           ],
         },
@@ -73,12 +73,11 @@ export default defineConfig(
           patterns: [
             {
               group: ['@prisma/*', '.prisma/*', '**/generated/prisma/**'],
-              message: 'A camada application acessa dados só por ports (RNF-09).',
+              message: 'A camada application acessa dados só por ports.',
             },
             {
               group: ['**/infrastructure/**', '**/presentation/**'],
-              message:
-                'A camada application não depende de infrastructure nem de presentation (RNF-09).',
+              message: 'A camada application não depende de infrastructure nem de presentation.',
             },
           ],
         },

@@ -18,9 +18,36 @@ const esquemaAmbiente = z
     PARAMETROS_CAMINHO: z.string().min(1).default('config/parametros.json'),
     SWAGGER_HABILITADO: booleano.optional(),
     APP_VERSAO: z.string().min(1).default('dev'),
+    // Base dos links enviados por e-mail (ex.: /definir-senha?token=).
+    WEB_URL: z.url({ protocol: /^https?$/ }).default('http://localhost:9000'),
+    // `arquivo` grava os e-mails em EMAIL_PASTA, para desenvolvimento e testes.
+    EMAIL_TRANSPORTE: z.enum(['arquivo', 'resend']).default('arquivo'),
+    EMAIL_PASTA: z.string().min(1).default('tmp/emails'),
+    EMAIL_REMETENTE: z
+      .string()
+      .regex(/^.+ <[^<>\s]+@[^<>\s]+>$/, 'use o formato Nome <endereco@dominio>')
+      .default('Fiscaliza Aí! <nao-responda@fiscalizaai.app>'),
+    RESEND_API_KEY: z.string().min(1).optional(),
+  })
+  .superRefine((ambiente, contexto) => {
+    if (ambiente.EMAIL_TRANSPORTE === 'resend' && !ambiente.RESEND_API_KEY) {
+      contexto.addIssue({
+        code: 'custom',
+        path: ['RESEND_API_KEY'],
+        message: 'obrigatória com EMAIL_TRANSPORTE=resend',
+      });
+    }
+    if (ambiente.NODE_ENV === 'production' && ambiente.EMAIL_TRANSPORTE !== 'resend') {
+      contexto.addIssue({
+        code: 'custom',
+        path: ['EMAIL_TRANSPORTE'],
+        message: 'use resend em produção; com arquivo, os e-mails não chegam a ninguém',
+      });
+    }
   })
   .transform((ambiente) => ({
     ...ambiente,
+    WEB_URL: ambiente.WEB_URL.replace(/\/+$/, ''),
     SWAGGER_HABILITADO: ambiente.SWAGGER_HABILITADO ?? ambiente.NODE_ENV !== 'production',
   }));
 

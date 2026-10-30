@@ -1,4 +1,4 @@
-// Schema do banco (PostgreSQL 16 + PostGIS 3). Modelo de dados: design.md.
+// Schema do banco (PostgreSQL 16 + PostGIS 3).
 //
 // O Prisma não representa tudo o que o banco garante. Ficam só no SQL das migrations:
 // - a extensão PostGIS;
@@ -73,9 +73,9 @@ model Municipio {
   nome     String
   /// CHECK: duas letras maiúsculas.
   uf       String                                      @db.Char(2)
-  /// Usada no protocolo (RN-05). CHECK: três letras maiúsculas.
+  /// Usada no protocolo. CHECK: três letras maiúsculas.
   sigla    String                                      @unique @db.Char(3)
-  /// O registro só aceita pontos em município ativo (CA-02.7).
+  /// O registro só aceita pontos em município ativo.
   ativo    Boolean                                     @default(false)
   area     Unsupported("geometry(MultiPolygon, 4326)")
   criadoEm DateTime                                    @default(now()) @map("criado_em") @db.Timestamptz(6)
@@ -91,7 +91,7 @@ model Municipio {
   @@map("municipio")
 }
 
-/// Vazia no MVP: nenhuma fonte tem os limites dos bairros de Sorocaba (design.md, D-06).
+/// Vazia no MVP: nenhuma fonte tem os limites dos bairros de Sorocaba.
 /// Fica no schema para receber a malha oficial, se a prefeitura fornecê-la.
 model Bairro {
   id          Int                                         @id @default(autoincrement())
@@ -109,7 +109,7 @@ model Bairro {
   @@map("bairro")
 }
 
-/// Um órgão por município (RN-14).
+/// Um órgão por município.
 model Orgao {
   id          Int     @id @default(autoincrement())
   municipioId Int     @unique @map("municipio_id")
@@ -136,7 +136,7 @@ model Categoria {
   icone           String
   /// CHECK: > 0
   slaDias         Int     @map("sla_dias") @db.SmallInt
-  /// Campos extras da ocorrência: [{ chave, rotulo, tipo, obrigatorio, ... }] (design.md).
+  /// Campos extras da ocorrência: [{ chave, rotulo, tipo, obrigatorio, ... }].
   schemaAtributos Json    @default("[]") @map("schema_atributos")
   ativa           Boolean @default(true)
 
@@ -161,11 +161,11 @@ model Usuario {
   papel            PapelUsuario
   municipioId      Int?         @map("municipio_id")
   orgaoId          Int?         @map("orgao_id")
-  /// Conta desativada não entra (CA-12.6).
+  /// Conta desativada não entra.
   ativo            Boolean      @default(true)
   politicaVersao   String?      @map("politica_versao")
   politicaAceitaEm DateTime?    @map("politica_aceita_em") @db.Timestamptz(6)
-  /// Controla o indicador de avisos novos (CA-06.5).
+  /// Controla o indicador de avisos novos.
   alertasVistosEm  DateTime?    @map("alertas_vistos_em") @db.Timestamptz(6)
   anonimizadoEm    DateTime?    @map("anonimizado_em") @db.Timestamptz(6)
   criadoEm         DateTime     @default(now()) @map("criado_em") @db.Timestamptz(6)
@@ -187,7 +187,7 @@ model Usuario {
   @@map("usuario")
 }
 
-/// Refresh token rotativo (RNF-05). Cada login abre uma família; reusar um token já usado
+/// Refresh token rotativo. Cada login abre uma família; reusar um token já usado
 /// revoga a família inteira. O job de limpeza apaga os expirados há mais de 30 dias (LGPD).
 model RefreshToken {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -211,7 +211,7 @@ model RefreshToken {
   @@map("refresh_token")
 }
 
-/// Redefinição de senha e convite de agentes (RF-01 e RF-12). Uso único.
+/// Redefinição de senha e convite de agentes. Uso único.
 model TokenAcesso {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuarioId String    @map("usuario_id") @db.Uuid
@@ -227,7 +227,7 @@ model TokenAcesso {
   @@map("token_acesso")
 }
 
-/// Inscrição de Web Push (Q-11).
+/// Inscrição de Web Push.
 model PushInscricao {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuarioId    String    @map("usuario_id") @db.Uuid
@@ -243,7 +243,7 @@ model PushInscricao {
   @@map("push_inscricao")
 }
 
-/// Exportação dos dados pessoais (CA-13.1). O arquivo expira 7 dias depois de pronto.
+/// Exportação dos dados pessoais. O arquivo expira 7 dias depois de pronto.
 model ExportacaoDados {
   id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuarioId    String           @map("usuario_id") @db.Uuid
@@ -264,21 +264,21 @@ model ExportacaoDados {
 // Ocorrências
 // ---------------------------------------------------------------------------
 
-/// O id é gerado no aparelho, o que torna o envio idempotente (CA-03.6).
+/// O id é gerado no aparelho, o que torna o envio idempotente.
 /// local e local_publico são geography(Point, 4326); local_publico é coluna gerada (igual a
-/// local no MVP, RN-15). Como têm tipo não suportado, a gravação usa SQL ($executeRaw).
+/// local no MVP). Como têm tipo não suportado, a gravação usa SQL ($executeRaw).
 /// CHECKs: protocolo ^FA-\d{4}-[A-Z]{3}-\d{6}$; descricao de 10 a 500 caracteres;
 /// duplicada_de_id <> id; precisao_m e reaberturas não negativos.
 model Ocorrencia {
   id            String                                 @id @db.Uuid
   protocolo     String                                 @unique
-  /// Fica nulo ao anonimizar o autor (RN-12).
+  /// Fica nulo ao anonimizar o autor.
   autorId       String?                                @map("autor_id") @db.Uuid
   publicarAutor Boolean                                @default(false) @map("publicar_autor")
   categoriaId   Int                                    @map("categoria_id") @db.SmallInt
   municipioId   Int                                    @map("municipio_id")
   orgaoId       Int                                    @map("orgao_id")
-  /// Sempre nulo no MVP: a malha de bairros ficou de fora (design.md, D-06).
+  /// Sempre nulo no MVP: a malha de bairros ficou de fora.
   bairroId      Int?                                   @map("bairro_id")
   descricao     String
   atributos     Json                                   @default("{}")
@@ -290,7 +290,7 @@ model Ocorrencia {
   endereco      String?
   status        StatusOcorrencia                       @default(RECEBIDA)
   duplicadaDeId String?                                @map("duplicada_de_id") @db.Uuid
-  /// Alimenta o selo "Reaberta" (CA-08.1).
+  /// Alimenta o selo "Reaberta".
   reaberturas   Int                                    @default(0) @db.SmallInt
   criadaEm      DateTime                               @default(now()) @map("criada_em") @db.Timestamptz(6)
   triadaEm      DateTime?                              @map("triada_em") @db.Timestamptz(6)
@@ -318,7 +318,7 @@ model Ocorrencia {
   @@map("ocorrencia")
 }
 
-/// CHECK: ordem 1 ou 2 (Q-14).
+/// CHECK: ordem 1 ou 2 (até 2 fotos por ocorrência).
 model OcorrenciaFoto {
   id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   ocorrenciaId   String          @map("ocorrencia_id") @db.Uuid
@@ -367,7 +367,7 @@ model OcorrenciaEvento {
   @@map("ocorrencia_evento")
 }
 
-/// "Também vi" (RF-07). A PK garante uma confirmação por usuário.
+/// "Também vi". A PK garante uma confirmação por usuário.
 model Confirmacao {
   ocorrenciaId String   @map("ocorrencia_id") @db.Uuid
   usuarioId    String   @map("usuario_id") @db.Uuid
@@ -381,7 +381,7 @@ model Confirmacao {
   @@map("confirmacao")
 }
 
-/// Avaliação do atendimento (RF-09). A PK garante uma avaliação por usuário.
+/// Avaliação do atendimento. A PK garante uma avaliação por usuário.
 /// CHECKs: nota de 1 a 5; comentario até 500 caracteres.
 model Avaliacao {
   ocorrenciaId String   @map("ocorrencia_id") @db.Uuid
@@ -398,7 +398,7 @@ model Avaliacao {
   @@map("avaliacao")
 }
 
-/// Sequência do protocolo por município e ano (RN-05). Incrementada com
+/// Sequência do protocolo por município e ano. Incrementada com
 /// INSERT … ON CONFLICT DO UPDATE SET ultimo = ultimo + 1 RETURNING ultimo, na transação do registro.
 model ProtocoloSequencia {
   municipioId Int @map("municipio_id")
@@ -415,7 +415,7 @@ model ProtocoloSequencia {
 // Indicadores
 // ---------------------------------------------------------------------------
 
-/// Desempenho do órgão na janela (RF-10). Um job agrega em SQL e o CalculoScore (domínio)
+/// Desempenho do órgão na janela do score. Um job agrega em SQL e o CalculoScore (domínio)
 /// calcula o score. CHECK: score entre 0 e 10.
 model DesempenhoOrgao {
   orgaoId         Int      @id @map("orgao_id")

@@ -9,7 +9,7 @@ import { Protocolo } from '../../modules/ocorrencias/domain/protocolo.js';
 import { aplicarCargaInicial, CATEGORIAS, SOROCABA } from './carga-inicial.js';
 
 /**
- * Dados de desenvolvimento (T-07): 1 usuário por papel e 50 ocorrências espalhadas pela área
+ * Dados de desenvolvimento: 1 usuário por papel e 50 ocorrências espalhadas pela área
  * urbana de Sorocaba, em vários status. Só roda com NODE_ENV=development ou test, declarado
  * explicitamente: sem NODE_ENV, a recusa protege um servidor que esqueceu a variável.
  */
@@ -18,7 +18,7 @@ const AMBIENTES_PERMITIDOS = ['development', 'test'];
 
 export const TOTAL_OCORRENCIAS_DEV = 50;
 
-/** Os usuários entram sem senha; a T-12 (cadastro e login) passa a definir uma senha de teste. */
+/** Os usuários entram sem senha; a senha de teste chega junto com o cadastro e login. */
 export const USUARIOS_DEV = [
   {
     papel: PapelUsuario.CIDADAO,

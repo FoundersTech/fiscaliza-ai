@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { validarParametros } from '../../../shared/config/parametros.js';
 import { CalculoScore, type DadosDesempenho, type ParametrosScore } from './calculo-score.js';
 
-/** Os valores do design ("Parâmetros [provisórios]"). */
+/** Os valores iniciais do parametros.json. */
 function parametros(mudancas: Partial<ParametrosScore> = {}): ParametrosScore {
   return {
     pesos: { resolucao: 0.5, prazo: 0.3, satisfacao: 0.2 },
@@ -55,7 +55,7 @@ function codigo(acao: () => unknown): string | undefined {
   return undefined;
 }
 
-describe('CalculoScore: exemplos de referência do design (CA-10.5)', () => {
+describe('CalculoScore: exemplos de referência', () => {
   const calculo = new CalculoScore(parametros());
 
   it('uso normal dá 7,0 "Regular"', () => {
@@ -67,7 +67,7 @@ describe('CalculoScore: exemplos de referência do design (CA-10.5)', () => {
     expect(resultado.componentes!.satisfacao).toBeCloseTo(0.7, 4);
   });
 
-  it('poucos dados dá 7,3, e não 10 (CA-10.6)', () => {
+  it('poucos dados dá 7,3, e não 10', () => {
     const resultado = calculo.calcular(POUCOS_DADOS);
 
     expect(resultado.score).toBe(7.3);
@@ -86,7 +86,7 @@ describe('CalculoScore: exemplos de referência do design (CA-10.5)', () => {
   });
 });
 
-describe('CalculoScore: fórmula (CA-10.1)', () => {
+describe('CalculoScore: fórmula', () => {
   const calculo = new CalculoScore(parametros());
 
   it('sem avaliações, a satisfação fica no prior', () => {
@@ -128,12 +128,12 @@ describe('CalculoScore: fórmula (CA-10.1)', () => {
   });
 });
 
-describe('CalculoScore: parâmetros da configuração (CA-10.2, CA-10.3)', () => {
+describe('CalculoScore: parâmetros da configuração', () => {
   it('aceita o parametros.json do repositório', () => {
     const arquivo = new URL('../../../../config/parametros.json', import.meta.url);
     const { score } = validarParametros(JSON.parse(readFileSync(arquivo, 'utf8')));
 
-    // Sem valor fixo: o arquivo pode mudar (CA-10.3) sem quebrar este teste.
+    // Sem valor fixo: o arquivo pode mudar sem quebrar este teste.
     expect(new CalculoScore(score).calcular(USO_NORMAL).score).toEqual(expect.any(Number));
   });
 

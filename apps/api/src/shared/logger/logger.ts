@@ -7,7 +7,7 @@ import type { Ambiente } from '../config/ambiente.js';
 export const CENSURA = '[Redacted]';
 
 /**
- * Campos que nunca aparecem nos logs (design: Segurança — vazamento de dados pessoais).
+ * Campos que nunca aparecem nos logs, para não vazar dados pessoais.
  * O `*` cobre um nível de profundidade: { usuario: { email } } é ocultado.
  */
 export const CAMINHOS_OCULTOS = [

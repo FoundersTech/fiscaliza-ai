@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { ErroConfiguracao, formatarProblemas } from './erro-configuracao.js';
 
-/** Parâmetros provisórios da RN-16 (design: "Parâmetros [provisórios]"). */
+/** Parâmetros ajustáveis do negócio, lidos do parametros.json em vez de fixos no código. */
 export const PARAMETROS = Symbol('PARAMETROS');
 
 const TOLERANCIA_SOMA = 1e-9;

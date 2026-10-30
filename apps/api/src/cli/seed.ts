@@ -1,5 +1,5 @@
 /**
- * Carga inicial do banco (T-07): Sorocaba, o órgão do município e as categorias.
+ * Carga inicial do banco: Sorocaba, o órgão do município e as categorias.
  * Pode rodar em qualquer ambiente e mais de uma vez, sem duplicar nada.
  *
  * Uso: pnpm db:seed (na raiz do monorepo).

@@ -17,7 +17,7 @@ export default defineConfig(() => {
         vueShim: true,
       },
 
-      // As rotas do design usam paths (/ocorrencias/:id), então o modo é history.
+      // As rotas usam paths (/ocorrencias/:id), então o modo é history.
       vueRouterMode: 'history',
     },
 
@@ -34,7 +34,7 @@ export default defineConfig(() => {
     animations: [],
 
     // https://v2.quasar.dev/quasar-cli-vite/developing-pwa/configuring-pwa
-    // InjectManifest: o service worker próprio recebe o handler de push (T-34).
+    // InjectManifest: o service worker próprio recebe o handler de push.
     pwa: {
       workboxMode: 'InjectManifest',
     },
