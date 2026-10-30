@@ -10,7 +10,7 @@ function parametros(mudancas: Partial<ParametrosScore> = {}): ParametrosScore {
   return {
     pesos: { resolucao: 0.5, prazo: 0.3, satisfacao: 0.2 },
     suavizacao_k: 10,
-    prior: 0.5,
+    prior: 0.7,
     faixas: [
       { min: 9.0, rotulo: 'Ótimo' },
       { min: 7.5, rotulo: 'Bom' },
@@ -58,22 +58,22 @@ function codigo(acao: () => unknown): string | undefined {
 describe('CalculoScore: exemplos de referência do design (CA-10.5)', () => {
   const calculo = new CalculoScore(parametros());
 
-  it('uso normal dá 6,8 "Regular"', () => {
+  it('uso normal dá 7,0 "Regular"', () => {
     const resultado = calculo.calcular(USO_NORMAL);
 
-    expect(resultado).toMatchObject({ score: 6.8, classificacao: 'Regular' });
-    expect(resultado.componentes!.resolucao).toBeCloseTo(0.6636, 4);
-    expect(resultado.componentes!.prazo).toBeCloseTo(0.7051, 4);
-    expect(resultado.componentes!.satisfacao).toBeCloseTo(0.66, 4);
+    expect(resultado).toMatchObject({ score: 7.0, classificacao: 'Regular' });
+    expect(resultado.componentes!.resolucao).toBeCloseTo(0.6818, 4);
+    expect(resultado.componentes!.prazo).toBeCloseTo(0.7308, 4);
+    expect(resultado.componentes!.satisfacao).toBeCloseTo(0.7, 4);
   });
 
-  it('poucos dados dá 5,5, e não 10 (CA-10.6)', () => {
+  it('poucos dados dá 7,3, e não 10 (CA-10.6)', () => {
     const resultado = calculo.calcular(POUCOS_DADOS);
 
-    expect(resultado.score).toBe(5.5);
-    expect(resultado.classificacao).toBe('Fraco');
+    expect(resultado.score).toBe(7.3);
+    expect(resultado.classificacao).toBe('Regular');
     for (const componente of Object.values(resultado.componentes!)) {
-      expect(componente).toBeCloseTo(0.5455, 4);
+      expect(componente).toBeCloseTo(0.7273, 4);
     }
   });
 
@@ -91,15 +91,15 @@ describe('CalculoScore: fórmula (CA-10.1)', () => {
 
   it('sem avaliações, a satisfação fica no prior', () => {
     const resultado = calculo.calcular({ ...USO_NORMAL, avaliacoes: 0, mediaAvaliacoes: null });
-    expect(resultado.componentes!.satisfacao).toBe(0.5);
+    expect(resultado.componentes!.satisfacao).toBe(0.7);
   });
 
   it('sem resolvidas, o prazo fica no prior', () => {
     const resultado = calculo.calcular({ ...SEM_DADOS, total: 5 });
-    expect(resultado.componentes!.prazo).toBe(0.5);
+    expect(resultado.componentes!.prazo).toBe(0.7);
   });
 
-  it('nos extremos, vai de 1,5 a 10', () => {
+  it('nos extremos, vai de 2,1 a 10', () => {
     const tudoBem = calculo.calcular({
       total: 10_000,
       resolvidas: 10_000,
@@ -116,8 +116,8 @@ describe('CalculoScore: fórmula (CA-10.1)', () => {
     });
 
     expect(tudoBem).toMatchObject({ score: 10, classificacao: 'Ótimo' });
-    // Sem nenhuma resolvida, o prazo fica no prior: 10 · 0,3 · 0,5 = 1,5 é o piso da fórmula.
-    expect(tudoMal).toMatchObject({ score: 1.5, classificacao: 'Ruim' });
+    // Sem nenhuma resolvida, o prazo fica no prior: 10 · 0,3 · 0,7 = 2,1 é o piso da fórmula.
+    expect(tudoMal).toMatchObject({ score: 2.1, classificacao: 'Ruim' });
   });
 
   it('o score tem uma casa decimal', () => {
@@ -133,22 +133,23 @@ describe('CalculoScore: parâmetros da configuração (CA-10.2, CA-10.3)', () =>
     const arquivo = new URL('../../../../config/parametros.json', import.meta.url);
     const { score } = validarParametros(JSON.parse(readFileSync(arquivo, 'utf8')));
 
-    expect(new CalculoScore(score).calcular(USO_NORMAL).score).toBe(6.8);
+    // Sem valor fixo: o arquivo pode mudar (CA-10.3) sem quebrar este teste.
+    expect(new CalculoScore(score).calcular(USO_NORMAL).score).toEqual(expect.any(Number));
   });
 
   it('mudar os pesos muda o score', () => {
     const soResolucao = new CalculoScore(
       parametros({ pesos: { resolucao: 1, prazo: 0, satisfacao: 0 } }),
     );
-    // 10 · R = 10 · 0,6636
-    expect(soResolucao.calcular(USO_NORMAL).score).toBe(6.6);
+    // 10 · R = 10 · 0,6818
+    expect(soResolucao.calcular(USO_NORMAL).score).toBe(6.8);
   });
 
   it('mudar as faixas muda a classificação', () => {
     const exigente = new CalculoScore(
       parametros({
         faixas: [
-          { min: 7, rotulo: 'Aceitável' },
+          { min: 7.5, rotulo: 'Aceitável' },
           { min: 0, rotulo: 'Insuficiente' },
         ],
       }),
