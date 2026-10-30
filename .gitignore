@@ -20,6 +20,9 @@ coverage
 #Specs
 /docs/specs
 
+# Configuração local do Claude Code
+/.claude
+
 # Logs e sistema
 npm-debug.log*
 pnpm-debug.log*
