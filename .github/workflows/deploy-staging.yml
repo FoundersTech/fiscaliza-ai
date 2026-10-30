@@ -136,24 +136,9 @@ jobs:
         env:
           DESTINO: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # O heredoc sem aspas é proposital: o token entra no script aqui, e não como argumento
-        # visível na lista de processos da VM.
-        run: |
-          # shellcheck disable=SC2087
-          ssh -i ~/.ssh/deploy "$DESTINO" bash -s -- "${{ github.actor }}" <<EOF
-          set -euo pipefail
-          cd /opt/fiscaliza
-          chmod 600 .env
-          echo "${GHCR_TOKEN}" | docker login ghcr.io -u "\$1" --password-stdin
-          docker compose pull api caddy redis
-          docker logout ghcr.io
-          docker compose build postgres
-          docker compose up -d --wait postgres redis
-          # Migrations e carga inicial antes de a API nova subir; se falharem, a antiga continua no ar.
-          docker compose run --rm migracao
-          docker compose up -d --wait --remove-orphans api caddy
-          docker image prune -f
-          EOF
+          ATOR: ${{ github.actor }}
+        # O token vai pela entrada padrão, e não como argumento visível na lista de processos da VM.
+        run: printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy "$DESTINO" "bash /opt/fiscaliza/subir.sh '$ATOR'"
 
       - name: Conferir a versão publicada
         run: |
