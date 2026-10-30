@@ -2,15 +2,15 @@ import { Inject, Injectable } from '@nestjs/common';
 
 import { AMBIENTE, type Ambiente } from '../../../shared/config/ambiente.js';
 import { erroEmailEmUso, erroPoliticaDesatualizada } from './erros.js';
-import { montarPerfil, type Sessao } from './perfil.js';
+import type { Sessao } from './perfil.js';
 import {
-  EMISSOR_TOKEN,
-  type EmissorToken,
   HASHER_SENHA,
   type HasherSenha,
+  type Origem,
   REPOSITORIO_USUARIOS,
   type RepositorioUsuarios,
 } from './portas.js';
+import { AbrirSessao } from './sessoes.js';
 
 export interface DadosCadastro {
   nome: string;
@@ -20,17 +20,17 @@ export interface DadosCadastro {
   politicaVersao: string;
 }
 
-/** Cadastro público: sempre cria um CIDADAO; os outros papéis nascem por convite. */
+/** Cadastro público: sempre cria um CIDADAO; os outros papéis são criados por convite. */
 @Injectable()
 export class Cadastrar {
   constructor(
     @Inject(REPOSITORIO_USUARIOS) private readonly usuarios: RepositorioUsuarios,
     @Inject(HASHER_SENHA) private readonly hasher: HasherSenha,
-    @Inject(EMISSOR_TOKEN) private readonly tokens: EmissorToken,
     @Inject(AMBIENTE) private readonly ambiente: Ambiente,
+    private readonly abrirSessao: AbrirSessao,
   ) {}
 
-  async executar(dados: DadosCadastro, agora = new Date()): Promise<Sessao> {
+  async executar(dados: DadosCadastro, origem: Origem, agora = new Date()): Promise<Sessao> {
     if (dados.politicaVersao !== this.ambiente.POLITICA_VERSAO) {
       throw erroPoliticaDesatualizada(this.ambiente.POLITICA_VERSAO);
     }
@@ -47,9 +47,6 @@ export class Cadastrar {
       politicaAceitaEm: agora,
     });
 
-    return {
-      accessToken: await this.tokens.emitir(usuario),
-      usuario: montarPerfil(usuario, this.ambiente.POLITICA_VERSAO),
-    };
+    return this.abrirSessao.executar(usuario, origem, agora);
   }
 }

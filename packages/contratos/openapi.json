@@ -48,7 +48,7 @@
         },
         "responses": {
           "201": {
-            "description": "Conta de cidadão criada e logada.",
+            "description": "Conta de cidadão criada e logada. O refresh vai no cookie fa_refresh.",
             "content": {
               "application/json": {
                 "schema": {
@@ -88,7 +88,7 @@
         },
         "responses": {
           "200": {
-            "description": "",
+            "description": "O refresh vai no cookie fa_refresh.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102,6 +102,57 @@
           },
           "429": {
             "description": "Mais de 5 tentativas em 60 s."
+          }
+        },
+        "tags": [
+          "autenticacao"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [
+          {
+            "name": "X-FA-CSRF",
+            "in": "header",
+            "description": "Sempre \"1\". Um site de fora não consegue mandar este header.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Access token novo e cookie novo.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "SESSAO_INVALIDA: sem cookie, expirado ou revogado"
+          },
+          "403": {
+            "description": "CSRF_AUSENTE"
+          }
+        },
+        "tags": [
+          "autenticacao"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Sessão do aparelho encerrada e cookie apagado."
           }
         },
         "tags": [

@@ -20,7 +20,7 @@ async function criarApp(
   ajustar?.(builder);
   const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-  configurarApp(app);
+  await configurarApp(app);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;

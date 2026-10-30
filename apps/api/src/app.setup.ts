@@ -1,3 +1,4 @@
+import fastifyCookie from '@fastify/cookie';
 import type { INestApplication } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -21,8 +22,11 @@ export function criarDocumentoOpenApi(app: INestApplication, versao: string): Op
 }
 
 /** Configuração compartilhada entre o servidor (main.ts) e os testes. */
-export function configurarApp(app: NestFastifyApplication): void {
+export async function configurarApp(app: NestFastifyApplication): Promise<void> {
   const ambiente = app.get<Ambiente>(AMBIENTE);
+
+  // Lê e grava cookies (o refresh token da sessão).
+  await app.register(fastifyCookie);
 
   app.setGlobalPrefix(PREFIXO_API);
   app.useGlobalPipes(criarPipeValidacao());

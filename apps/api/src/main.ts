@@ -24,7 +24,7 @@ async function bootstrap(): Promise<void> {
   });
   app.useLogger(app.get(Logger));
   app.enableShutdownHooks();
-  configurarApp(app);
+  await configurarApp(app);
 
   await app.listen(ambiente.PORT, '0.0.0.0');
 }

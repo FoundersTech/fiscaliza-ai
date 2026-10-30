@@ -1,30 +1,27 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { AMBIENTE, type Ambiente } from '../../../shared/config/ambiente.js';
 import { erroCredenciaisInvalidas } from './erros.js';
-import { montarPerfil, podeEntrar, type Sessao } from './perfil.js';
+import { podeEntrar, type Sessao } from './perfil.js';
 import {
-  EMISSOR_TOKEN,
-  type EmissorToken,
   HASHER_SENHA,
   type HasherSenha,
+  type Origem,
   REPOSITORIO_USUARIOS,
   type RepositorioUsuarios,
 } from './portas.js';
+import { AbrirSessao } from './sessoes.js';
 
 @Injectable()
 export class Entrar {
-  /** Hash de uma senha qualquer */
   private hashFicticio?: Promise<string>;
 
   constructor(
     @Inject(REPOSITORIO_USUARIOS) private readonly usuarios: RepositorioUsuarios,
     @Inject(HASHER_SENHA) private readonly hasher: HasherSenha,
-    @Inject(EMISSOR_TOKEN) private readonly tokens: EmissorToken,
-    @Inject(AMBIENTE) private readonly ambiente: Ambiente,
+    private readonly abrirSessao: AbrirSessao,
   ) {}
 
-  async executar(email: string, senha: string): Promise<Sessao> {
+  async executar(email: string, senha: string, origem: Origem): Promise<Sessao> {
     const usuario = await this.usuarios.buscarPorEmail(email);
 
     if (!usuario || !podeEntrar(usuario)) {
@@ -36,9 +33,6 @@ export class Entrar {
       throw erroCredenciaisInvalidas();
     }
 
-    return {
-      accessToken: await this.tokens.emitir(usuario),
-      usuario: montarPerfil(usuario, this.ambiente.POLITICA_VERSAO),
-    };
+    return this.abrirSessao.executar(usuario, origem);
   }
 }
