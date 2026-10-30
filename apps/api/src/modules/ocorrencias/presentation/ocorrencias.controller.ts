@@ -1,7 +1,9 @@
-import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Param, ParseUUIDPipe, Post, Res } from '@nestjs/common';
 import {
   ApiConflictResponse,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiTags,
   ApiUnprocessableEntityResponse,
@@ -10,8 +12,17 @@ import {
 import type { DadosToken } from '../../identidade/application/portas.js';
 import { Papel } from '../../identidade/domain/papel.js';
 import { Autenticado, UsuarioAtual } from '../../identidade/presentation/autenticacao.js';
+import {
+  ConfirmarOcorrencia,
+  ocorrenciaNaoEncontrada,
+} from '../application/confirmar-ocorrencia.js';
 import { RegistrarOcorrencia } from '../application/registrar-ocorrencia.js';
-import { ErroDuplicidadeResposta, OcorrenciaCriadaResposta, RegistroDto } from './dto.js';
+import {
+  ConfirmacaoResposta,
+  ErroDuplicidadeResposta,
+  OcorrenciaCriadaResposta,
+  RegistroDto,
+} from './dto.js';
 
 interface Resposta {
   status(codigo: number): { send(corpo: unknown): unknown };
@@ -20,7 +31,10 @@ interface Resposta {
 @ApiTags('ocorrencias')
 @Controller('ocorrencias')
 export class OcorrenciasController {
-  constructor(private readonly registrarOcorrencia: RegistrarOcorrencia) {}
+  constructor(
+    private readonly registrarOcorrencia: RegistrarOcorrencia,
+    private readonly confirmarOcorrencia: ConfirmarOcorrencia,
+  ) {}
 
   @Post()
   @Autenticado(Papel.CIDADAO)
@@ -60,5 +74,22 @@ export class OcorrenciasController {
     resposta
       .status(registro.criada ? HttpStatus.CREATED : HttpStatus.OK)
       .send(OcorrenciaCriadaResposta.de(registro));
+  }
+
+  @Post(':id/confirmacoes')
+  @ApiForbiddenResponse({
+    description:
+      'AUTOR_NAO_CONFIRMA: quem registrou não confirma a própria. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.',
+  })
+  @Autenticado(Papel.CIDADAO)
+  @ApiCreatedResponse({ type: ConfirmacaoResposta, description: '"Também vi" registrado' })
+  @ApiNotFoundResponse({ description: 'NAO_ENCONTRADA' })
+  @ApiConflictResponse({ description: 'JA_CONFIRMADA: o usuário já confirmou esta ocorrência' })
+  @ApiUnprocessableEntityResponse({ description: 'OCORRENCIA_FECHADA: resolvida' })
+  async confirmar(
+    @Param('id', new ParseUUIDPipe({ exceptionFactory: ocorrenciaNaoEncontrada })) id: string,
+    @UsuarioAtual() usuario: DadosToken,
+  ): Promise<ConfirmacaoResposta> {
+    return { confirmacoes: await this.confirmarOcorrencia.executar(id, usuario.usuarioId) };
   }
 }

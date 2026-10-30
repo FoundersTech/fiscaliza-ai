@@ -242,3 +242,45 @@ describe('Ocorrencia: aberta', () => {
     expect(ocorrencia({ status }).estaAberta()).toBe(aberta);
   });
 });
+
+describe('Ocorrencia: confirmação', () => {
+  it.each([RECEBIDA, EM_ANALISE, EM_EXECUCAO])('outra pessoa confirma uma %s', (status) => {
+    expect(codigo(() => ocorrencia({ status }).validarConfirmacao('vizinho'))).toBeUndefined();
+  });
+
+  it.each([RESOLVIDA, RECUSADA, DUPLICADA])('%s não aceita confirmação', (status) => {
+    expect(codigo(() => ocorrencia({ status }).validarConfirmacao('vizinho'))).toBe(
+      'OCORRENCIA_FECHADA',
+    );
+  });
+
+  it('o autor não confirma a própria, nem depois de fechada', () => {
+    expect(codigo(() => ocorrencia().validarConfirmacao(AUTOR))).toBe('AUTOR_NAO_CONFIRMA');
+    expect(codigo(() => ocorrencia({ status: RESOLVIDA }).validarConfirmacao(AUTOR))).toBe(
+      'AUTOR_NAO_CONFIRMA',
+    );
+  });
+
+  it('com o autor anonimizado, qualquer pessoa pode confirmar', () => {
+    expect(codigo(() => ocorrencia({ autorId: null }).validarConfirmacao('vizinho'))).toBe(
+      undefined,
+    );
+  });
+});
+
+describe('Ocorrencia: visibilidade', () => {
+  it.each([
+    [RECEBIDA, true],
+    [RESOLVIDA, true],
+    [RECUSADA, false],
+    [DUPLICADA, false],
+  ])('%s aparece para outra pessoa: %s', (status, visivel) => {
+    expect(ocorrencia({ status }).visivelPara('vizinho')).toBe(visivel);
+    expect(ocorrencia({ status }).visivelPara(null)).toBe(visivel);
+  });
+
+  it('o autor vê a própria recusada ou duplicada', () => {
+    expect(ocorrencia({ status: RECUSADA }).visivelPara(AUTOR)).toBe(true);
+    expect(ocorrencia({ status: DUPLICADA }).visivelPara(AUTOR)).toBe(true);
+  });
+});

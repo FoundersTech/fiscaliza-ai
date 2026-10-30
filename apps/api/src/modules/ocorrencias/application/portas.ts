@@ -1,5 +1,5 @@
 import type { Ponto } from '../../territorio/domain/endereco.js';
-import type { StatusOcorrencia } from '../domain/ocorrencia.js';
+import type { DadosOcorrencia, StatusOcorrencia } from '../domain/ocorrencia.js';
 import type { Atributos } from '../domain/schema-atributos.js';
 
 export const REPOSITORIO_OCORRENCIAS = Symbol('REPOSITORIO_OCORRENCIAS');
@@ -61,4 +61,6 @@ export interface RepositorioOcorrencias {
   localSemEndereco(id: string): Promise<Ponto | null>;
   gravarEndereco(id: string, endereco: string): Promise<void>;
   semEnderecoCriadasAntes(antesDe: Date, limite: number): Promise<string[]>;
+  carregar(id: string): Promise<DadosOcorrencia | null>;
+  confirmar(ocorrenciaId: string, usuarioId: string, criadaEm: Date): Promise<number | null>;
 }

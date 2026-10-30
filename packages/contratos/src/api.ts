@@ -212,6 +212,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ocorrencias/{id}/confirmacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OcorrenciasController_confirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -469,6 +485,13 @@ export interface components {
             mensagem: string;
             /** @description Vazio no ID_EM_USO */
             detalhes: components["schemas"]["DetalhesDuplicidade"];
+        };
+        ConfirmacaoResposta: {
+            /**
+             * @description Total de confirmações, já com esta
+             * @example 4
+             */
+            confirmacoes: number;
         };
     };
     responses: never;
@@ -949,6 +972,67 @@ export interface operations {
                 };
             };
             /** @description FORA_DA_AREA, CATEGORIA_INATIVA, ATRIBUTOS_INVALIDOS, FOTO_NAO_ENVIADA ou VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OcorrenciasController_confirmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description "Também vi" registrado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmacaoResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
+             *
+             *     AUTOR_NAO_CONFIRMA: quem registrou não confirma a própria. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description JA_CONFIRMADA: o usuário já confirmou esta ocorrência */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description OCORRENCIA_FECHADA: resolvida */
             422: {
                 headers: {
                     [name: string]: unknown;
