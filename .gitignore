@@ -7,6 +7,9 @@ coverage
 .env*
 !.env.example
 
+# E-mails gravados pelo transporte "arquivo" (EMAIL_PASTA)
+/apps/api/tmp
+
 # Prisma Client gerado (prisma generate)
 /apps/api/src/generated
 

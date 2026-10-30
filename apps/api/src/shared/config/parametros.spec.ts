@@ -39,7 +39,7 @@ function mensagemDoErro(acao: () => unknown): string {
 }
 
 describe('validarParametros', () => {
-  it('aceita os parâmetros do design', () => {
+  it('aceita parâmetros válidos', () => {
     expect(validarParametros(parametrosValidos()).score.pesos.resolucao).toBe(0.5);
   });
 

@@ -2,7 +2,7 @@ import { HttpException } from '@nestjs/common';
 
 import { ErroAplicacao } from './erro-aplicacao.js';
 
-/** Formato de erro de toda a API (design: "Formato de erro"). */
+/** Formato de erro de toda a API. */
 export interface CorpoErro {
   codigo: string;
   mensagem: string;

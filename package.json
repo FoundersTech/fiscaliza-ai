@@ -17,6 +17,7 @@
     "db:migrar": "pnpm --filter @fiscaliza/api prisma:migrar",
     "db:seed": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api seed",
     "db:seed:dev": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api seed:dev",
+    "email:teste": "pnpm --filter @fiscaliza/api build && pnpm --filter @fiscaliza/api email:teste",
     "infra:up": "docker compose up -d --wait",
     "infra:down": "docker compose down"
   },

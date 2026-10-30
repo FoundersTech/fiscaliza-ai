@@ -41,7 +41,7 @@ function codigo(acao: () => unknown): string | undefined {
   return undefined;
 }
 
-describe('Ocorrencia: transições do agente (RN-03)', () => {
+describe('Ocorrencia: transições do agente', () => {
   const pares = TODOS.flatMap((de) => TODOS.map((para) => [de, para] as const));
 
   it.each(pares)('%s → %s', (de, para) => {
@@ -62,7 +62,7 @@ describe('Ocorrencia: transições do agente (RN-03)', () => {
     }
   });
 
-  it('a tabela segue a RN-03', () => {
+  it('a tabela de transições do agente', () => {
     expect(TRANSICOES_AGENTE).toEqual({
       RECEBIDA: [EM_ANALISE, RECUSADA, DUPLICADA],
       EM_ANALISE: [EM_EXECUCAO, RECUSADA, DUPLICADA],
@@ -89,7 +89,7 @@ describe('Ocorrencia: transições do agente (RN-03)', () => {
   });
 });
 
-describe('Ocorrencia: dado exigido por status final (CA-08.5)', () => {
+describe('Ocorrencia: dado exigido por status final', () => {
   it.each([
     [RECUSADA, RECEBIDA],
     [RESOLVIDA, EM_EXECUCAO],
@@ -129,7 +129,7 @@ describe('Ocorrencia: dado exigido por status final (CA-08.5)', () => {
   });
 });
 
-describe('Ocorrencia: datas de triagem e resolução (CA-08.6)', () => {
+describe('Ocorrencia: datas de triagem e resolução', () => {
   it('a primeira saída de RECEBIDA preenche triada_em, e a resolução preenche resolvida_em', () => {
     const alvo = ocorrencia();
     const depois = new Date(AGORA.getTime() + UM_DIA);
@@ -148,7 +148,7 @@ describe('Ocorrencia: datas de triagem e resolução (CA-08.6)', () => {
   });
 });
 
-describe('Ocorrencia: reabertura (RF-14)', () => {
+describe('Ocorrencia: reabertura', () => {
   const resolvidaEm = new Date('2026-10-10T12:00:00Z');
   const resolvida = () =>
     ocorrencia({ status: RESOLVIDA, triadaEm: CRIADA, resolvidaEm, reaberturas: 1 });
@@ -230,7 +230,7 @@ describe('Ocorrencia: reabertura (RF-14)', () => {
   });
 });
 
-describe('Ocorrencia: aberta (RN-02)', () => {
+describe('Ocorrencia: aberta', () => {
   it.each([
     [RECEBIDA, true],
     [EM_ANALISE, true],

@@ -11,7 +11,7 @@ updates:
     cooldown:
       default-days: 3
     open-pull-requests-limit: 5
-    # Majors que exigem migração planejada (ver design.md, Stack). Minor e patch continuam chegando.
+    # Majors que exigem migração planejada. Minor e patch continuam chegando.
     ignore:
       # BullMQ 5 + ioredis 5 são os suportados pelo @nestjs/bullmq 12.
       - dependency-name: bullmq

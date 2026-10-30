@@ -6,7 +6,7 @@ import { z } from 'zod';
 import type { PrismaClient } from '../../generated/prisma/client.js';
 
 /**
- * Carga inicial (T-07, design.md "Carga inicial"): Sorocaba, o órgão único do município (RN-14)
+ * Carga inicial: Sorocaba, o órgão único do município
  * e as 4 categorias com prazo provisório. Pode rodar quantas vezes for preciso: o que já existe
  * não é duplicado nem sobrescrito, para não desfazer edições feitas pelos administradores.
  */
@@ -18,10 +18,10 @@ export const SOROCABA = {
   sigla: 'SOR',
 } as const;
 
-/** "Prefeitura de Sorocaba" e "PMS" são [proposto] no design; o ADMIN_MUNICIPIO pode editar. */
+/** Nome e sigla iniciais do órgão; o ADMIN_MUNICIPIO pode editá-los. */
 const ORGAO_SOROCABA = { nome: 'Prefeitura de Sorocaba', sigla: 'PMS' } as const;
 
-/** Prazos [provisório] (design.md). `icone` é um nome do Material Icons. */
+/** Prazos iniciais, ajustáveis pelo admin. `icone` é um nome do Material Icons. */
 export const CATEGORIAS = [
   { slug: 'pavimentacao', nome: 'Pavimentação', icone: 'add_road', slaDias: 30 },
   { slug: 'iluminacao', nome: 'Iluminação', icone: 'lightbulb', slaDias: 15 },

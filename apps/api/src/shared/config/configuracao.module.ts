@@ -5,7 +5,7 @@ import { carregarParametros, PARAMETROS } from './parametros.js';
 
 /**
  * Valida as variáveis de ambiente e o parametros.json na subida.
- * Qualquer erro aqui impede a API de subir (design: T-02).
+ * Qualquer erro aqui impede a API de subir.
  */
 @Global()
 @Module({

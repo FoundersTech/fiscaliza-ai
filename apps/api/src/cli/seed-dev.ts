@@ -1,5 +1,5 @@
 /**
- * Dados de desenvolvimento (T-07): carga inicial, 1 usuário por papel e 50 ocorrências.
+ * Dados de desenvolvimento: carga inicial, 1 usuário por papel e 50 ocorrências.
  * Recusa rodar fora de NODE_ENV=development ou test.
  *
  * Uso: pnpm db:seed:dev (na raiz do monorepo).

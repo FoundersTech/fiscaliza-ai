@@ -1,5 +1,5 @@
 # Ambiente local de desenvolvimento: PostgreSQL 16 + PostGIS 3 e Redis 7.
-# As credenciais servem só para a máquina local; staging e produção têm o Compose próprio (T-05).
+# As credenciais servem só para a máquina local; staging e produção têm o Compose próprio.
 name: fiscaliza-ai
 
 services:

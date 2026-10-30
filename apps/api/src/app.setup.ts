@@ -10,7 +10,7 @@ import { criarPipeValidacao } from './shared/erros/validacao.js';
 export const PREFIXO_API = 'api/v1';
 export const CAMINHO_DOCS = 'docs';
 
-/** Documento OpenAPI da API: servido em /docs-json e exportado para os contratos (T-03). */
+/** Documento OpenAPI da API: servido em /docs-json e exportado para os contratos. */
 export function criarDocumentoOpenApi(app: INestApplication, versao: string): OpenAPIObject {
   const config = new DocumentBuilder()
     .setTitle('Fiscaliza Aí! API')

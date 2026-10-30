@@ -19,6 +19,7 @@
     "openapi:exportar": "node dist/cli/exportar-openapi.js",
     "seed": "node dist/cli/seed.js",
     "seed:dev": "node dist/cli/seed-dev.js",
+    "email:teste": "node dist/cli/email-teste.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {

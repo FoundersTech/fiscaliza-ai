@@ -1,5 +1,5 @@
 /**
- * Exporta o documento OpenAPI para packages/contratos/openapi.json (T-03).
+ * Exporta o documento OpenAPI para packages/contratos/openapi.json.
  * Não precisa de banco nem de Redis: o Prisma só conecta na primeira consulta e o Redis é trocado
  * por um cliente que nunca conecta.
  *

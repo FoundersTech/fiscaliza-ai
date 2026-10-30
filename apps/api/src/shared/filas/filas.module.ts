@@ -5,8 +5,7 @@ import { AMBIENTE, type Ambiente } from '../config/ambiente.js';
 import { opcoesConexaoRedis } from '../redis/conexao-redis.js';
 
 /**
- * Conexão do BullMQ. Cada módulo registra as próprias filas com BullModule.registerQueue
- * (design: "Jobs (BullMQ)").
+ * Conexão do BullMQ. Cada módulo registra as próprias filas com BullModule.registerQueue.
  */
 @Module({
   imports: [

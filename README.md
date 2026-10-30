@@ -113,6 +113,14 @@ pnpm test:int
 
 Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://localhost:3000/api/v1`, Swagger em `http://localhost:3000/docs`) e `pnpm --filter @fiscaliza/web dev` (PWA). Para desligar o banco e o Redis, use `pnpm infra:down`.
 
+### E-mails em desenvolvimento
+
+Em desenvolvimento, a API não envia e-mails: grava cada um em `apps/api/tmp/emails` (fora do Git). Abra o `.html` no navegador para ver o e-mail e clicar no link. Para conferir o envio real pelo Resend, defina `EMAIL_TRANSPORTE=resend` e `RESEND_API_KEY` no terminal, sem colocar a chave no `.env`, e rode:
+
+```bash
+pnpm email:teste -- --para voce@exemplo.com
+```
+
 ### Contratos da API
 
 Depois de mudar qualquer rota ou DTO da API, regenere os tipos usados pelo PWA e commite `packages/contratos` junto (não precisa de banco nem Redis):
