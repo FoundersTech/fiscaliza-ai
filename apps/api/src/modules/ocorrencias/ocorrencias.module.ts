@@ -3,7 +3,12 @@ import { Module } from '@nestjs/common';
 
 import { MidiaModule } from '../midia/midia.module.js';
 import { TerritorioModule } from '../territorio/territorio.module.js';
-import { FILA_TERRITORIO, FilaEnderecos, PreencherEndereco } from './application/enderecos.js';
+import {
+  FILA_TERRITORIO,
+  FilaEnderecos,
+  PreencherEndereco,
+  ReconciliarEnderecos,
+} from './application/enderecos.js';
 import { REPOSITORIO_OCORRENCIAS } from './application/portas.js';
 import { RegistrarOcorrencia } from './application/registrar-ocorrencia.js';
 import { EnderecoProcessor } from './infrastructure/endereco.processor.js';
@@ -18,8 +23,10 @@ import { OcorrenciasController } from './presentation/ocorrencias.controller.js'
     RegistrarOcorrencia,
     FilaEnderecos,
     PreencherEndereco,
+    ReconciliarEnderecos,
     EnderecoProcessor,
     { provide: REPOSITORIO_OCORRENCIAS, useClass: RepositorioOcorrenciasPrisma },
   ],
+  exports: [ReconciliarEnderecos],
 })
 export class OcorrenciasModule {}

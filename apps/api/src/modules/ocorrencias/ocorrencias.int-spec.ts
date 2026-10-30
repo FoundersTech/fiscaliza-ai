@@ -101,6 +101,8 @@ describe('POST /ocorrencias', () => {
   beforeEach(async () => {
     await prisma.$executeRaw`TRUNCATE ocorrencia, protocolo_sequencia CASCADE`;
     await filaFotos.obliterate({ force: true });
+    // O processamento tem testes próprios; aqui as fotos ficam PENDENTE na fila.
+    await filaFotos.pause();
     geocoding.enderecoDe.mockReset();
     geocoding.enderecoDe.mockResolvedValue({ rua: 'Rua A', numero: '1', bairro: 'Centro' });
   });

@@ -1,6 +1,6 @@
 /**
- * Dados de desenvolvimento: carga inicial, 1 usuário por papel, 50 ocorrências e o bucket de
- * uploads no S3 local. Recusa rodar fora de NODE_ENV=development ou test.
+ * Dados de desenvolvimento: carga inicial, 1 usuário por papel, 50 ocorrências e os buckets de
+ * uploads e de fotos no S3 local. Recusa rodar fora de NODE_ENV=development ou test.
  *
  * Uso: pnpm db:seed:dev (na raiz do monorepo).
  */
@@ -21,8 +21,11 @@ executarComPrisma(async (prisma) => {
   );
 
   const ambiente = validarAmbiente(process.env);
-  await criarBucketSeFaltar(configStorage(ambiente), ambiente.R2_BUCKET_UPLOADS);
-  console.log(`Bucket ${ambiente.R2_BUCKET_UPLOADS} pronto em ${ambiente.R2_ENDPOINT}.`);
+  const config = configStorage(ambiente);
+  for (const bucket of [config.bucketUploads, config.bucketFotos]) {
+    await criarBucketSeFaltar(config, bucket);
+    console.log(`Bucket ${bucket} pronto em ${config.endpoint}.`);
+  }
 }).catch((erro: unknown) => {
   console.error(erro instanceof ErroAmbienteSeedDev ? erro.message : erro);
   process.exit(1);

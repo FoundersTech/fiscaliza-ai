@@ -51,15 +51,14 @@ export interface ResultadoGravacao {
 export interface RepositorioOcorrencias {
   buscar(id: string): Promise<OcorrenciaGravada | null>;
   categoriaAtiva(id: number): Promise<CategoriaDoRegistro | null>;
-  /** Abertas da categoria a até `raioM` do ponto, da mais próxima para a mais distante. */
   candidatasDuplicidade(filtro: {
     categoriaId: number;
     local: Ponto;
     raioM: number;
     limite: number;
   }): Promise<CandidataDuplicidade[]>;
-  /** Protocolo, ocorrência, evento RECEBIDA e fotos PENDENTE numa transação só. */
   criar(nova: NovaOcorrencia): Promise<ResultadoGravacao>;
   localSemEndereco(id: string): Promise<Ponto | null>;
   gravarEndereco(id: string, endereco: string): Promise<void>;
+  semEnderecoCriadasAntes(antesDe: Date, limite: number): Promise<string[]>;
 }

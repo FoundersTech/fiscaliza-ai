@@ -54,6 +54,8 @@ const esquemaAmbiente = z
     R2_ACCESS_KEY_ID: z.string().min(1).optional(),
     R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
     R2_BUCKET_UPLOADS: z.string().min(1).default('fa-uploads'),
+    // Bucket público: só as fotos já recodificadas e aprovadas.
+    R2_BUCKET_FOTOS: z.string().min(1).default('fa-fotos'),
   })
   .superRefine((ambiente, contexto) => {
     if (ambiente.NODE_ENV === 'production' && !ambiente.JWT_SECRET) {

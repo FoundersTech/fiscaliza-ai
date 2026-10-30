@@ -18,10 +18,12 @@ export default defineConfig({
       NODE_ENV: 'test',
       LOG_LEVEL: 'silent',
       DATABASE_URL: urlBancoTeste.href,
-      REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
+      // Banco 1 do Redis: os workers da API de desenvolvimento não pegam os jobs dos testes.
+      REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379/1',
       PARAMETROS_CAMINHO: 'config/parametros.json',
       SWAGGER_HABILITADO: 'true',
       R2_BUCKET_UPLOADS: 'fa-uploads-teste',
+      R2_BUCKET_FOTOS: 'fa-fotos-teste',
     },
     projects: [
       { extends: true, test: { name: 'unidade', include: ['src/**/*.spec.ts'] } },

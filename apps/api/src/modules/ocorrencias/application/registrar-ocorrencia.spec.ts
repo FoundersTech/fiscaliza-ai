@@ -35,6 +35,7 @@ function montar() {
       .mockResolvedValue({ criada: true, ocorrencia: GRAVADA, fotoIds: ['foto-1'] }),
     localSemEndereco: vi.fn<RepositorioOcorrencias['localSemEndereco']>(),
     gravarEndereco: vi.fn<RepositorioOcorrencias['gravarEndereco']>(),
+    semEnderecoCriadasAntes: vi.fn<RepositorioOcorrencias['semEnderecoCriadasAntes']>(),
   };
   const territorio = {
     executar: vi
