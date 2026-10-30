@@ -15,12 +15,6 @@ const routes: RouteRecordRaw[] = [
         meta: { auth: true, papeis: ['CIDADAO'] },
       },
       {
-        path: 'registrar',
-        name: 'registrar',
-        component: () => import('@/pages/RegistrarPage.vue'),
-        meta: { auth: true, papeis: ['CIDADAO'] },
-      },
-      {
         path: 'politica-privacidade',
         name: 'politica-privacidade',
         component: () => import('@/pages/PoliticaPage.vue'),
@@ -29,6 +23,12 @@ const routes: RouteRecordRaw[] = [
   },
 
   // Telas sem a barra inferior.
+  {
+    path: '/registrar',
+    name: 'registrar',
+    component: () => import('@/pages/RegistrarPage.vue'),
+    meta: { auth: true, papeis: ['CIDADAO'] },
+  },
   {
     path: '/login',
     name: 'login',

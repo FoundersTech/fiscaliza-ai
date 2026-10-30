@@ -83,6 +83,8 @@ pnpm typecheck
 pnpm test
 ```
 
+No PWA, os testes que dependem de canvas e de decodificar imagens (arquivos `*.navegador.spec.ts`, como o da compressão das fotos) rodam no Google Chrome instalado na máquina, pelo modo navegador do Vitest. O Chrome precisa estar instalado; nenhum navegador é baixado.
+
 ```bash
 pnpm build
 ```

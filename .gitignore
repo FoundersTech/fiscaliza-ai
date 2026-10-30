@@ -13,6 +13,9 @@ coverage
 # Prisma Client gerado (prisma generate)
 /apps/api/src/generated
 
+# Prints de falha dos testes no navegador (Vitest)
+.vitest
+
 # Quasar
 .quasar
 /apps/web/quasar.config.*.temporary.compiled*

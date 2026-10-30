@@ -7,11 +7,13 @@ const DESLOGADO = { logado: false, papel: null };
 const CIDADAO = { logado: true, papel: 'CIDADAO' as const };
 const AGENTE = { logado: true, papel: 'AGENTE_ORGAO' as const };
 
-/** O meta de uma rota filha do layout, como o router vai ver. */
+/** O meta de uma rota, dentro do layout ou fora dele, como o router vai ver. */
 function metaDe(caminho: string) {
-  const filha = routes[0]?.children?.find((rota) => rota.path === caminho);
-  if (!filha) throw new Error(`rota ${caminho} não existe`);
-  return filha.meta ?? {};
+  const rota =
+    routes[0]?.children?.find((filha) => filha.path === caminho) ??
+    routes.find((solta) => solta.path === `/${caminho}`);
+  if (!rota) throw new Error(`rota ${caminho} não existe`);
+  return rota.meta ?? {};
 }
 
 describe('decidirAcesso', () => {
