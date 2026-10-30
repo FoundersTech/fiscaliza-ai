@@ -4,16 +4,16 @@ import type { Papel } from '@/stores/auth';
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** Exige login: sem ele, vai para /login?voltar=<rota>. */
     auth?: boolean;
-    /** Papéis que podem abrir a rota; os outros veem "Acesso negado". */
     papeis?: readonly Papel[];
+    visitante?: boolean;
   }
 }
 
 export interface Destino {
   fullPath: string;
-  meta: { auth?: boolean; papeis?: readonly Papel[] };
+  meta: { auth?: boolean; papeis?: readonly Papel[]; visitante?: boolean };
+  query?: Record<string, unknown>;
 }
 
 export interface SessaoAtual {
@@ -23,6 +23,9 @@ export interface SessaoAtual {
 
 /** true libera a navegação; senão, devolve para onde redirecionar. */
 export function decidirAcesso(destino: Destino, sessao: SessaoAtual): true | RouteLocationRaw {
+  if (destino.meta.visitante && sessao.logado) {
+    return destinoSeguro(destino.query?.['voltar']);
+  }
   const exigeLogin = destino.meta.auth === true || (destino.meta.papeis?.length ?? 0) > 0;
   if (!exigeLogin) return true;
 

@@ -1,63 +1,110 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-import TelaCentral from '@/components/TelaCentral.vue';
+import { useApi } from '@/boot/api';
+import CampoSenha from '@/components/CampoSenha.vue';
+import CartaoAcesso from '@/components/CartaoAcesso.vue';
 import { destinoSeguro } from '@/router/acesso';
+import { lerErroApi, MENSAGEM_SEM_CONEXAO, mensagemDoErro } from '@/services/erros';
+import { obrigatorio } from '@/services/validacao';
+import { useAuthStore } from '@/stores/auth';
 
 const rota = useRoute();
+const router = useRouter();
+const api = useApi();
+const auth = useAuthStore();
+
 const voltar = computed(() => destinoSeguro(rota.query.voltar));
+// Quem ainda não tem conta segue para o cadastro com o mesmo voltar.
+const consultaCadastro = computed(() => (voltar.value === '/' ? {} : { voltar: voltar.value }));
+
+const email = ref('');
+const senha = ref('');
+const enviando = ref(false);
+const erro = ref<string | null>(null);
+
+async function entrar(): Promise<void> {
+  enviando.value = true;
+  erro.value = null;
+  try {
+    const { data, error } = await api.POST('/api/v1/auth/login', {
+      body: { email: email.value, senha: senha.value },
+    });
+    if (data) {
+      auth.iniciarSessao(data);
+      await router.replace(voltar.value);
+      return;
+    }
+    erro.value = mensagemDoErro(lerErroApi(error), 'Não foi possível entrar. Tente de novo.');
+  } catch {
+    erro.value = MENSAGEM_SEM_CONEXAO;
+  } finally {
+    enviando.value = false;
+  }
+}
 </script>
 
 <template>
-  <TelaCentral>
-    <img src="/icons/icon-192x192.png" alt="" width="96" height="96" class="logo" />
-    <h1 class="fa-titulo">Fiscaliza Aí!</h1>
-    <p class="slogan">Viu um problema? Fiscaliza Aí!</p>
+  <CartaoAcesso
+    titulo="Entrar"
+    :subtitulo="
+      voltar === '/'
+        ? 'Acompanhe e registre ocorrências em Sorocaba.'
+        : 'Entre para continuar de onde parou.'
+    "
+  >
+    <q-form class="fa-formulario" @submit="entrar">
+      <q-input
+        v-model="email"
+        type="email"
+        label="E-mail"
+        autocomplete="username"
+        outlined
+        lazy-rules
+        :rules="[obrigatorio('Informe o e-mail')]"
+      />
+      <CampoSenha
+        v-model="senha"
+        rotulo="Senha"
+        autocomplete="current-password"
+        :regras="[obrigatorio('Informe a senha')]"
+      />
+      <router-link to="/esqueci-senha" class="fa-link esqueci">Esqueci minha senha</router-link>
 
-    <section class="aviso fa-card">
-      <q-icon name="sym_o_lock" size="24px" class="aviso__icone" />
-      <p>Para continuar, entre na sua conta. A tela de entrada está quase pronta.</p>
-      <p v-if="voltar !== '/'" class="fa-legenda">
-        Depois de entrar, você volta para {{ voltar }}.
+      <p v-if="erro" class="fa-mensagem fa-mensagem--erro" role="alert">{{ erro }}</p>
+      <q-btn
+        type="submit"
+        unelevated
+        no-caps
+        color="primary"
+        label="Entrar"
+        :loading="enviando"
+        class="fa-botao-largo"
+      />
+    </q-form>
+
+    <template #rodape>
+      <p class="rodape">
+        Ainda não tem conta?
+        <router-link :to="{ path: '/cadastro', query: consultaCadastro }" class="fa-link">
+          Criar conta
+        </router-link>
       </p>
-    </section>
-
-    <q-btn unelevated no-caps color="primary" to="/" label="Voltar ao início" class="botao" />
-  </TelaCentral>
+      <router-link to="/" class="fa-link">Continuar sem entrar</router-link>
+    </template>
+  </CartaoAcesso>
 </template>
 
 <style scoped lang="scss">
-.logo {
-  border-radius: 22px;
-  margin-bottom: 8px;
+.esqueci {
+  align-self: flex-end;
+  margin: -4px 0 12px;
+  font-size: 13px;
 }
 
-.slogan {
-  margin: 0 0 12px;
+.rodape {
+  margin: 4px 0 0;
   color: var(--fa-texto-2);
-}
-
-.aviso {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-
-  p {
-    margin: 0;
-  }
-}
-
-.aviso__icone {
-  color: var(--fa-azul);
-}
-
-.botao {
-  width: 100%;
-  height: 44px;
-  border-radius: var(--fa-raio-sm);
-  font-weight: 600;
 }
 </style>
