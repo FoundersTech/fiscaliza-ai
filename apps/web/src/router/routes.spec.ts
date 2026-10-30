@@ -9,6 +9,14 @@ describe('routes', () => {
     expect(abas).toEqual(expect.arrayContaining(['', 'mapa', 'score', 'alertas', 'registrar']));
   });
 
+  it('login, cadastro e esqueci a senha são só para visitantes; definir senha abre para todos', () => {
+    const meta = (caminho: string) => routes.find((rota) => rota.path === caminho)?.meta;
+    expect(meta('/login')).toEqual({ visitante: true });
+    expect(meta('/cadastro')).toEqual({ visitante: true });
+    expect(meta('/esqueci-senha')).toEqual({ visitante: true });
+    expect(meta('/definir-senha')).toBeUndefined();
+  });
+
   it('deixa a rota coringa (404) por último', () => {
     expect(routes.at(-1)?.path).toBe('/:catchAll(.*)*');
   });

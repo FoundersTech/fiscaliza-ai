@@ -20,11 +20,38 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/RegistrarPage.vue'),
         meta: { auth: true, papeis: ['CIDADAO'] },
       },
+      {
+        path: 'politica-privacidade',
+        name: 'politica-privacidade',
+        component: () => import('@/pages/PoliticaPage.vue'),
+      },
     ],
   },
 
   // Telas sem a barra inferior.
-  { path: '/login', name: 'login', component: () => import('@/pages/LoginPage.vue') },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/pages/LoginPage.vue'),
+    meta: { visitante: true },
+  },
+  {
+    path: '/cadastro',
+    name: 'cadastro',
+    component: () => import('@/pages/CadastroPage.vue'),
+    meta: { visitante: true },
+  },
+  {
+    path: '/esqueci-senha',
+    name: 'esqueci-senha',
+    component: () => import('@/pages/EsqueciSenhaPage.vue'),
+    meta: { visitante: true },
+  },
+  {
+    path: '/definir-senha',
+    name: 'definir-senha',
+    component: () => import('@/pages/DefinirSenhaPage.vue'),
+  },
   {
     path: '/acesso-negado',
     name: 'acesso-negado',

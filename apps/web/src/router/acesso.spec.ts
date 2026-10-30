@@ -47,6 +47,19 @@ describe('decidirAcesso', () => {
   it('rota só com auth aceita qualquer papel logado', () => {
     expect(decidirAcesso({ fullPath: '/conta', meta: { auth: true } }, AGENTE)).toBe(true);
   });
+
+  it('o login abre para o visitante', () => {
+    expect(decidirAcesso({ fullPath: '/login', meta: { visitante: true } }, DESLOGADO)).toBe(true);
+  });
+
+  it('logado, o login segue para o voltar, e sem voltar para o início', () => {
+    const login = { fullPath: '/login?voltar=/registrar', meta: { visitante: true } };
+    expect(decidirAcesso({ ...login, query: { voltar: '/registrar' } }, CIDADAO)).toBe(
+      '/registrar',
+    );
+    expect(decidirAcesso({ ...login, query: { voltar: 'https://fora.test' } }, CIDADAO)).toBe('/');
+    expect(decidirAcesso({ fullPath: '/login', meta: { visitante: true } }, CIDADAO)).toBe('/');
+  });
 });
 
 describe('destinoSeguro', () => {

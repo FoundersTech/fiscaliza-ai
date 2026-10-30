@@ -21,7 +21,7 @@ const esquemaAmbiente = z
     PARAMETROS_CAMINHO: z.string().min(1).default('config/parametros.json'),
     SWAGGER_HABILITADO: booleano.optional(),
     APP_VERSAO: z.string().min(1).default('dev'),
-    // Base dos links enviados por e-mail (ex.: /definir-senha?token=).
+    // Endereço do PWA: base dos links dos e-mails e única origem liberada no CORS.
     WEB_URL: z.url({ protocol: /^https?$/ }).default('http://localhost:9000'),
     // `arquivo` grava os e-mails em EMAIL_PASTA, para desenvolvimento e testes.
     EMAIL_TRANSPORTE: z.enum(['arquivo', 'resend']).default('arquivo'),

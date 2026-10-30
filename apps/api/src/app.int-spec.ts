@@ -59,6 +59,31 @@ describe('API com Postgres e Redis reais', () => {
     expect(resposta.json<{ paths: object }>().paths).toHaveProperty(`/${PREFIXO_API}/health`);
   });
 
+  it('o CORS libera só o PWA (WEB_URL), com cookies', async () => {
+    function preflight(origem: string) {
+      return app.inject({
+        method: 'OPTIONS',
+        url: `/${PREFIXO_API}/auth/refresh`,
+        headers: {
+          origin: origem,
+          'access-control-request-method': 'POST',
+          'access-control-request-headers': 'x-fa-csrf',
+        },
+      });
+    }
+
+    const doPwa = await preflight('http://localhost:9000');
+    expect(doPwa.statusCode).toBe(204);
+    expect(doPwa.headers).toMatchObject({
+      'access-control-allow-origin': 'http://localhost:9000',
+      'access-control-allow-credentials': 'true',
+      'access-control-allow-headers': 'x-fa-csrf',
+    });
+
+    const deFora = await preflight('https://site-malicioso.test');
+    expect(deFora.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it('o BullMQ conecta no Redis e enfileira jobs', async () => {
     const fila = app.get<Queue>(getQueueToken(FILA_TESTE));
 
