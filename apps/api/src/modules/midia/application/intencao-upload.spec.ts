@@ -10,6 +10,7 @@ const OCORRENCIA = '0b9f3c2e-5d1a-4f6b-9c8e-7a6d5c4b3a21';
 function montar() {
   const storage = {
     urlDeEnvio: vi.fn<StoragePort['urlDeEnvio']>().mockResolvedValue('https://s3.exemplo.test/u'),
+    existeUpload: vi.fn<StoragePort['existeUpload']>(),
   };
   return { criar: new CriarIntencaoUpload(storage), storage };
 }

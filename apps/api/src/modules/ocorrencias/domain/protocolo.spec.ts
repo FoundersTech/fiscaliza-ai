@@ -22,6 +22,11 @@ describe('Protocolo', () => {
     );
   });
 
+  it('o ano é o de São Paulo: a noite de 31/12 ainda conta no ano que termina', () => {
+    expect(Protocolo.anoDe(new Date('2027-01-01T02:30:00Z'))).toBe(2026);
+    expect(Protocolo.anoDe(new Date('2027-01-01T03:00:00Z'))).toBe(2027);
+  });
+
   it('lê um protocolo válido, tolerando espaços e minúsculas', () => {
     expect(Protocolo.ler(' fa-2026-sor-000123 ')).toEqual({ ano: 2026, sigla: 'SOR', numero: 123 });
   });

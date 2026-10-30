@@ -2,6 +2,8 @@ import {
   BucketAlreadyExists,
   BucketAlreadyOwnedByYou,
   CreateBucketCommand,
+  HeadObjectCommand,
+  NotFound,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -65,6 +67,16 @@ export class StorageR2Adapter implements StoragePort, OnModuleDestroy {
       signingDate: emitidaEm,
       signableHeaders: new Set(['content-type', 'content-length']),
     });
+  }
+
+  async existeUpload(chave: string): Promise<boolean> {
+    try {
+      await this.s3.send(new HeadObjectCommand({ Bucket: this.config.bucketUploads, Key: chave }));
+      return true;
+    } catch (erro) {
+      if (erro instanceof NotFound) return false;
+      throw erro;
+    }
   }
 
   onModuleDestroy(): void {
