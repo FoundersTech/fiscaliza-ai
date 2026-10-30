@@ -15,6 +15,7 @@ export interface Perfil {
 export interface Sessao {
   accessToken: string;
   usuario: Perfil;
+  refresh: { token: string; expiraEm: Date };
 }
 
 export function montarPerfil(usuario: Usuario, politicaVigente: string): Perfil {

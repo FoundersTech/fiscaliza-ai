@@ -4,9 +4,16 @@ import { AMBIENTE, type Ambiente } from '../../shared/config/ambiente.js';
 import { Cadastrar } from './application/cadastrar.js';
 import { Entrar } from './application/entrar.js';
 import { ObterPerfil } from './application/obter-perfil.js';
-import { EMISSOR_TOKEN, HASHER_SENHA, REPOSITORIO_USUARIOS } from './application/portas.js';
+import {
+  EMISSOR_TOKEN,
+  HASHER_SENHA,
+  REPOSITORIO_SESSOES,
+  REPOSITORIO_USUARIOS,
+} from './application/portas.js';
+import { AbrirSessao, RenovarSessao, Sair } from './application/sessoes.js';
 import { EmissorJwt } from './infrastructure/emissor-jwt.js';
 import { HasherArgon2 } from './infrastructure/hasher-argon2.js';
+import { RepositorioSessoesPrisma } from './infrastructure/repositorio-sessoes.prisma.js';
 import { RepositorioUsuariosPrisma } from './infrastructure/repositorio-usuarios.prisma.js';
 import { AuthController, MeController } from './presentation/auth.controller.js';
 import { GuardAutenticacao } from './presentation/autenticacao.js';
@@ -22,9 +29,13 @@ import { GuardAutenticacao } from './presentation/autenticacao.js';
     Cadastrar,
     Entrar,
     ObterPerfil,
+    AbrirSessao,
+    RenovarSessao,
+    Sair,
     GuardAutenticacao,
     { provide: HASHER_SENHA, useClass: HasherArgon2 },
     { provide: REPOSITORIO_USUARIOS, useClass: RepositorioUsuariosPrisma },
+    { provide: REPOSITORIO_SESSOES, useClass: RepositorioSessoesPrisma },
     {
       provide: EMISSOR_TOKEN,
       inject: [AMBIENTE],

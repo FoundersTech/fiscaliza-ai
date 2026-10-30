@@ -52,6 +52,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -181,7 +213,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Conta de cidadão criada e logada. */
+            /** @description Conta de cidadão criada e logada. O refresh vai no cookie fa_refresh. */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -226,6 +258,7 @@ export interface operations {
             };
         };
         responses: {
+            /** @description O refresh vai no cookie fa_refresh. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -243,6 +276,61 @@ export interface operations {
             };
             /** @description Mais de 5 tentativas em 60 s. */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_refresh: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Sempre "1". Um site de fora não consegue mandar este header. */
+                "X-FA-CSRF": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Access token novo e cookie novo. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessaoResposta"];
+                };
+            };
+            /** @description SESSAO_INVALIDA: sem cookie, expirado ou revogado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CSRF_AUSENTE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sessão do aparelho encerrada e cookie apagado. */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

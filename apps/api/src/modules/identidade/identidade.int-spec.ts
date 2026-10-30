@@ -48,7 +48,7 @@ describe('Cadastro, login e autorização', () => {
       controllers: [RotaDeAgente],
     }).compile();
     app = modulo.createNestApplication<NestFastifyApplication>(new FastifyAdapter());
-    configurarApp(app);
+    await configurarApp(app);
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     prisma = app.get(PrismaService);
@@ -272,6 +272,149 @@ describe('Cadastro, login e autorização', () => {
 
       expect(resposta.statusCode).toBe(401);
       expect(resposta.json()).toMatchObject({ codigo: 'NAO_AUTENTICADO' });
+    });
+  });
+
+  describe('Sessão com refresh rotativo', () => {
+    interface CookieResposta {
+      name: string;
+      value: string;
+      path?: string;
+      httpOnly?: boolean;
+      secure?: boolean;
+      sameSite?: string;
+      expires?: Date;
+    }
+
+    function cookieRefresh(resposta: { cookies: CookieResposta[] }): CookieResposta {
+      const cookie = resposta.cookies.find((item) => item.name === 'fa_refresh');
+      if (!cookie) throw new Error('a resposta não gravou o cookie fa_refresh');
+      return cookie;
+    }
+
+    function renovar(refresh?: string, comCsrf = true) {
+      return app.inject({
+        method: 'POST',
+        url: `/${PREFIXO_API}/auth/refresh`,
+        headers: comCsrf ? { 'x-fa-csrf': '1' } : {},
+        cookies: refresh ? { fa_refresh: refresh } : {},
+      });
+    }
+
+    async function entrar(): Promise<string> {
+      return cookieRefresh(await post('auth/cadastro', cadastro())).value;
+    }
+
+    it('cadastro e login gravam o cookie HttpOnly, Secure e SameSite=Strict, só para /api/v1/auth, por 30 dias', async () => {
+      await post('auth/cadastro', cadastro());
+      const login = await post('auth/login', {
+        email: 'maria@exemplo.test',
+        senha: 'senha-forte-1',
+      });
+
+      const cookie = cookieRefresh(login);
+      expect(cookie).toMatchObject({
+        path: '/api/v1/auth',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Strict',
+      });
+      const dias = (cookie.expires!.getTime() - Date.now()) / (24 * 60 * 60 * 1000);
+      expect(dias).toBeGreaterThan(29.9);
+      expect(dias).toBeLessThanOrEqual(30);
+
+      const gravado = await prisma.refreshToken.findFirstOrThrow({ orderBy: { criadoEm: 'desc' } });
+      expect(gravado.tokenHash).not.toBe(cookie.value);
+      expect(gravado.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+    });
+
+    it('o refresh devolve um access token novo e troca o cookie', async () => {
+      const primeiro = await entrar();
+
+      const resposta = await renovar(primeiro);
+
+      expect(resposta.statusCode).toBe(200);
+      const corpo = resposta.json<{ access_token: string; usuario: { papel: string } }>();
+      expect(corpo.usuario.papel).toBe('CIDADAO');
+      expect((await get('me', corpo.access_token)).statusCode).toBe(200);
+      expect(cookieRefresh(resposta).value).not.toBe(primeiro);
+    });
+
+    it('reapresentar o token antigo depois de 10 s revoga a família, e o refresh seguinte devolve 401', async () => {
+      const antigo = await entrar();
+      const novo = cookieRefresh(await renovar(antigo)).value;
+      // O antigo foi usado há 11 s.
+      await prisma.refreshToken.updateMany({
+        where: { usadoEm: { not: null } },
+        data: { usadoEm: new Date(Date.now() - 11_000) },
+      });
+
+      const reuso = await renovar(antigo);
+      expect(reuso.statusCode).toBe(401);
+      expect(reuso.json()).toMatchObject({ codigo: 'SESSAO_INVALIDA' });
+
+      const seguinte = await renovar(novo);
+      expect(seguinte.statusCode).toBe(401);
+      expect(await prisma.refreshToken.count({ where: { revogadoEm: null } })).toBe(0);
+    });
+
+    it('dentro de 10 s, o token antigo ainda renova (duas abas) sem derrubar a sessão', async () => {
+      const antigo = await entrar();
+      const novo = cookieRefresh(await renovar(antigo)).value;
+
+      expect((await renovar(antigo)).statusCode).toBe(200);
+      expect((await renovar(novo)).statusCode).toBe(200);
+    });
+
+    it('depois do logout, o refresh devolve 401 e o cookie é apagado', async () => {
+      const refresh = await entrar();
+
+      const logout = await app.inject({
+        method: 'POST',
+        url: `/${PREFIXO_API}/auth/logout`,
+        cookies: { fa_refresh: refresh },
+      });
+      expect(logout.statusCode).toBe(204);
+      const apagado = cookieRefresh(logout);
+      expect(apagado.value).toBe('');
+      expect(apagado.expires!.getTime()).toBeLessThan(Date.now());
+
+      expect((await renovar(refresh)).statusCode).toBe(401);
+    });
+
+    it('sem X-FA-CSRF, o refresh é recusado e o token continua valendo', async () => {
+      const refresh = await entrar();
+
+      const semCsrf = await renovar(refresh, false);
+      expect(semCsrf.statusCode).toBe(403);
+      expect(semCsrf.json()).toMatchObject({ codigo: 'CSRF_AUSENTE' });
+
+      expect((await renovar(refresh)).statusCode).toBe(200);
+    });
+
+    it.each([
+      ['sem cookie', undefined],
+      ['com um token que não existe', 'token-inventado'],
+    ])('%s, o refresh devolve 401', async (_caso, refresh) => {
+      const resposta = await renovar(refresh);
+
+      expect(resposta.statusCode).toBe(401);
+      expect(resposta.json()).toMatchObject({ codigo: 'SESSAO_INVALIDA' });
+    });
+
+    it('refresh expirado devolve 401', async () => {
+      const refresh = await entrar();
+      await prisma.refreshToken.updateMany({ data: { expiraEm: new Date(Date.now() - 1000) } });
+
+      expect((await renovar(refresh)).statusCode).toBe(401);
+    });
+
+    it('conta desativada não renova, e a sessão é revogada', async () => {
+      const refresh = await entrar();
+      await prisma.usuario.updateMany({ data: { ativo: false } });
+
+      expect((await renovar(refresh)).statusCode).toBe(401);
+      expect(await prisma.refreshToken.count({ where: { revogadoEm: null } })).toBe(0);
     });
   });
 });

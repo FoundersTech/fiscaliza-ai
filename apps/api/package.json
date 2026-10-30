@@ -29,6 +29,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.5",
     "@fastify/static": "^10.1.7",
     "@nestjs/bullmq": "^12.0.0",
     "@nestjs/common": "^12.0.0",

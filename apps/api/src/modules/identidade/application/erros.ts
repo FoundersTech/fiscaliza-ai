@@ -1,5 +1,14 @@
 import { ErroAplicacao } from '../../../shared/erros/erro-aplicacao.js';
 
+export function erroSessaoInvalida(): ErroAplicacao {
+  return new ErroAplicacao('SESSAO_INVALIDA', 'Sua sessão terminou. Entre de novo.', 401);
+}
+
+/** Pedido de renovação sem o header X-FA-CSRF: pode ter vindo de outro site. */
+export function erroCsrf(): ErroAplicacao {
+  return new ErroAplicacao('CSRF_AUSENTE', 'Requisição recusada.', 403);
+}
+
 export function erroEmailEmUso(): ErroAplicacao {
   return new ErroAplicacao('EMAIL_EM_USO', 'Já existe uma conta com este e-mail.', 409);
 }

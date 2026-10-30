@@ -3,6 +3,7 @@ import type { Papel } from '../domain/papel.js';
 export const HASHER_SENHA = Symbol('HASHER_SENHA');
 export const EMISSOR_TOKEN = Symbol('EMISSOR_TOKEN');
 export const REPOSITORIO_USUARIOS = Symbol('REPOSITORIO_USUARIOS');
+export const REPOSITORIO_SESSOES = Symbol('REPOSITORIO_SESSOES');
 
 export interface HasherSenha {
   gerar(senha: string): Promise<string>;
@@ -19,7 +20,6 @@ export interface DadosToken {
 
 export interface EmissorToken {
   emitir(dados: DadosToken): Promise<string>;
-  /** Devolve os dados de um token válido, ou null se ele for inválido ou estiver expirado. */
   verificar(token: string): Promise<DadosToken | null>;
 }
 
@@ -46,4 +46,37 @@ export interface RepositorioUsuarios {
   buscarPorEmail(email: string): Promise<Usuario | null>;
   buscarPorId(id: string): Promise<Usuario | null>;
   criarCidadao(dados: NovoCidadao): Promise<Usuario>;
+}
+
+/** De onde veio a requisição; fica gravado no refresh token. */
+export interface Origem {
+  ip: string | null;
+  userAgent: string | null;
+}
+
+export interface RefreshGravado {
+  id: string;
+  usuarioId: string;
+  familiaId: string;
+  expiraEm: Date;
+  usadoEm: Date | null;
+  revogadoEm: Date | null;
+}
+
+export interface NovoRefresh extends Origem {
+  usuarioId: string;
+  familiaId: string;
+  tokenHash: string;
+  expiraEm: Date;
+}
+
+export interface RepositorioSessoes {
+  criar(dados: NovoRefresh): Promise<void>;
+  buscarPorHash(tokenHash: string): Promise<RefreshGravado | null>;
+  /**
+   * Marca o token como usado e grava o sucessor, juntos. Devolve false se outra requisição usou o
+   * token primeiro (duas abas renovando ao mesmo tempo).
+   */
+  rotacionar(id: string, sucessor: NovoRefresh, agora: Date): Promise<boolean>;
+  revogarFamilia(familiaId: string, agora: Date): Promise<void>;
 }
