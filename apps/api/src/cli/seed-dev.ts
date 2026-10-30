@@ -1,9 +1,14 @@
 /**
- * Dados de desenvolvimento: carga inicial, 1 usuário por papel e 50 ocorrências.
- * Recusa rodar fora de NODE_ENV=development ou test.
+ * Dados de desenvolvimento: carga inicial, 1 usuário por papel, 50 ocorrências e o bucket de
+ * uploads no S3 local. Recusa rodar fora de NODE_ENV=development ou test.
  *
  * Uso: pnpm db:seed:dev (na raiz do monorepo).
  */
+import {
+  configStorage,
+  criarBucketSeFaltar,
+} from '../modules/midia/infrastructure/storage-r2.adapter.js';
+import { validarAmbiente } from '../shared/config/ambiente.js';
 import { aplicarDadosDev, ErroAmbienteSeedDev } from './seed/dados-dev.js';
 import { executarComPrisma } from './seed/prisma-cli.js';
 
@@ -14,6 +19,10 @@ executarComPrisma(async (prisma) => {
       ? `Dados de desenvolvimento criados: ${resumo.usuarios} usuários e ${resumo.ocorrenciasCriadas} ocorrências.`
       : `Dados de desenvolvimento já existiam: ${resumo.usuarios} usuários conferidos, nenhuma ocorrência nova.`,
   );
+
+  const ambiente = validarAmbiente(process.env);
+  await criarBucketSeFaltar(configStorage(ambiente), ambiente.R2_BUCKET_UPLOADS);
+  console.log(`Bucket ${ambiente.R2_BUCKET_UPLOADS} pronto em ${ambiente.R2_ENDPOINT}.`);
 }).catch((erro: unknown) => {
   console.error(erro instanceof ErroAmbienteSeedDev ? erro.message : erro);
   process.exit(1);

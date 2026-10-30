@@ -24,7 +24,7 @@ Dar aos cidadãos uma ferramenta simples para reportar problemas urbanos e, ao m
 
 ## 🗺️ Roadmap (alto nível)
 
-- [ ] Cadastro e autenticação de usuários (cidadãos)
+- [x] Cadastro e autenticação de usuários (cidadãos)
 - [ ] Envio de notificação (foto + descrição + geolocalização)
 - [ ] Listagem/mapa de notificações por região
 - [ ] Fluxo de atualização de status pela prefeitura (recebido → em andamento → resolvido)
@@ -42,6 +42,8 @@ Dar aos cidadãos uma ferramenta simples para reportar problemas urbanos e, ao m
 | Banco          | PostgreSQL 16 + PostGIS 3, Prisma 7        |
 | Fila e cache   | Redis 7 + BullMQ 5                         |
 | Storage        | Cloudflare R2                              |
+| Mapa           | Google Maps JavaScript API                 |
+| Endereços      | Nominatim (OpenStreetMap)                  |
 | Testes         | Vitest                                     |
 
 Monorepo pnpm, TypeScript 6 estrito, ESLint e Prettier.
@@ -85,9 +87,9 @@ pnpm test
 pnpm build
 ```
 
-### Banco e Redis locais
+### Banco, Redis e storage locais
 
-Precisa do Docker. O `docker-compose.yml` da raiz sobe o PostgreSQL 16 + PostGIS e o Redis 7:
+Precisa do Docker. O `docker-compose.yml` da raiz sobe o PostgreSQL 16 + PostGIS, o Redis 7 e um storage S3 (SeaweedFS, em `http://localhost:9100`) que faz o papel do Cloudflare R2:
 
 ```bash
 pnpm infra:up
@@ -99,19 +101,23 @@ Na primeira vez, copie `apps/api/.env.example` para `apps/api/.env`. Depois, e s
 pnpm db:migrar
 ```
 
-Em seguida, carregue os dados. O `db:seed:dev` aplica a carga inicial (Sorocaba, o órgão e as 4 categorias) e cria 1 usuário de teste por papel (`cidadao@`, `agente@`, `gestor@` e `admin@fiscaliza.test`, todos com a senha `fiscaliza123`) e 50 ocorrências. Ele só roda com `NODE_ENV=development` ou `test`. Em staging e produção, use só `pnpm db:seed`, com a carga inicial. Os dois podem rodar de novo sem duplicar nada:
+Em seguida, carregue os dados. O `db:seed:dev` aplica a carga inicial (Sorocaba, o órgão e as 4 categorias) e cria 1 usuário de teste por papel (`cidadao@`, `agente@`, `gestor@` e `admin@fiscaliza.test`, todos com a senha `fiscaliza123`) e 50 ocorrências, além do bucket `fa-uploads` no storage local. Ele só roda com `NODE_ENV=development` ou `test`. Em staging e produção, use só `pnpm db:seed`, com a carga inicial. Os dois podem rodar de novo sem duplicar nada:
 
 ```bash
 pnpm db:seed:dev
 ```
 
-Com o banco e o Redis de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução:
+Com o banco, o Redis e o storage de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução, e um bucket à parte (`fa-uploads-teste`):
 
 ```bash
 pnpm test:int
 ```
 
-Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://localhost:3000/api/v1`, Swagger em `http://localhost:3000/docs`) e `pnpm --filter @fiscaliza/web dev` (PWA). Para desligar o banco e o Redis, use `pnpm infra:down`.
+Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://localhost:3000/api/v1`, Swagger em `http://localhost:3000/docs`) e `pnpm --filter @fiscaliza/web dev` (PWA). Para desligar tudo, use `pnpm infra:down`.
+
+### Fotos em desenvolvimento
+
+O PWA envia cada foto direto ao storage, sem passar pela API: `POST /api/v1/uploads/intencao` devolve uma URL de PUT válida por 5 minutos, assinada para o tipo `image/jpeg` e para o tamanho exato informado (até 300 KB). Um PUT com outro tipo, outro tamanho ou depois do prazo é recusado com 403. Em desenvolvimento e nos testes, sem as variáveis `R2_*` no `.env`, a API usa o storage local do `docker-compose.yml`, com as credenciais de `deploy/local/s3.json`. Staging usa o R2 da Cloudflare.
 
 ### E-mails em desenvolvimento
 
@@ -122,6 +128,12 @@ pnpm email:teste --para voce@exemplo.com
 ```
 
 O argumento vai direto depois do nome do script, sem `--`: com ele, o comando recusa o `--para`.
+
+### Endereços e mapa em desenvolvimento
+
+O `GET /api/v1/geo/reverso` busca o endereço no servidor público do Nominatim, então precisa de internet também em desenvolvimento. A API faz no máximo uma consulta a cada 1,1 s, como pede a política de uso do servidor, e guarda cada endereço no Redis por 30 dias; sem Redis, ou se o Nominatim demorar mais de 2 s, o endereço vem `null`. Para usar outro servidor, mude `NOMINATIM_URL` no `.env`.
+
+O Map ID do Google Maps que o PWA recebe em `GET /api/v1/config/publica` vem de `GOOGLE_MAPS_MAP_ID`. Sem essa variável, vale o `DEMO_MAP_ID`, o Map ID de testes do Google.
 
 ### Administrador da plataforma
 
@@ -176,3 +188,5 @@ A API roda numa VM ARM do Oracle Cloud com o Docker Compose de `deploy/staging` 
 ## 📄 Licença
 
 MIT License
+
+Os endereços vêm do OpenStreetMap: © colaboradores do OpenStreetMap, dados sob a licença [ODbL](https://opendatacommons.org/licenses/odbl/).

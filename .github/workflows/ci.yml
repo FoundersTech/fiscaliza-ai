@@ -69,6 +69,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Os services do Actions não aceitam o comando do SeaweedFS; ele sobe pelo Compose da raiz.
+      - run: docker compose up -d --wait s3
       - run: pnpm test:int
 
   contratos:

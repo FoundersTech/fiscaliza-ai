@@ -180,6 +180,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/uploads/intencao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UploadsController_intencao"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -337,6 +353,30 @@ export interface components {
             endereco: string | null;
             /** @description Falso fora de um município atendido: o envio fica bloqueado */
             dentro_da_area: boolean;
+        };
+        IntencaoUploadDto: {
+            /**
+             * Format: uuid
+             * @description Id da ocorrência, gerado no aparelho
+             */
+            ocorrencia_id: string;
+            /**
+             * @description Posição da foto na ocorrência
+             * @enum {number}
+             */
+            ordem: 1 | 2;
+            /** @example image/jpeg */
+            content_type: string;
+            /** @description Tamanho exato do arquivo: o PUT com outro tamanho é recusado */
+            bytes: number;
+        };
+        IntencaoUploadResposta: {
+            /** @description PUT com os headers Content-Type e Content-Length do pedido */
+            upload_url: string;
+            /** @example ocorrencias/0b9f3c2e-5d1a-4f6b-9c8e-7a6d5c4b3a21/1-….jpg */
+            upload_key: string;
+            /** Format: date-time */
+            expira_em: string;
         };
     };
     responses: never;
@@ -709,6 +749,51 @@ export interface operations {
                 content?: never;
             };
             /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UploadsController_intencao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntencaoUploadDto"];
+            };
+        };
+        responses: {
+            /** @description URL de envio da foto, válida por 5 minutos */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntencaoUploadResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description FOTO_INVALIDA ou VALIDACAO */
             422: {
                 headers: {
                     [name: string]: unknown;

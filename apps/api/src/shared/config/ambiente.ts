@@ -9,6 +9,13 @@ const booleano = z.enum(['true', 'false']).transform((valor) => valor === 'true'
 /** Só para desenvolvimento e testes; em produção, JWT_SECRET é obrigatório. */
 const JWT_SECRET_DESENVOLVIMENTO = 'segredo-de-desenvolvimento-nao-use-em-producao-0001';
 
+/** O storage S3 do docker-compose.yml da raiz (credenciais em deploy/local/s3.json). */
+const STORAGE_LOCAL = {
+  endpoint: 'http://localhost:9100',
+  chave: 'fiscaliza',
+  segredo: 'fiscaliza-local',
+} as const;
+
 const esquemaAmbiente = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -41,6 +48,12 @@ const esquemaAmbiente = z
     NOMINATIM_URL: z.url({ protocol: /^https?$/ }).default('https://nominatim.openstreetmap.org'),
     // Map ID do Google Maps que o PWA recebe no /config/publica. DEMO_MAP_ID serve para testes.
     GOOGLE_MAPS_MAP_ID: z.string().min(1).default('DEMO_MAP_ID'),
+    // Storage das fotos: o R2 da conta R2_ACCOUNT_ID. Sem ela nem R2_ENDPOINT, o S3 local.
+    R2_ACCOUNT_ID: z.string().min(1).optional(),
+    R2_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
+    R2_ACCESS_KEY_ID: z.string().min(1).optional(),
+    R2_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+    R2_BUCKET_UPLOADS: z.string().min(1).default('fa-uploads'),
   })
   .superRefine((ambiente, contexto) => {
     if (ambiente.NODE_ENV === 'production' && !ambiente.JWT_SECRET) {
@@ -64,6 +77,20 @@ const esquemaAmbiente = z
         message: 'use resend em produção; com arquivo, os e-mails não chegam a ninguém',
       });
     }
+    if (ambiente.NODE_ENV === 'production') {
+      if (!ambiente.R2_ACCOUNT_ID && !ambiente.R2_ENDPOINT) {
+        contexto.addIssue({
+          code: 'custom',
+          path: ['R2_ACCOUNT_ID'],
+          message: 'obrigatória em produção (ou R2_ENDPOINT)',
+        });
+      }
+      for (const campo of ['R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY'] as const) {
+        if (!ambiente[campo]) {
+          contexto.addIssue({ code: 'custom', path: [campo], message: 'obrigatória em produção' });
+        }
+      }
+    }
   })
   .transform((ambiente) => ({
     ...ambiente,
@@ -71,6 +98,14 @@ const esquemaAmbiente = z
     NOMINATIM_URL: ambiente.NOMINATIM_URL.replace(/\/+$/, ''),
     JWT_SECRET: ambiente.JWT_SECRET ?? JWT_SECRET_DESENVOLVIMENTO,
     SWAGGER_HABILITADO: ambiente.SWAGGER_HABILITADO ?? ambiente.NODE_ENV !== 'production',
+    R2_ENDPOINT: (
+      ambiente.R2_ENDPOINT ??
+      (ambiente.R2_ACCOUNT_ID
+        ? `https://${ambiente.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+        : STORAGE_LOCAL.endpoint)
+    ).replace(/\/+$/, ''),
+    R2_ACCESS_KEY_ID: ambiente.R2_ACCESS_KEY_ID ?? STORAGE_LOCAL.chave,
+    R2_SECRET_ACCESS_KEY: ambiente.R2_SECRET_ACCESS_KEY ?? STORAGE_LOCAL.segredo,
   }));
 
 export type Ambiente = z.output<typeof esquemaAmbiente>;
