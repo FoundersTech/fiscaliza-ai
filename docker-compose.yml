@@ -1,4 +1,4 @@
-# Ambiente local de desenvolvimento: PostgreSQL 16 + PostGIS 3 e Redis 7.
+# Ambiente local de desenvolvimento: PostgreSQL 16 + PostGIS 3, Redis 7 e um storage S3.
 # As credenciais servem só para a máquina local; staging e produção têm o Compose próprio.
 name: fiscaliza-ai
 
@@ -29,5 +29,22 @@ services:
       timeout: 3s
       retries: 10
 
+  # Faz o papel do Cloudflare R2: a mesma API S3, com as URLs pré-assinadas conferidas do
+  # mesmo jeito. A porta 9000 fica livre para o PWA.
+  s3:
+    image: chrislusf/seaweedfs:4.50
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      - '9100:8333'
+    volumes:
+      - ./deploy/local/s3.json:/etc/seaweedfs/s3.json:ro
+      - s3-dados:/data
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8333/healthz']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   postgres-dados:
+  s3-dados:

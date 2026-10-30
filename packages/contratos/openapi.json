@@ -365,6 +365,51 @@
           "territorio"
         ]
       }
+    },
+    "/api/v1/uploads/intencao": {
+      "post": {
+        "operationId": "UploadsController_intencao",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntencaoUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "URL de envio da foto, válida por 5 minutos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntencaoUploadResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "FOTO_INVALIDA ou VALIDACAO"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "midia"
+        ]
+      }
     }
   },
   "info": {
@@ -801,6 +846,61 @@
         "required": [
           "endereco",
           "dentro_da_area"
+        ]
+      },
+      "IntencaoUploadDto": {
+        "type": "object",
+        "properties": {
+          "ocorrencia_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Id da ocorrência, gerado no aparelho"
+          },
+          "ordem": {
+            "type": "number",
+            "enum": [
+              1,
+              2
+            ],
+            "description": "Posição da foto na ocorrência"
+          },
+          "content_type": {
+            "type": "string",
+            "example": "image/jpeg"
+          },
+          "bytes": {
+            "type": "number",
+            "maximum": 307200,
+            "description": "Tamanho exato do arquivo: o PUT com outro tamanho é recusado"
+          }
+        },
+        "required": [
+          "ocorrencia_id",
+          "ordem",
+          "content_type",
+          "bytes"
+        ]
+      },
+      "IntencaoUploadResposta": {
+        "type": "object",
+        "properties": {
+          "upload_url": {
+            "type": "string",
+            "description": "PUT com os headers Content-Type e Content-Length do pedido"
+          },
+          "upload_key": {
+            "type": "string",
+            "example": "ocorrencias/0b9f3c2e-5d1a-4f6b-9c8e-7a6d5c4b3a21/1-….jpg"
+          },
+          "expira_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "upload_url",
+          "upload_key",
+          "expira_em"
         ]
       }
     }

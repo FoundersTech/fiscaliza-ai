@@ -13,7 +13,38 @@ const PRODUCAO = {
   EMAIL_TRANSPORTE: 'resend',
   RESEND_API_KEY: 're_teste',
   JWT_SECRET: 'a'.repeat(64),
+  R2_ACCOUNT_ID: 'f'.repeat(32),
+  R2_ACCESS_KEY_ID: 'chave-r2',
+  R2_SECRET_ACCESS_KEY: 'segredo-r2',
 };
+
+describe('validarAmbiente: storage', () => {
+  it('fora de produção, sem variáveis, usa o S3 local do docker-compose', () => {
+    expect(validarAmbiente(OBRIGATORIAS)).toMatchObject({
+      R2_ENDPOINT: 'http://localhost:9100',
+      R2_ACCESS_KEY_ID: 'fiscaliza',
+      R2_SECRET_ACCESS_KEY: 'fiscaliza-local',
+      R2_BUCKET_UPLOADS: 'fa-uploads',
+    });
+  });
+
+  it('com R2_ACCOUNT_ID, o endpoint é o da conta no R2', () => {
+    expect(validarAmbiente({ ...OBRIGATORIAS, ...PRODUCAO }).R2_ENDPOINT).toBe(
+      `https://${'f'.repeat(32)}.r2.cloudflarestorage.com`,
+    );
+  });
+
+  it('exige a conta e as chaves do R2 em produção', () => {
+    expect(() =>
+      validarAmbiente({
+        ...OBRIGATORIAS,
+        ...PRODUCAO,
+        R2_ACCOUNT_ID: undefined,
+        R2_SECRET_ACCESS_KEY: undefined,
+      }),
+    ).toThrow(/R2_ACCOUNT_ID: obrigatória em produção[\s\S]*R2_SECRET_ACCESS_KEY: obrigatória/);
+  });
+});
 
 describe('validarAmbiente: autenticação', () => {
   it('exige JWT_SECRET em produção', () => {
