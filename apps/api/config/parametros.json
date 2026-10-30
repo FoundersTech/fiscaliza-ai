@@ -3,7 +3,7 @@
     "janela_dias": 90,
     "pesos": { "resolucao": 0.5, "prazo": 0.3, "satisfacao": 0.2 },
     "suavizacao_k": 10,
-    "prior": 0.5,
+    "prior": 0.7,
     "faixas": [
       { "min": 9.0, "rotulo": "Ótimo" },
       { "min": 7.5, "rotulo": "Bom" },
