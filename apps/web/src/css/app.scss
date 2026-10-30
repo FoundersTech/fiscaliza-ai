@@ -1,1 +1,131 @@
-// Estilos globais do app.
+// Estilos globais do app. Sistema visual do protótipo: 60% base, 30% estrutura, 10% azul.
+// As cores mudam no tema escuro (body.body--dark, do Quasar); os componentes só usam os tokens.
+
+:root {
+  // Base (60%)
+  --fa-fundo: #f8fafc;
+  --fa-superficie: #ffffff;
+  --fa-superficie-2: #f1f5f9;
+  // Estrutura (30%)
+  --fa-borda: #e2e8f0;
+  --fa-borda-forte: #cbd5e1;
+  --fa-texto: #0f172a;
+  --fa-texto-2: #475569;
+  --fa-texto-3: #64748b;
+  // Destaque (10%)
+  --fa-azul: #2563eb;
+  --fa-azul-suave: #dbeafe;
+
+  // Status das ocorrências
+  --fa-recebido-fundo: #fef3c7;
+  --fa-recebido-texto: #92400e;
+  --fa-andamento-fundo: #dbeafe;
+  --fa-andamento-texto: #1d4ed8;
+  --fa-resolvido-fundo: #dcfce7;
+  --fa-resolvido-texto: #166534;
+  --fa-urgente: #dc2626;
+
+  // Raios e espaçamentos (base de 4 px)
+  --fa-raio-sm: 8px;
+  --fa-raio: 12px;
+  --fa-raio-lg: 16px;
+  --fa-raio-pilula: 999px;
+  --fa-pagina: 16px;
+  --fa-card: 20px;
+  --fa-secao: 32px;
+
+  --fa-sombra: 0 1px 2px rgb(15 23 42 / 0.05), 0 2px 8px rgb(15 23 42 / 0.06);
+  --fa-fonte: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+body.body--dark {
+  --fa-fundo: #0b1120;
+  --fa-superficie: #111827;
+  --fa-superficie-2: #1e293b;
+  --fa-borda: #1e293b;
+  --fa-borda-forte: #334155;
+  --fa-texto: #f1f5f9;
+  --fa-texto-2: #cbd5e1;
+  --fa-texto-3: #94a3b8;
+  --fa-azul: #3b82f6;
+  --fa-azul-suave: rgb(59 130 246 / 0.16);
+
+  --fa-recebido-fundo: rgb(245 158 11 / 0.18);
+  --fa-recebido-texto: #fcd34d;
+  --fa-andamento-fundo: rgb(59 130 246 / 0.2);
+  --fa-andamento-texto: #93c5fd;
+  --fa-resolvido-fundo: rgb(34 197 94 / 0.18);
+  --fa-resolvido-texto: #86efac;
+  --fa-urgente: #ef4444;
+
+  --fa-sombra: 0 1px 2px rgb(0 0 0 / 0.4);
+  --q-primary: #3b82f6;
+}
+
+body {
+  font-family: var(--fa-fonte);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fa-texto);
+  background: var(--fa-fundo);
+  -webkit-font-smoothing: antialiased;
+}
+
+// Tipografia: display 32, título 24, corpo 14, legenda 12.
+.fa-display {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.fa-titulo {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.fa-legenda {
+  font-size: 12px;
+  color: var(--fa-texto-3);
+}
+
+.fa-sobrelinha {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fa-texto-3);
+}
+
+.fa-card {
+  background: var(--fa-superficie);
+  border: 1px solid var(--fa-borda);
+  border-radius: var(--fa-raio-lg);
+  box-shadow: var(--fa-sombra);
+  padding: var(--fa-card);
+}
+
+// Conteúdo das telas: margem de celular e largura de leitura no computador.
+.fa-conteudo {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 var(--fa-pagina) var(--fa-secao);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fa-pagina);
+}
+
+// Botões redondos do cabeçalho (tema, alertas).
+.fa-botao-redondo {
+  background: var(--fa-superficie-2);
+  color: var(--fa-texto-2);
+}
+
+:focus-visible {
+  outline: 2px solid var(--fa-azul);
+  outline-offset: 2px;
+}

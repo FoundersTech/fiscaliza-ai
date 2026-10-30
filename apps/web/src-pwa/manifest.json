@@ -1,9 +1,15 @@
 {
+  "name": "Fiscaliza Aí!",
+  "short_name": "Fiscaliza Aí!",
+  "description": "Viu um problema? Fiscaliza Aí! Registre problemas urbanos de Sorocaba e acompanhe a resolução.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "scope": "/",
   "orientation": "portrait",
-  "background_color": "#ffffff",
-  "theme_color": "#027be3",
-  "display_override": ["fullscreen", "minimal-ui"],
   "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "categories": ["government", "utilities"],
   "icons": [
     {
       "src": "icons/icon-128x128.png",
@@ -35,12 +41,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "icons/icon-monochrome-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "monochrome"
     }
   ]
 }

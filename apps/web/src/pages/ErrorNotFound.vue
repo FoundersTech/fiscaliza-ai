@@ -1,9 +1,24 @@
+<script setup lang="ts">
+import EstadoVazio from '@/components/EstadoVazio.vue';
+import TelaCentral from '@/components/TelaCentral.vue';
+</script>
+
 <template>
-  <q-page class="flex flex-center text-center q-pa-md">
-    <div>
-      <div class="text-h2 text-weight-bold">404</div>
-      <p class="text-h6 text-grey-7">Página não encontrada.</p>
-      <q-btn color="primary" unelevated no-caps to="/" label="Voltar ao início" />
-    </div>
-  </q-page>
+  <TelaCentral>
+    <EstadoVazio
+      icone="sym_o_explore_off"
+      titulo="Página não encontrada"
+      texto="O endereço pode ter mudado ou estar incompleto."
+    >
+      <q-btn unelevated no-caps color="primary" to="/" label="Voltar ao início" class="botao" />
+    </EstadoVazio>
+  </TelaCentral>
 </template>
+
+<style scoped lang="scss">
+.botao {
+  margin-top: 12px;
+  border-radius: var(--fa-raio-sm);
+  font-weight: 600;
+}
+</style>

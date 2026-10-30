@@ -32,7 +32,7 @@ export default defineConfigWithVueTs(
       'prefer-promise-reject-errors': 'off',
       'vue/v-slot-style': ['warn', 'shorthand'],
 
-      // Design, Segurança (XSS): conteúdo do usuário nunca é renderizado como HTML.
+      // Segurança (XSS): conteúdo do usuário nunca é renderizado como HTML.
       'vue/no-v-html': 'error',
 
       'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',

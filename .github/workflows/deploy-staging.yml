@@ -176,6 +176,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --filter @fiscaliza/web
       - run: pnpm --filter @fiscaliza/web build
+        env:
+          API_URL: https://api-staging.fiscalizaai.app
       - name: Publicar no Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
