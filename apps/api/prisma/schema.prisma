@@ -91,6 +91,8 @@ model Municipio {
   @@map("municipio")
 }
 
+/// Vazia no MVP: nenhuma fonte tem os limites dos bairros de Sorocaba (design.md, D-06).
+/// Fica no schema para receber a malha oficial, se a prefeitura fornecê-la.
 model Bairro {
   id          Int                                         @id @default(autoincrement())
   municipioId Int                                         @map("municipio_id")
@@ -276,7 +278,7 @@ model Ocorrencia {
   categoriaId   Int                                    @map("categoria_id") @db.SmallInt
   municipioId   Int                                    @map("municipio_id")
   orgaoId       Int                                    @map("orgao_id")
-  /// Nulo quando nenhum polígono de bairro contém o ponto.
+  /// Sempre nulo no MVP: a malha de bairros ficou de fora (design.md, D-06).
   bairroId      Int?                                   @map("bairro_id")
   descricao     String
   atributos     Json                                   @default("{}")

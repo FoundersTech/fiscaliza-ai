@@ -5,6 +5,7 @@ import {
   StatusOcorrencia,
   type PrismaClient,
 } from '../../generated/prisma/client.js';
+import { Protocolo } from '../../modules/ocorrencias/domain/protocolo.js';
 import { aplicarCargaInicial, CATEGORIAS, SOROCABA } from './carga-inicial.js';
 
 /**
@@ -225,7 +226,7 @@ async function criarOcorrencia(prisma: PrismaClient, dados: DadosOcorrencia): Pr
       ON CONFLICT (municipio_id, ano)
       DO UPDATE SET ultimo = protocolo_sequencia.ultimo + 1
       RETURNING ultimo`;
-    const protocolo = `FA-${ano}-${SOROCABA.sigla}-${String(sequencia!.ultimo).padStart(6, '0')}`;
+    const protocolo = Protocolo.formatar(ano, SOROCABA.sigla, sequencia!.ultimo);
 
     const id = randomUUID();
     await tx.$executeRaw`
