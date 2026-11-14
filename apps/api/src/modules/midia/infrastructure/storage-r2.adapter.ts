@@ -115,6 +115,10 @@ export class StorageR2Adapter implements StoragePort, OnModuleDestroy {
     );
   }
 
+  async despublicar(chave: string): Promise<void> {
+    await this.s3.send(new DeleteObjectCommand({ Bucket: this.config.bucketFotos, Key: chave }));
+  }
+
   onModuleDestroy(): void {
     this.s3.destroy();
   }

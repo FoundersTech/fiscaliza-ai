@@ -196,6 +196,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/fotos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminFotosController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/fotos/{id}/rejeicao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AdminFotosController_rejeitar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ocorrencias": {
         parameters: {
             query?: never;
@@ -242,6 +274,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/categorias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CategoriasController_listar"];
+        put?: never;
+        post: operations["CategoriasController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/categorias/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CategoriasController_editar"];
         trace?: never;
     };
 }
@@ -426,6 +490,34 @@ export interface components {
             /** Format: date-time */
             expira_em: string;
         };
+        FotoRevisaoResposta: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ocorrencia_id: string;
+            /** @example FA-2026-SOR-000123 */
+            protocolo: string;
+            /** @enum {number} */
+            ordem: 1 | 2;
+            /** @enum {string} */
+            moderacao: "PENDENTE" | "APROVADA" | "REJEITADA";
+            /** @description Só da foto aprovada */
+            url: string | null;
+            /** @description Só da foto aprovada */
+            miniatura_url: string | null;
+            motivo_rejeicao: string | null;
+            /** Format: date-time */
+            criada_em: string;
+        };
+        RevisaoFotosResposta: {
+            itens: components["schemas"]["FotoRevisaoResposta"][];
+            /** @description Passe em ?cursor= para a página seguinte; null na última */
+            proximo_cursor: string | null;
+        };
+        RejeicaoFotoDto: {
+            /** @example Mostra o rosto de uma pessoa */
+            motivo: string;
+        };
         LocalDto: {
             /** @example -23.5015 */
             lat: number;
@@ -577,6 +669,65 @@ export interface components {
             pontos: components["schemas"]["PontoMapaResposta"][];
             /** @description Havia mais pontos na área: o PWA pede para aproximar o mapa */
             truncado: boolean;
+        };
+        CategoriaAdminResposta: {
+            id: number;
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
+            nome: string;
+            /** @example lightbulb */
+            icone: string;
+            /** @example 15 */
+            sla_dias: number;
+            schema_atributos: components["schemas"]["CampoAtributoResposta"][];
+            ativa: boolean;
+        };
+        NovaCategoriaDto: {
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
+            nome: string;
+            /**
+             * @description Nome de um ícone do Material Icons
+             * @example lightbulb
+             */
+            icone: string;
+            /**
+             * @description Prazo em dias
+             * @example 15
+             */
+            sla_dias: number;
+            /** @description Campos extras do registro. Pode ser vazio. */
+            schema_atributos: components["schemas"]["CampoAtributoResposta"][];
+            /**
+             * @description false tira a categoria do registro
+             * @default true
+             */
+            ativa: boolean;
+        };
+        EdicaoCategoriaDto: {
+            /** @example iluminacao */
+            slug?: string;
+            /** @example Iluminação */
+            nome?: string;
+            /**
+             * @description Nome de um ícone do Material Icons
+             * @example lightbulb
+             */
+            icone?: string;
+            /**
+             * @description Prazo em dias
+             * @example 15
+             */
+            sla_dias?: number;
+            /** @description Campos extras do registro. Pode ser vazio. */
+            schema_atributos?: components["schemas"]["CampoAtributoResposta"][];
+            /**
+             * @description false tira a categoria do registro
+             * @default true
+             */
+            ativa: boolean;
         };
     };
     responses: never;
@@ -1002,6 +1153,111 @@ export interface operations {
             };
         };
     };
+    AdminFotosController_listar: {
+        parameters: {
+            query?: {
+                moderacao?: "PENDENTE" | "APROVADA" | "REJEITADA";
+                /** @description O proximo_cursor da página anterior */
+                cursor?: string;
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Das mais recentes às mais antigas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisaoFotosResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFotosController_rejeitar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejeicaoFotoDto"];
+            };
+        };
+        responses: {
+            /** @description A foto some das telas públicas na hora, e ela e a miniatura são apagadas do bucket público. Repetir o pedido não muda o motivo. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description FOTO_EM_ANALISE: a foto ainda não foi processada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ConsultasController_feed: {
         parameters: {
             query?: {
@@ -1205,6 +1461,152 @@ export interface operations {
             };
             /** @description Mais de 120 tentativas em 60 s. */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriasController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Todas as categorias, ativas e inativas, em ordem de nome */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriaAdminResposta"][];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriasController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovaCategoriaDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriaAdminResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description SLUG_EM_USO */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriasController_editar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EdicaoCategoriaDto"];
+            };
+        };
+        responses: {
+            /** @description Categoria alterada. Inativa, ela sai do registro de novas ocorrências; as que já existem continuam com ela. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriaAdminResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description SLUG_EM_USO */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados) */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

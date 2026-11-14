@@ -411,6 +411,129 @@
         ]
       }
     },
+    "/api/v1/admin/fotos": {
+      "get": {
+        "operationId": "AdminFotosController_listar",
+        "parameters": [
+          {
+            "name": "moderacao",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "APROVADA",
+              "type": "string",
+              "enum": [
+                "PENDENTE",
+                "APROVADA",
+                "REJEITADA"
+              ]
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "O proximo_cursor da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Das mais recentes às mais antigas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisaoFotosResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
+    "/api/v1/admin/fotos/{id}/rejeicao": {
+      "post": {
+        "operationId": "AdminFotosController_rejeitar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejeicaoFotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "A foto some das telas públicas na hora, e ela e a miniatura são apagadas do bucket público. Repetir o pedido não muda o motivo."
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADA"
+          },
+          "409": {
+            "description": "FOTO_EM_ANALISE: a foto ainda não foi processada"
+          },
+          "422": {
+            "description": "VALIDACAO"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
     "/api/v1/ocorrencias": {
       "post": {
         "operationId": "OcorrenciasController_registrar",
@@ -667,6 +790,147 @@
         },
         "tags": [
           "ocorrencias"
+        ]
+      }
+    },
+    "/api/v1/admin/categorias": {
+      "get": {
+        "operationId": "CategoriasController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Todas as categorias, ativas e inativas, em ordem de nome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoriaAdminResposta"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      },
+      "post": {
+        "operationId": "CategoriasController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NovaCategoriaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriaAdminResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "409": {
+            "description": "SLUG_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
+    "/api/v1/admin/categorias/{id}": {
+      "patch": {
+        "operationId": "CategoriasController_editar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdicaoCategoriaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Categoria alterada. Inativa, ela sai do registro de novas ocorrências; as que já existem continuam com ela.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriaAdminResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADA"
+          },
+          "409": {
+            "description": "SLUG_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
         ]
       }
     }
@@ -1162,6 +1426,101 @@
           "expira_em"
         ]
       },
+      "FotoRevisaoResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ocorrencia_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "protocolo": {
+            "type": "string",
+            "example": "FA-2026-SOR-000123"
+          },
+          "ordem": {
+            "type": "number",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "moderacao": {
+            "type": "string",
+            "enum": [
+              "PENDENTE",
+              "APROVADA",
+              "REJEITADA"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Só da foto aprovada"
+          },
+          "miniatura_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Só da foto aprovada"
+          },
+          "motivo_rejeicao": {
+            "type": "string",
+            "nullable": true
+          },
+          "criada_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "ocorrencia_id",
+          "protocolo",
+          "ordem",
+          "moderacao",
+          "url",
+          "miniatura_url",
+          "motivo_rejeicao",
+          "criada_em"
+        ]
+      },
+      "RevisaoFotosResposta": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FotoRevisaoResposta"
+            }
+          },
+          "proximo_cursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Passe em ?cursor= para a página seguinte; null na última"
+          }
+        },
+        "required": [
+          "itens",
+          "proximo_cursor"
+        ]
+      },
+      "RejeicaoFotoDto": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string",
+            "example": "Mostra o rosto de uma pessoa",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "motivo"
+        ]
+      },
       "LocalDto": {
         "type": "object",
         "properties": {
@@ -1568,6 +1927,135 @@
           "pontos",
           "truncado"
         ]
+      },
+      "CategoriaAdminResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "slug": {
+            "type": "string",
+            "example": "iluminacao"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação"
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb"
+          },
+          "sla_dias": {
+            "type": "number",
+            "example": 15
+          },
+          "schema_atributos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAtributoResposta"
+            }
+          },
+          "ativa": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "icone",
+          "sla_dias",
+          "schema_atributos",
+          "ativa"
+        ]
+      },
+      "NovaCategoriaDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "iluminacao",
+            "pattern": "^[a-z0-9-]{2,40}$"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb",
+            "description": "Nome de um ícone do Material Icons"
+          },
+          "sla_dias": {
+            "type": "number",
+            "example": 15,
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Prazo em dias"
+          },
+          "schema_atributos": {
+            "description": "Campos extras do registro. Pode ser vazio.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAtributoResposta"
+            }
+          },
+          "ativa": {
+            "type": "boolean",
+            "default": true,
+            "description": "false tira a categoria do registro"
+          }
+        },
+        "required": [
+          "slug",
+          "nome",
+          "icone",
+          "sla_dias",
+          "schema_atributos"
+        ]
+      },
+      "EdicaoCategoriaDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "iluminacao",
+            "pattern": "^[a-z0-9-]{2,40}$"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb",
+            "description": "Nome de um ícone do Material Icons"
+          },
+          "sla_dias": {
+            "type": "number",
+            "example": 15,
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Prazo em dias"
+          },
+          "schema_atributos": {
+            "description": "Campos extras do registro. Pode ser vazio.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAtributoResposta"
+            }
+          },
+          "ativa": {
+            "type": "boolean",
+            "default": true,
+            "description": "false tira a categoria do registro"
+          }
+        }
       }
     }
   }
