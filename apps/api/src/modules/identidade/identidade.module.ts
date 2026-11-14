@@ -5,6 +5,7 @@ import { NotificacoesModule } from '../notificacoes/notificacoes.module.js';
 import { Cadastrar } from './application/cadastrar.js';
 import { CriarAdminPlataforma } from './application/criar-admin.js';
 import { Entrar } from './application/entrar.js';
+import { LimparTokensExpirados } from './application/limpar-tokens-expirados.js';
 import { ObterPerfil } from './application/obter-perfil.js';
 import { AceitarPolitica, ConferirAcesso } from './application/politica.js';
 import {
@@ -44,6 +45,7 @@ import { GuardAutenticacao } from './presentation/autenticacao.js';
     AceitarPolitica,
     ConferirAcesso,
     CriarAdminPlataforma,
+    LimparTokensExpirados,
     GuardAutenticacao,
     { provide: HASHER_SENHA, useClass: HasherArgon2 },
     { provide: REPOSITORIO_USUARIOS, useClass: RepositorioUsuariosPrisma },
@@ -55,6 +57,6 @@ import { GuardAutenticacao } from './presentation/autenticacao.js';
       useFactory: (ambiente: Ambiente) => new EmissorJwt(ambiente.JWT_SECRET),
     },
   ],
-  exports: [EMISSOR_TOKEN, ConferirAcesso, GuardAutenticacao],
+  exports: [EMISSOR_TOKEN, ConferirAcesso, GuardAutenticacao, LimparTokensExpirados],
 })
 export class IdentidadeModule {}

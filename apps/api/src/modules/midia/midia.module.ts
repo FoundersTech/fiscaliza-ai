@@ -5,6 +5,7 @@ import { AMBIENTE, type Ambiente } from '../../shared/config/ambiente.js';
 import { PARAMETROS, type Parametros } from '../../shared/config/parametros.js';
 import { ConferirUploads, FILA_MIDIA, FilaFotos } from './application/fotos-enviadas.js';
 import { CriarIntencaoUpload } from './application/intencao-upload.js';
+import { LimparUploadsOrfaos } from './application/limpar-uploads-orfaos.js';
 import {
   MODERACAO_PORT,
   PROCESSADOR_IMAGEM,
@@ -30,6 +31,7 @@ import { UploadsController } from './presentation/uploads.controller.js';
     FilaFotos,
     ProcessarFoto,
     ReconciliarFotos,
+    LimparUploadsOrfaos,
     FotoProcessor,
     {
       provide: STORAGE_PORT,
@@ -44,6 +46,6 @@ import { UploadsController } from './presentation/uploads.controller.js';
     },
     { provide: REPOSITORIO_FOTOS, useClass: RepositorioFotosPrisma },
   ],
-  exports: [ConferirUploads, FilaFotos, ReconciliarFotos],
+  exports: [ConferirUploads, FilaFotos, ReconciliarFotos, LimparUploadsOrfaos],
 })
 export class MidiaModule {}

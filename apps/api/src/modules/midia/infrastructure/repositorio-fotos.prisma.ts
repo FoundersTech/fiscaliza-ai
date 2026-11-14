@@ -42,4 +42,13 @@ export class RepositorioFotosPrisma implements RepositorioFotos {
     });
     return fotos.map((foto) => foto.id);
   }
+
+  async uploadsEmUso(chaves: readonly string[]): Promise<Set<string>> {
+    if (!chaves.length) return new Set();
+    const fotos = await this.prisma.ocorrenciaFoto.findMany({
+      where: { uploadKey: { in: [...chaves] } },
+      select: { uploadKey: true },
+    });
+    return new Set(fotos.flatMap((foto) => (foto.uploadKey ? [foto.uploadKey] : [])));
+  }
 }

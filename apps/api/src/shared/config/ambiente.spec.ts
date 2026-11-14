@@ -25,6 +25,7 @@ describe('validarAmbiente: storage', () => {
       R2_ACCESS_KEY_ID: 'fiscaliza',
       R2_SECRET_ACCESS_KEY: 'fiscaliza-local',
       R2_BUCKET_UPLOADS: 'fa-uploads',
+      R2_BUCKET_BACKUP: 'fa-backup',
     });
   });
 

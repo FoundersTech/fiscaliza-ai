@@ -23,6 +23,10 @@ RUN pnpm --filter @fiscaliza/api build
 RUN pnpm --filter @fiscaliza/api deploy --prod /app
 
 FROM base AS runtime
+# pg_dump e pg_restore do backup diário. Precisam ser da mesma versão do PostgreSQL do Compose
+# (16): o Debian bookworm só traz o cliente 15, que se recusa a copiar um servidor 16. O pacote
+# vem do repositório oficial do PostgreSQL, configurado pelo script do postgresql-common.
+RUN apt-get update   && apt-get install -y --no-install-recommends postgresql-common   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y   && apt-get install -y --no-install-recommends postgresql-client-16   && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /app ./

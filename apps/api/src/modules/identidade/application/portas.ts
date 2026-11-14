@@ -90,6 +90,8 @@ export interface RepositorioSessoes {
   rotacionar(id: string, sucessor: NovoRefresh, agora: Date): Promise<boolean>;
   revogarFamilia(familiaId: string, agora: Date): Promise<void>;
   revogarDoUsuario(usuarioId: string, agora: Date): Promise<void>;
+  /** Apaga os tokens que expiraram antes de `antesDe`, com o IP e o user-agent. Devolve quantos. */
+  apagarExpiradosAntes(antesDe: Date): Promise<number>;
 }
 
 export type TipoTokenAcesso = 'REDEFINIR_SENHA' | 'CONVITE';
@@ -116,4 +118,6 @@ export interface RepositorioTokensAcesso {
    * usuário, juntos. Devolve false se outra requisição usou o token primeiro.
    */
   definirSenha(token: TokenAcessoGravado, senhaHash: string, agora: Date): Promise<boolean>;
+  /** Apaga os links que expiraram antes de `antesDe`. Devolve quantos. */
+  apagarExpiradosAntes(antesDe: Date): Promise<number>;
 }

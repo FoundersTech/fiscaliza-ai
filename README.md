@@ -103,13 +103,13 @@ Na primeira vez, copie `apps/api/.env.example` para `apps/api/.env`. Depois, e s
 pnpm db:migrar
 ```
 
-Em seguida, carregue os dados. O `db:seed:dev` aplica a carga inicial (Sorocaba, o órgão e as 4 categorias) e cria 1 usuário de teste por papel (`cidadao@`, `agente@`, `gestor@` e `admin@fiscaliza.test`, todos com a senha `fiscaliza123`) e 50 ocorrências, além dos buckets `fa-uploads` e `fa-fotos` no storage local. Ele só roda com `NODE_ENV=development` ou `test`. Em staging e produção, use só `pnpm db:seed`, com a carga inicial. Os dois podem rodar de novo sem duplicar nada:
+Em seguida, carregue os dados. O `db:seed:dev` aplica a carga inicial (Sorocaba, o órgão e as 4 categorias) e cria 1 usuário de teste por papel (`cidadao@`, `agente@`, `gestor@` e `admin@fiscaliza.test`, todos com a senha `fiscaliza123`) e 50 ocorrências, além dos buckets `fa-uploads`, `fa-fotos` e `fa-backup` no storage local. Ele só roda com `NODE_ENV=development` ou `test`. Em staging e produção, use só `pnpm db:seed`, com a carga inicial. Os dois podem rodar de novo sem duplicar nada:
 
 ```bash
 pnpm db:seed:dev
 ```
 
-Com o banco, o Redis e o storage de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução, buckets à parte (`fa-uploads-teste` e `fa-fotos-teste`) e o banco 1 do Redis, para que uma API de desenvolvimento ligada não pegue os jobs dos testes:
+Com o banco, o Redis e o storage de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução, buckets à parte (`fa-uploads-teste`, `fa-fotos-teste` e `fa-backup-teste`) e o banco 1 do Redis, para que uma API de desenvolvimento ligada não pegue os jobs dos testes. O teste do backup usa o `pg_dump` e o `pg_restore` do PATH quando existem (no CI, o runner já os traz) e, senão, os do container `postgres` do Compose (`docker compose exec`), que têm a mesma versão do servidor:
 
 ```bash
 pnpm test:int
@@ -122,6 +122,23 @@ Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://
 O PWA envia cada foto direto ao storage, sem passar pela API: `POST /api/v1/uploads/intencao` devolve uma URL de PUT válida por 5 minutos, assinada para o tipo `image/jpeg` e para o tamanho exato informado (até 300 KB). Um PUT com outro tipo, outro tamanho ou depois do prazo é recusado com 403. Em desenvolvimento e nos testes, sem as variáveis `R2_*` no `.env`, a API usa o storage local do `docker-compose.yml`, com as credenciais de `deploy/local/s3.json`. Staging usa o R2 da Cloudflare.
 
 Depois do registro da ocorrência, um job da própria API recodifica cada foto com o `sharp` (até 1600 px, miniatura de 400 px, sem EXIF nem GPS), publica no bucket `fa-fotos` e apaga o original do `fa-uploads`. Um arquivo que não é imagem fica `REJEITADA`. No storage local, o `fa-fotos` é público para leitura, como em staging: a foto fica em `http://localhost:9100/fa-fotos/<storage_key>`. A cada 10 minutos, um job de reconciliação põe de volta na fila as fotos e os endereços que ficaram para trás.
+
+### Limpeza e backup
+
+A fila `manutencao` da API tem dois jobs diários, no horário de São Paulo:
+
+- **limpeza (03:00):** apaga do `fa-uploads` os originais de foto com mais de 24 h que nenhuma ocorrência usa (o PUT chegou, mas a ocorrência nunca foi registrada), os refresh tokens e os links de senha e de convite expirados há mais de 30 dias (com eles saem o IP e o user-agent do login) e os arquivos das exportações de dados vencidas, que ficam `EXPIRADA`;
+- **backup (04:00):** roda o `pg_dump` (formato custom, sem dono nem permissões) e grava `postgres/fiscaliza-AAAA-MM-DD.dump` no bucket privado `R2_BUCKET_BACKUP` (padrão `fa-backup`). Um segundo backup no mesmo dia substitui o primeiro, e os de mais de 7 dias são apagados depois que o do dia foi gravado. Se falhar, o log da API mostra `ALERTA: backup do banco não foi feito`, e o do dia seguinte roda normalmente.
+
+A imagem da API traz o `pg_dump` e o `pg_restore` 16, a mesma versão do PostgreSQL do Compose. Para restaurar um backup, crie um banco vazio e rode o comando de restauração no container da API apontando para ele. Sem `--dia`, o comando lista os backups guardados; ele recusa um banco que já tenha tabelas. Em staging, na VM (`/opt/fiscaliza`):
+
+```bash
+docker compose exec postgres createdb -U fiscaliza fiscaliza_restaurado
+docker compose run --rm -T -e DATABASE_URL=postgresql://fiscaliza:<senha>@postgres:5432/fiscaliza_restaurado migracao node dist/cli/restaurar-backup.js
+docker compose run --rm -T -e DATABASE_URL=postgresql://fiscaliza:<senha>@postgres:5432/fiscaliza_restaurado migracao node dist/cli/restaurar-backup.js --dia 2026-11-14
+```
+
+Para conferir, suba uma API de teste com esse `DATABASE_URL` e outro banco do Redis, para que os workers dela não peguem os jobs da API no ar (`docker compose run --rm -T -e DATABASE_URL=... -e REDIS_URL=redis://redis:6379/9 api`), e confira o `/api/v1/health` e o login de uma conta existente de dentro da rede do Compose. Para colocar o banco restaurado no lugar do principal, pare a API, renomeie os bancos (`ALTER DATABASE ... RENAME TO ...`) e suba a API de novo. O teste de integração do backup faz esse caminho inteiro: grava o backup pelo job, restaura num banco vazio e sobe a API sobre ele.
 
 ### Mapa em desenvolvimento
 
