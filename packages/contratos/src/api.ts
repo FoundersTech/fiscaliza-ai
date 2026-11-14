@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/indicadores/painel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["IndicadoresController_painel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -577,6 +593,48 @@ export interface components {
             pontos: components["schemas"]["PontoMapaResposta"][];
             /** @description Havia mais pontos na área: o PWA pede para aproximar o mapa */
             truncado: boolean;
+        };
+        CategoriaPainelResposta: {
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
+            nome: string;
+            /** @example lightbulb */
+            icone: string;
+            /** @example 12 */
+            total: number;
+            /** @example 7 */
+            resolvidas: number;
+        };
+        PainelResposta: {
+            /** @description Nenhuma ocorrência no período: mostrar "Sem ocorrências no período" */
+            vazio: boolean;
+            /**
+             * @example 30
+             * @enum {number}
+             */
+            periodo_dias: 30 | 90 | 365;
+            /** @example 40 */
+            total: number;
+            /** @example 22 */
+            resolvidas: number;
+            /**
+             * @description Percentual de resolvidas, com uma casa; null quando vazio
+             * @example 55
+             */
+            resolvidas_pct: number | null;
+            /**
+             * @description Mediana de dias entre o registro e a resolução; null sem nenhuma resolvida
+             * @example 6.5
+             */
+            dias_mediana: number | null;
+            /** @description Só as categorias com ocorrências, da maior para a menor */
+            por_categoria: components["schemas"]["CategoriaPainelResposta"][];
+            /**
+             * Format: date-time
+             * @description Quando os números foram calculados (ficam guardados por até 5 minutos)
+             */
+            calculado_em: string;
         };
     };
     responses: never;
@@ -1197,6 +1255,46 @@ export interface operations {
                 };
             };
             /** @description BBOX_INVALIDA (área ausente ou malformada) ou VALIDACAO (filtro inválido) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IndicadoresController_painel: {
+        parameters: {
+            query?: {
+                /** @description Código IBGE; sem ele, todos os municípios atendidos */
+                municipio?: number;
+                /** @description Últimos N dias, pela data de registro */
+                periodo?: 30 | 90 | 365;
+                /** @description Slugs das categorias, separados por vírgula */
+                categoria?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PainelResposta"];
+                };
+            };
+            /** @description VALIDACAO (período, município ou categoria) */
             422: {
                 headers: {
                     [name: string]: unknown;

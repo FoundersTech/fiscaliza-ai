@@ -669,6 +669,69 @@
           "ocorrencias"
         ]
       }
+    },
+    "/api/v1/indicadores/painel": {
+      "get": {
+        "operationId": "IndicadoresController_painel",
+        "parameters": [
+          {
+            "name": "municipio",
+            "required": false,
+            "in": "query",
+            "description": "Código IBGE; sem ele, todos os municípios atendidos",
+            "schema": {
+              "example": 3552205,
+              "type": "number"
+            }
+          },
+          {
+            "name": "periodo",
+            "required": false,
+            "in": "query",
+            "description": "Últimos N dias, pela data de registro",
+            "schema": {
+              "default": 30,
+              "type": "number",
+              "enum": [
+                30,
+                90,
+                365
+              ]
+            }
+          },
+          {
+            "name": "categoria",
+            "required": false,
+            "in": "query",
+            "description": "Slugs das categorias, separados por vírgula",
+            "schema": {
+              "example": "iluminacao,pavimentacao",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PainelResposta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDACAO (período, município ou categoria)"
+          },
+          "429": {
+            "description": "Mais de 120 tentativas em 60 s."
+          }
+        },
+        "tags": [
+          "indicadores"
+        ]
+      }
     }
   },
   "info": {
@@ -1567,6 +1630,98 @@
         "required": [
           "pontos",
           "truncado"
+        ]
+      },
+      "CategoriaPainelResposta": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "iluminacao"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação"
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb"
+          },
+          "total": {
+            "type": "number",
+            "example": 12
+          },
+          "resolvidas": {
+            "type": "number",
+            "example": 7
+          }
+        },
+        "required": [
+          "slug",
+          "nome",
+          "icone",
+          "total",
+          "resolvidas"
+        ]
+      },
+      "PainelResposta": {
+        "type": "object",
+        "properties": {
+          "vazio": {
+            "type": "boolean",
+            "description": "Nenhuma ocorrência no período: mostrar \"Sem ocorrências no período\""
+          },
+          "periodo_dias": {
+            "type": "number",
+            "enum": [
+              30,
+              90,
+              365
+            ],
+            "example": 30
+          },
+          "total": {
+            "type": "number",
+            "example": 40
+          },
+          "resolvidas": {
+            "type": "number",
+            "example": 22
+          },
+          "resolvidas_pct": {
+            "type": "number",
+            "nullable": true,
+            "example": 55,
+            "description": "Percentual de resolvidas, com uma casa; null quando vazio"
+          },
+          "dias_mediana": {
+            "type": "number",
+            "nullable": true,
+            "example": 6.5,
+            "description": "Mediana de dias entre o registro e a resolução; null sem nenhuma resolvida"
+          },
+          "por_categoria": {
+            "description": "Só as categorias com ocorrências, da maior para a menor",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoriaPainelResposta"
+            }
+          },
+          "calculado_em": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Quando os números foram calculados (ficam guardados por até 5 minutos)"
+          }
+        },
+        "required": [
+          "vazio",
+          "periodo_dias",
+          "total",
+          "resolvidas",
+          "resolvidas_pct",
+          "dias_mediana",
+          "por_categoria",
+          "calculado_em"
         ]
       }
     }

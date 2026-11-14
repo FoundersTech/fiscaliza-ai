@@ -12,7 +12,7 @@ const LIMITE_MAXIMO_FEED = 50;
 const STATUS_PUBLICOS = Object.values(StatusPublico);
 
 /** `a,b` ou `?x=a&x=b` viram ['a', 'b']; vazio vira undefined (sem filtro). */
-const lista = Transform(({ value }: { value: unknown }) => {
+export const lista = Transform(({ value }: { value: unknown }) => {
   const valores = (Array.isArray(value) ? value : [value])
     .filter((item): item is string => typeof item === 'string')
     .flatMap((item) => item.split(','))
@@ -22,7 +22,7 @@ const lista = Transform(({ value }: { value: unknown }) => {
 });
 
 // Texto vazio continua vazio, para não virar 0 e passar como número.
-const inteiro = Transform(({ value }: { value: unknown }) =>
+export const inteiro = Transform(({ value }: { value: unknown }) =>
   typeof value === 'string' && value.trim() !== '' ? Number(value) : value,
 );
 
