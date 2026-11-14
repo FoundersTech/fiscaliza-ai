@@ -57,6 +57,12 @@ import { GuardAutenticacao, GuardAutenticacaoOpcional } from './presentation/aut
       useFactory: (ambiente: Ambiente) => new EmissorJwt(ambiente.JWT_SECRET),
     },
   ],
-  exports: [EMISSOR_TOKEN, ConferirAcesso, GuardAutenticacao, GuardAutenticacaoOpcional],
+  exports: [
+    EMISSOR_TOKEN,
+    HASHER_SENHA,
+    ConferirAcesso,
+    GuardAutenticacao,
+    GuardAutenticacaoOpcional,
+  ],
 })
 export class IdentidadeModule {}

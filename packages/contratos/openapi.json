@@ -247,6 +247,45 @@
         "tags": [
           "me"
         ]
+      },
+      "delete": {
+        "operationId": "PrivacidadeController_excluir",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExcluirContaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Conta anonimizada, sessões encerradas e cookie de refresh apagado. As ocorrências continuam públicas, sem autor."
+          },
+          "401": {
+            "description": "SENHA_INCORRETA\n\nSem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO"
+          },
+          "429": {
+            "description": "Mais de 5 tentativas em 900 s."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me"
+        ]
       }
     },
     "/api/v1/me/politica": {
@@ -767,6 +806,115 @@
         ],
         "tags": [
           "ocorrencias"
+        ]
+      }
+    },
+    "/api/v1/me/exportacoes": {
+      "post": {
+        "operationId": "PrivacidadeController_exportar",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": "Exportação dos dados pedida; o arquivo é gerado em segundo plano. Se já há uma em andamento ou pronta para baixar, devolve essa mesma.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportacaoCriadaResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me"
+        ]
+      },
+      "get": {
+        "operationId": "PrivacidadeController_exportacoes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "As últimas exportações do usuário, das mais recentes para as mais antigas.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExportacaoResposta"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/exportacoes/{id}": {
+      "get": {
+        "operationId": "PrivacidadeController_exportacao",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportacaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "EXPORTACAO_NAO_ENCONTRADA (inclusive a de outra pessoa)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "me"
         ]
       }
     }
@@ -2048,6 +2196,87 @@
         "required": [
           "itens",
           "proximo_cursor"
+        ]
+      },
+      "StatusExportacao": {
+        "type": "string",
+        "enum": [
+          "PROCESSANDO",
+          "PRONTA",
+          "FALHOU",
+          "EXPIRADA"
+        ]
+      },
+      "ExportacaoCriadaResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatusExportacao"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
+      "ExportacaoResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "description": "Pronta com o prazo vencido já aparece como EXPIRADA",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatusExportacao"
+              }
+            ]
+          },
+          "solicitada_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pronta_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expira_em": {
+            "type": "string",
+            "format": "date-time",
+            "description": "O arquivo some 7 dias depois de pronto"
+          },
+          "download_url": {
+            "type": "string",
+            "description": "Só quando PRONTA. Link do arquivo JSON, válido por 15 minutos."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "solicitada_em"
+        ]
+      },
+      "ExcluirContaDto": {
+        "type": "object",
+        "properties": {
+          "senha": {
+            "type": "string",
+            "format": "password",
+            "description": "Senha atual, para confirmar a exclusão"
+          }
+        },
+        "required": [
+          "senha"
         ]
       }
     }
