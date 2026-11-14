@@ -41,7 +41,8 @@ export function criarConfigLogger(
       : {}),
   };
 
-  return { pinoHttp: destino ? [opcoes, destino] : opcoes,
+  return {
+    pinoHttp: destino ? [opcoes, destino] : opcoes,
     forRoutes: [{ path: '/{*splat}', method: RequestMethod.ALL }],
   };
 }
