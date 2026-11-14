@@ -17,7 +17,7 @@ const STATUS_PUBLICOS = Object.values(StatusPublico);
 const STATUS_EXIBIDOS = [...STATUS_PUBLICOS, ...Object.values(StatusDoAutor)];
 
 /** `a,b` ou `?x=a&x=b` viram ['a', 'b']; vazio vira undefined (sem filtro). */
-const lista = Transform(({ value }: { value: unknown }) => {
+export const lista = Transform(({ value }: { value: unknown }) => {
   const valores = (Array.isArray(value) ? value : [value])
     .filter((item): item is string => typeof item === 'string')
     .flatMap((item) => item.split(','))
