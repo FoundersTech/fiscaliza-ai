@@ -3,6 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { AMBIENTE, type Ambiente } from '../../shared/config/ambiente.js';
 import { NotificacoesModule } from '../notificacoes/notificacoes.module.js';
 import { Cadastrar } from './application/cadastrar.js';
+import { AlterarAtivacaoConta, ConvidarUsuario } from './application/contas.js';
 import { CriarAdminPlataforma } from './application/criar-admin.js';
 import { Entrar } from './application/entrar.js';
 import { ObterPerfil } from './application/obter-perfil.js';
@@ -26,7 +27,8 @@ import { GuardAutenticacao } from './presentation/autenticacao.js';
 
 /**
  * Contas e sessões. É global para que qualquer módulo use @Autenticado(): o guard precisa do
- * emissor de tokens e da conferência de conta e política.
+ * emissor de tokens e da conferência de conta e política. A administração usa o convite e a
+ * ativação de contas daqui.
  */
 @Global()
 @Module({
@@ -43,6 +45,8 @@ import { GuardAutenticacao } from './presentation/autenticacao.js';
     DefinirSenha,
     AceitarPolitica,
     ConferirAcesso,
+    ConvidarUsuario,
+    AlterarAtivacaoConta,
     CriarAdminPlataforma,
     GuardAutenticacao,
     { provide: HASHER_SENHA, useClass: HasherArgon2 },
@@ -55,6 +59,12 @@ import { GuardAutenticacao } from './presentation/autenticacao.js';
       useFactory: (ambiente: Ambiente) => new EmissorJwt(ambiente.JWT_SECRET),
     },
   ],
-  exports: [EMISSOR_TOKEN, ConferirAcesso, GuardAutenticacao],
+  exports: [
+    EMISSOR_TOKEN,
+    ConferirAcesso,
+    GuardAutenticacao,
+    ConvidarUsuario,
+    AlterarAtivacaoConta,
+  ],
 })
 export class IdentidadeModule {}

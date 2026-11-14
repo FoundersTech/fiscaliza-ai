@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 
+import { AdministracaoModule } from './modules/administracao/administracao.module.js';
 import { IdentidadeModule } from './modules/identidade/identidade.module.js';
 import { ManutencaoModule } from './modules/manutencao/manutencao.module.js';
 import { MidiaModule } from './modules/midia/midia.module.js';
@@ -32,6 +33,7 @@ import { SaudeModule } from './shared/saude/saude.module.js';
     MidiaModule,
     OcorrenciasModule,
     ManutencaoModule,
+    AdministracaoModule,
   ],
 })
 export class AppModule {}

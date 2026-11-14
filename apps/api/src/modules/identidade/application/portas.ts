@@ -48,6 +48,8 @@ export interface NovoConvidado {
   apelidoPublico: string;
   email: string;
   papel: Papel;
+  municipioId?: number | null;
+  orgaoId?: number | null;
 }
 
 export interface RepositorioUsuarios {
@@ -56,6 +58,7 @@ export interface RepositorioUsuarios {
   criarCidadao(dados: NovoCidadao): Promise<Usuario>;
   criarConvidado(dados: NovoConvidado): Promise<Usuario>;
   registrarAceitePolitica(id: string, versao: string, agora: Date): Promise<void>;
+  definirAtivo(id: string, ativo: boolean): Promise<void>;
 }
 
 /** De onde veio a requisição; fica gravado no refresh token. */

@@ -525,6 +525,273 @@
           "ocorrencias"
         ]
       }
+    },
+    "/api/v1/admin/orgao": {
+      "get": {
+        "operationId": "OrgaoController_obter",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "O órgão do município do gestor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "MUNICIPIO_SEM_ORGAO: falha da carga inicial"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      },
+      "patch": {
+        "operationId": "OrgaoController_editar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdicaoOrgaoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Órgão com o nome e a sigla novos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
+    "/api/v1/admin/agentes": {
+      "get": {
+        "operationId": "AgentesController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Agentes do órgão do município do gestor, em ordem de nome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgenteResposta"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "MUNICIPIO_SEM_ORGAO: falha da carga inicial"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      },
+      "post": {
+        "operationId": "AgentesController_convidar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agente criado sem senha; o convite para definir a senha vale por 72 horas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgenteResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "409": {
+            "description": "EMAIL_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
+    "/api/v1/admin/agentes/{id}": {
+      "patch": {
+        "operationId": "AgentesController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlteracaoAgenteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agente ativado ou desativado. Desativar encerra todas as sessões dele na hora.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgenteResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.\n\nOUTRO_MUNICIPIO: o agente é de outro município. ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADO"
+          },
+          "422": {
+            "description": "VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
+    "/api/v1/admin/gestores": {
+      "post": {
+        "operationId": "GestoresController_convidar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConviteGestorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "ADMIN_MUNICIPIO criado sem senha; o convite vale por 72 horas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GestorResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "409": {
+            "description": "EMAIL_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou MUNICIPIO_INEXISTENTE"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
     }
   },
   "info": {
@@ -1245,6 +1512,157 @@
         },
         "required": [
           "confirmacoes"
+        ]
+      },
+      "OrgaoResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "municipio_id": {
+            "type": "number"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "sigla": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "municipio_id",
+          "nome",
+          "sigla"
+        ]
+      },
+      "EdicaoOrgaoDto": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "example": "Prefeitura de Sorocaba",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "sigla": {
+            "type": "string",
+            "example": "PMS",
+            "minLength": 2,
+            "maxLength": 10
+          }
+        }
+      },
+      "AgenteResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "ativo": {
+            "type": "boolean"
+          },
+          "convite_pendente": {
+            "type": "boolean",
+            "description": "Ainda não definiu a senha pelo link do convite"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "email",
+          "ativo",
+          "convite_pendente"
+        ]
+      },
+      "ConviteDto": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "example": "João Pereira",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "joao@sorocaba.sp.gov.br",
+            "maxLength": 254
+          }
+        },
+        "required": [
+          "nome",
+          "email"
+        ]
+      },
+      "AlteracaoAgenteDto": {
+        "type": "object",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "false desativa o agente e encerra todas as sessões dele"
+          }
+        },
+        "required": [
+          "ativo"
+        ]
+      },
+      "ConviteGestorDto": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "example": "João Pereira",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "joao@sorocaba.sp.gov.br",
+            "maxLength": 254
+          },
+          "municipio_id": {
+            "type": "number",
+            "example": 3552205,
+            "description": "Código IBGE do município"
+          }
+        },
+        "required": [
+          "nome",
+          "email",
+          "municipio_id"
+        ]
+      },
+      "GestorResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "municipio_id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "email",
+          "municipio_id"
         ]
       }
     }
