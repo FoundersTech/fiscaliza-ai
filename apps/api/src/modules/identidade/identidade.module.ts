@@ -3,6 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { AMBIENTE, type Ambiente } from '../../shared/config/ambiente.js';
 import { NotificacoesModule } from '../notificacoes/notificacoes.module.js';
 import { Cadastrar } from './application/cadastrar.js';
+import { AlterarAtivacaoConta, ConvidarUsuario } from './application/contas.js';
 import { CriarAdminPlataforma } from './application/criar-admin.js';
 import { Entrar } from './application/entrar.js';
 import { ObterPerfil } from './application/obter-perfil.js';
@@ -27,7 +28,7 @@ import { GuardAutenticacao, GuardAutenticacaoOpcional } from './presentation/aut
 /**
  * Contas e sessões. É global para que qualquer módulo use @Autenticado() e
  * @AutenticacaoOpcional(): os guards precisam do emissor de tokens e da conferência de conta e
- * política.
+ * política. A administração usa o convite e a ativação de contas daqui.
  */
 @Global()
 @Module({
@@ -44,6 +45,8 @@ import { GuardAutenticacao, GuardAutenticacaoOpcional } from './presentation/aut
     DefinirSenha,
     AceitarPolitica,
     ConferirAcesso,
+    ConvidarUsuario,
+    AlterarAtivacaoConta,
     CriarAdminPlataforma,
     GuardAutenticacao,
     GuardAutenticacaoOpcional,
@@ -63,6 +66,8 @@ import { GuardAutenticacao, GuardAutenticacaoOpcional } from './presentation/aut
     ConferirAcesso,
     GuardAutenticacao,
     GuardAutenticacaoOpcional,
+    ConvidarUsuario,
+    AlterarAtivacaoConta,
   ],
 })
 export class IdentidadeModule {}

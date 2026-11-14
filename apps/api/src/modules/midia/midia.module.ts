@@ -13,24 +13,28 @@ import {
 } from './application/portas.js';
 import { ProcessarFoto } from './application/processar-foto.js';
 import { ReconciliarFotos } from './application/reconciliar-fotos.js';
+import { ListarFotosParaRevisao, RejeitarFoto } from './application/revisao-fotos.js';
 import { UrlFotos } from './application/url-fotos.js';
 import { FotoProcessor } from './infrastructure/foto.processor.js';
 import { moderacaoPara } from './infrastructure/moderacao.js';
 import { ProcessadorSharp } from './infrastructure/processador-sharp.adapter.js';
 import { RepositorioFotosPrisma } from './infrastructure/repositorio-fotos.prisma.js';
 import { configStorage, StorageR2Adapter } from './infrastructure/storage-r2.adapter.js';
+import { AdminFotosController } from './presentation/admin-fotos.controller.js';
 import { UploadsController } from './presentation/uploads.controller.js';
 
-/** Fotos das ocorrências: envio direto ao storage, processamento e publicação. */
+/** Fotos das ocorrências: envio direto ao storage, processamento, publicação e remoção. */
 @Module({
   imports: [BullModule.registerQueue({ name: FILA_MIDIA })],
-  controllers: [UploadsController],
+  controllers: [UploadsController, AdminFotosController],
   providers: [
     CriarIntencaoUpload,
     ConferirUploads,
     FilaFotos,
     ProcessarFoto,
     ReconciliarFotos,
+    ListarFotosParaRevisao,
+    RejeitarFoto,
     UrlFotos,
     FotoProcessor,
     {

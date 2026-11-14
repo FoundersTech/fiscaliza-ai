@@ -45,7 +45,11 @@ export class RepositorioUsuariosPrisma implements RepositorioUsuarios {
     });
   }
 
-  private async criar(data: Prisma.UsuarioCreateInput): Promise<Usuario> {
+  async definirAtivo(id: string, ativo: boolean): Promise<void> {
+    await this.prisma.usuario.update({ where: { id }, data: { ativo } });
+  }
+
+  private async criar(data: Prisma.UsuarioUncheckedCreateInput): Promise<Usuario> {
     try {
       return paraUsuario(await this.prisma.usuario.create({ data }));
     } catch (erro) {
