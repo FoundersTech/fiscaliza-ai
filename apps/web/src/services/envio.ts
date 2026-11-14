@@ -7,7 +7,7 @@ import type { Ponto } from './localizacao';
 export type Candidata = components['schemas']['CandidataDuplicidadeResposta'];
 
 export interface FotoParaEnvio {
-  arquivo: File;
+  arquivo: Blob;
   ordem: 1 | 2;
   /** Já está no storage: um novo envio só repete o registro. */
   uploadKey?: string | undefined;
@@ -32,6 +32,8 @@ export type ResultadoEnvio =
 
 export interface OpcoesEnvio {
   forcarCriacao?: boolean;
+  /** OFFLINE: pendente guardada no aparelho, enviada depois; não passa pela duplicidade. */
+  origem?: 'ONLINE' | 'OFFLINE';
   /** Avisa quando uma foto chega ao storage, para não enviá-la de novo numa repetição. */
   aoEnviarFoto?: (ordem: 1 | 2, uploadKey: string) => void;
   enviarArquivo?: typeof fetch;
@@ -53,7 +55,12 @@ function erro(erroApi: ErroApi | null, padrao: string): ResultadoEnvio {
 export async function enviarOcorrencia(
   api: Api,
   dados: DadosEnvio,
-  { forcarCriacao = false, aoEnviarFoto, enviarArquivo = fetch }: OpcoesEnvio = {},
+  {
+    forcarCriacao = false,
+    origem = 'ONLINE',
+    aoEnviarFoto,
+    enviarArquivo = fetch,
+  }: OpcoesEnvio = {},
 ): Promise<ResultadoEnvio> {
   try {
     const fotos: { upload_key: string; ordem: 1 | 2 }[] = [];
@@ -74,7 +81,7 @@ export async function enviarOcorrencia(
         precisao_m: dados.precisaoM,
         publicar_autor: dados.publicarAutor,
         fotos,
-        origem: 'ONLINE',
+        origem,
         forcar_criacao: forcarCriacao,
       },
     });
@@ -89,6 +96,24 @@ export async function enviarOcorrencia(
   } catch {
     return { tipo: 'ERRO', codigo: null, mensagem: MENSAGEM_SEM_CONEXAO };
   }
+}
+
+/**
+ * Erros que passam sozinhos: sem conexão, servidor ou storage fora do ar, sessão vencida, limite de
+ * requisições. O que sobra é recusa do servidor (fora da área, categoria inativa...): repetir não
+ * adianta.
+ */
+const CODIGOS_PASSAGEIROS = new Set([
+  'SERVICO_INDISPONIVEL',
+  'ERRO_INTERNO',
+  'MUITAS_REQUISICOES',
+  'NAO_AUTENTICADO',
+  'POLITICA_PENDENTE',
+  'FOTO_NAO_ENVIADA',
+]);
+
+export function erroPassageiro(resultado: Extract<ResultadoEnvio, { tipo: 'ERRO' }>): boolean {
+  return resultado.codigo === null || CODIGOS_PASSAGEIROS.has(resultado.codigo);
 }
 
 async function enviarFoto(

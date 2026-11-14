@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useApi, useSessao } from '@/boot/api';
+import BotaoSair from '@/components/BotaoSair.vue';
 import TextoPolitica from '@/components/TextoPolitica.vue';
 import { lerErroApi, MENSAGEM_SEM_CONEXAO, mensagemDoErro } from '@/services/erros';
 import { POLITICA_VERSAO } from '@/services/politica';
@@ -92,7 +93,7 @@ function recarregar(): void {
             @click="aceitar"
           />
         </template>
-        <q-btn flat no-caps label="Sair da conta" class="fa-botao-largo" @click="sair" />
+        <BotaoSair @sair="sair" />
       </q-card-section>
     </q-card>
   </q-dialog>
