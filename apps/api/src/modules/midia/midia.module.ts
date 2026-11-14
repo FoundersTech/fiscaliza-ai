@@ -13,6 +13,7 @@ import {
 } from './application/portas.js';
 import { ProcessarFoto } from './application/processar-foto.js';
 import { ReconciliarFotos } from './application/reconciliar-fotos.js';
+import { UrlFotos } from './application/url-fotos.js';
 import { FotoProcessor } from './infrastructure/foto.processor.js';
 import { moderacaoPara } from './infrastructure/moderacao.js';
 import { ProcessadorSharp } from './infrastructure/processador-sharp.adapter.js';
@@ -30,6 +31,7 @@ import { UploadsController } from './presentation/uploads.controller.js';
     FilaFotos,
     ProcessarFoto,
     ReconciliarFotos,
+    UrlFotos,
     FotoProcessor,
     {
       provide: STORAGE_PORT,
@@ -44,6 +46,6 @@ import { UploadsController } from './presentation/uploads.controller.js';
     },
     { provide: REPOSITORIO_FOTOS, useClass: RepositorioFotosPrisma },
   ],
-  exports: [ConferirUploads, FilaFotos, ReconciliarFotos],
+  exports: [ConferirUploads, FilaFotos, ReconciliarFotos, UrlFotos],
 })
 export class MidiaModule {}
