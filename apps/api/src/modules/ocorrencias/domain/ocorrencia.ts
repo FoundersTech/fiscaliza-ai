@@ -70,6 +70,25 @@ export interface ComandoReabertura {
   janelaDias: number;
 }
 
+/** O que se sabe da pessoa logada em relação à ocorrência. */
+export interface VinculoUsuario {
+  usuarioId: string;
+  /** Só o cidadão confirma, avalia e reabre; os outros papéis apenas leem. */
+  ehCidadao: boolean;
+  confirmou: boolean;
+  avaliou: boolean;
+}
+
+/** O que a pessoa logada pode fazer na ocorrência agora. */
+export interface AcoesDoUsuario {
+  minhaConfirmacao: boolean;
+  podeConfirmar: boolean;
+  podeAvaliar: boolean;
+  podeReabrir: boolean;
+  /** Fim do prazo para avaliar ou reabrir; null se a ocorrência não está resolvida. */
+  prazoPosResolucaoAte: Date | null;
+}
+
 /**
  * Agregado Ocorrencia:Regras de atendimento e reabertura . Não grava nada: cada mudança devolve o evento para a camada de aplicação
  * persistir junto com o novo estado.
@@ -125,6 +144,31 @@ export class Ocorrencia {
     const { status, resolvidaEm } = this.dados;
     if (status !== RESOLVIDA || !resolvidaEm) return false;
     return agora.getTime() <= resolvidaEm.getTime() + janelaDias * UM_DIA_MS;
+  }
+
+  prazoPosResolucao(janelaDias: number): Date | null {
+    const { status, resolvidaEm } = this.dados;
+    if (status !== RESOLVIDA || !resolvidaEm) return null;
+    return new Date(resolvidaEm.getTime() + janelaDias * UM_DIA_MS);
+  }
+
+  /**
+   * Botões do detalhe: "Também vi" para quem não é o autor enquanto está aberta; avaliar e
+   * reabrir para o autor ou quem confirmou, nos dias seguintes à resolução. Avaliar, uma vez só.
+   */
+  acoesPara(vinculo: VinculoUsuario, agora: Date, janelaDias: number): AcoesDoUsuario {
+    const { usuarioId, ehCidadao, confirmou, avaliou } = vinculo;
+    const posResolucao =
+      ehCidadao &&
+      this.temVinculo(usuarioId, confirmou) &&
+      this.dentroDaJanelaPosResolucao(agora, janelaDias);
+    return {
+      minhaConfirmacao: confirmou,
+      podeConfirmar: ehCidadao && !confirmou && !this.ehAutor(usuarioId) && this.estaAberta(),
+      podeAvaliar: posResolucao && !avaliou,
+      podeReabrir: posResolucao,
+      prazoPosResolucaoAte: this.prazoPosResolucao(janelaDias),
+    };
   }
 
   /** Transição feita pelo agente do órgão */

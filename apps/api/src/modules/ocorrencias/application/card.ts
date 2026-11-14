@@ -6,7 +6,8 @@ import {
   diasEmAberto,
   ehUrgente,
   resumir,
-  type StatusPublico,
+  type StatusExibido,
+  statusExibidoDe,
   statusPublicoDe,
 } from '../domain/exibicao-publica.js';
 import type { CategoriaDoCard, DadosCard } from './consultas.js';
@@ -16,7 +17,8 @@ export interface Card {
   id: string;
   protocolo: string;
   categoria: CategoriaDoCard;
-  statusPublico: StatusPublico;
+  /** Recusado ou duplicado só aparecem nas consultas do próprio autor. */
+  statusPublico: StatusExibido;
   resumo: string;
   endereco: string | null;
   confirmacoes: number;
@@ -40,8 +42,11 @@ export class MontadorCard {
     return ehUrgente(confirmacoes, this.parametros.urgente_min_confirmacoes);
   }
 
-  montar(dados: DadosCard, agora: Date): Card {
-    const statusPublico = statusPublicoDe(dados.status);
+  /** Com `paraOAutor`, aceita também recusada e duplicada, que só o autor enxerga. */
+  montar(dados: DadosCard, agora: Date, paraOAutor = false): Card {
+    const statusPublico = paraOAutor
+      ? statusExibidoDe(dados.status)
+      : statusPublicoDe(dados.status);
     if (!statusPublico) {
       throw new Error(`A ocorrência ${dados.id} (${dados.status}) não é pública.`);
     }

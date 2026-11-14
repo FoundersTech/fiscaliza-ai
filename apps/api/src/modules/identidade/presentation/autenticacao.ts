@@ -58,6 +58,42 @@ export class GuardAutenticacao implements CanActivate {
 }
 
 /**
+ * Rota aberta a visitantes que também atende quem está logado. Sem o header Authorization, segue
+ * como visitante. Com ele, o token precisa ser válido (senão 401, para o PWA renovar a sessão) e
+ * a conta precisa poder entrar. A política pendente não bloqueia: a rota é só de leitura.
+ */
+@Injectable()
+export class GuardAutenticacaoOpcional implements CanActivate {
+  constructor(
+    @Inject(EMISSOR_TOKEN) private readonly tokens: EmissorToken,
+    private readonly conferirAcesso: ConferirAcesso,
+  ) {}
+
+  async canActivate(contexto: ExecutionContext): Promise<boolean> {
+    const requisicao = contexto.switchToHttp().getRequest<RequisicaoAutenticada>();
+    const cabecalho = requisicao.headers.authorization;
+    if (cabecalho === undefined || cabecalho === '') return true;
+
+    const [esquema, token] = String(cabecalho).split(' ');
+    const dados = esquema === 'Bearer' && token ? await this.tokens.verificar(token) : null;
+    if (!dados) throw erroNaoAutenticado();
+    await this.conferirAcesso.executar(dados.usuarioId, false);
+
+    requisicao.usuario = dados;
+    return true;
+  }
+}
+
+/** Rota pública com campos a mais para quem manda o token. Leia quem é com @UsuarioOpcional. */
+export function AutenticacaoOpcional(): MethodDecorator & ClassDecorator {
+  return applyDecorators(
+    UseGuards(GuardAutenticacaoOpcional),
+    ApiBearerAuth(),
+    ApiUnauthorizedResponse({ description: 'Token enviado, mas inválido ou expirado.' }),
+  );
+}
+
+/**
  * Rota só para quem está logado. Com papéis, só para eles; os outros recebem 403. Quem ainda não
  * aceitou a versão vigente da política também recebe 403. A checagem de escopo (órgão e
  * município do token contra o recurso) fica no caso de uso.
@@ -98,4 +134,10 @@ export const UsuarioAtual = createParamDecorator(
     if (!usuario) throw erroNaoAutenticado();
     return usuario;
   },
+);
+
+/** Os dados do token, ou null para visitante (use junto com @AutenticacaoOpcional). */
+export const UsuarioOpcional = createParamDecorator(
+  (_dado: unknown, contexto: ExecutionContext): DadosToken | null =>
+    contexto.switchToHttp().getRequest<RequisicaoAutenticada>().usuario ?? null,
 );

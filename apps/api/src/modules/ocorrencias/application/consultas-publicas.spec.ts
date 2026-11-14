@@ -15,6 +15,15 @@ const urlFotos = new UrlFotos({ R2_URL_PUBLICA: 'https://fotos.exemplo.test' } a
 const montador = new MontadorCard(parametros, urlFotos);
 const agora = new Date('2026-11-14T15:00:00Z');
 
+/** As leituras que feed e mapa não usam. */
+function outrasConsultas() {
+  return {
+    detalhe: vi.fn<ConsultasOcorrencias['detalhe']>(),
+    vinculo: vi.fn<ConsultasOcorrencias['vinculo']>(),
+    doAutor: vi.fn<ConsultasOcorrencias['doAutor']>(),
+  };
+}
+
 function dados(mudancas: Partial<DadosCard> = {}): DadosCard {
   return {
     id: '7f9c2b1e-0c1d-4b8a-9a43-1f5e8f0e2a10',
@@ -102,6 +111,7 @@ describe('ListarFeed', () => {
 
   it('pede um item a mais e devolve o cursor do último da página', async () => {
     const consultas = {
+      ...outrasConsultas(),
       feed: vi.fn<ConsultasOcorrencias['feed']>().mockResolvedValue([linha(1), linha(2), linha(3)]),
       pontosNaArea: vi.fn<ConsultasOcorrencias['pontosNaArea']>(),
     };
@@ -114,6 +124,7 @@ describe('ListarFeed', () => {
 
   it('na última página, proximo_cursor é null', async () => {
     const consultas = {
+      ...outrasConsultas(),
       feed: vi.fn<ConsultasOcorrencias['feed']>().mockResolvedValue([linha(1)]),
       pontosNaArea: vi.fn<ConsultasOcorrencias['pontosNaArea']>(),
     };
@@ -161,6 +172,7 @@ describe('ListarMapa', () => {
       confirmacoes: 0,
     };
     const consultas = {
+      ...outrasConsultas(),
       feed: vi.fn<ConsultasOcorrencias['feed']>(),
       pontosNaArea: vi
         .fn<ConsultasOcorrencias['pontosNaArea']>()

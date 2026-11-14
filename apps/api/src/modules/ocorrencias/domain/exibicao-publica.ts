@@ -25,6 +25,23 @@ export function statusPublicoDe(status: StatusOcorrencia): StatusPublico | null 
   return publico ?? null;
 }
 
+/** Status que só o autor enxerga: a ocorrência foi recusada ou era repetida. */
+export const StatusDoAutor = {
+  RECUSADO: 'RECUSADO',
+  DUPLICADO: 'DUPLICADO',
+} as const;
+export type StatusDoAutor = (typeof StatusDoAutor)[keyof typeof StatusDoAutor];
+
+/** O status como aparece no app, incluindo os que só o autor vê. */
+export type StatusExibido = StatusPublico | StatusDoAutor;
+
+export function statusExibidoDe(status: StatusOcorrencia): StatusExibido {
+  return (
+    statusPublicoDe(status) ??
+    (status === StatusOcorrencia.RECUSADA ? StatusDoAutor.RECUSADO : StatusDoAutor.DUPLICADO)
+  );
+}
+
 /** Os status internos de um filtro público; sem filtro, todos os visíveis. */
 export function statusInternosDe(publicos: readonly StatusPublico[] | null): StatusOcorrencia[] {
   if (!publicos?.length) return [...VISIVEIS_AO_PUBLICO];

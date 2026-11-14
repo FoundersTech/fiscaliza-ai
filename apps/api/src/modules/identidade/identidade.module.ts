@@ -22,11 +22,12 @@ import { RepositorioSessoesPrisma } from './infrastructure/repositorio-sessoes.p
 import { RepositorioTokensAcessoPrisma } from './infrastructure/repositorio-tokens-acesso.prisma.js';
 import { RepositorioUsuariosPrisma } from './infrastructure/repositorio-usuarios.prisma.js';
 import { AuthController, MeController } from './presentation/auth.controller.js';
-import { GuardAutenticacao } from './presentation/autenticacao.js';
+import { GuardAutenticacao, GuardAutenticacaoOpcional } from './presentation/autenticacao.js';
 
 /**
- * Contas e sessões. É global para que qualquer módulo use @Autenticado(): o guard precisa do
- * emissor de tokens e da conferência de conta e política.
+ * Contas e sessões. É global para que qualquer módulo use @Autenticado() e
+ * @AutenticacaoOpcional(): os guards precisam do emissor de tokens e da conferência de conta e
+ * política.
  */
 @Global()
 @Module({
@@ -45,6 +46,7 @@ import { GuardAutenticacao } from './presentation/autenticacao.js';
     ConferirAcesso,
     CriarAdminPlataforma,
     GuardAutenticacao,
+    GuardAutenticacaoOpcional,
     { provide: HASHER_SENHA, useClass: HasherArgon2 },
     { provide: REPOSITORIO_USUARIOS, useClass: RepositorioUsuariosPrisma },
     { provide: REPOSITORIO_SESSOES, useClass: RepositorioSessoesPrisma },
@@ -55,6 +57,6 @@ import { GuardAutenticacao } from './presentation/autenticacao.js';
       useFactory: (ambiente: Ambiente) => new EmissorJwt(ambiente.JWT_SECRET),
     },
   ],
-  exports: [EMISSOR_TOKEN, ConferirAcesso, GuardAutenticacao],
+  exports: [EMISSOR_TOKEN, ConferirAcesso, GuardAutenticacao, GuardAutenticacaoOpcional],
 })
 export class IdentidadeModule {}
