@@ -4,14 +4,18 @@ import { computed } from 'vue';
 import type { Conclusao } from '@/stores/registro';
 
 const props = defineProps<{ conclusao: Conclusao }>();
-const emit = defineEmits<{ inicio: []; outra: [] }>();
+const emit = defineEmits<{ inicio: []; outra: []; minhas: [] }>();
 
-const titulo = computed(() =>
-  props.conclusao.tipo === 'CRIADA' ? 'Notificação enviada' : 'Confirmação registrada',
-);
+const titulo = computed(() => {
+  if (props.conclusao.tipo === 'PENDENTE') return 'Aguardando conexão';
+  return props.conclusao.tipo === 'CRIADA' ? 'Notificação enviada' : 'Confirmação registrada';
+});
 
 const texto = computed(() => {
   const { conclusao } = props;
+  if (conclusao.tipo === 'PENDENTE') {
+    return 'A ocorrência ficou guardada no aparelho e vai ser enviada sozinha quando a conexão voltar. O protocolo sai nessa hora.';
+  }
   if (conclusao.tipo === 'CRIADA') return 'Seus vizinhos já podem confirmar a ocorrência.';
   if (conclusao.confirmacoes === null) return 'Você já tinha confirmado esta ocorrência.';
   return conclusao.confirmacoes === 1
@@ -22,11 +26,17 @@ const texto = computed(() => {
 
 <template>
   <section class="concluido">
-    <div class="concluido__selo">
-      <q-icon name="sym_o_check" size="36px" />
+    <div
+      class="concluido__selo"
+      :class="{ 'concluido__selo--pendente': conclusao.tipo === 'PENDENTE' }"
+    >
+      <q-icon
+        :name="conclusao.tipo === 'PENDENTE' ? 'sym_o_cloud_off' : 'sym_o_check'"
+        size="36px"
+      />
     </div>
     <h1 class="concluido__titulo">{{ titulo }}</h1>
-    <p class="concluido__protocolo">
+    <p v-if="conclusao.tipo !== 'PENDENTE'" class="concluido__protocolo">
       Protocolo <strong data-teste="protocolo">{{ conclusao.protocolo }}</strong>
     </p>
     <p class="concluido__texto">{{ texto }}</p>
@@ -39,6 +49,14 @@ const texto = computed(() => {
         class="fa-botao-largo"
         label="Ir para o início"
         @click="emit('inicio')"
+      />
+      <q-btn
+        v-if="conclusao.tipo === 'PENDENTE'"
+        flat
+        no-caps
+        color="primary"
+        label="Ver minhas ocorrências"
+        @click="emit('minhas')"
       />
       <q-btn flat no-caps color="primary" label="Registrar outra" @click="emit('outra')" />
     </div>
@@ -68,6 +86,11 @@ const texto = computed(() => {
   background: var(--fa-azul);
   color: #fff;
   box-shadow: 0 0 0 10px var(--fa-azul-suave);
+
+  &--pendente {
+    background: var(--fa-texto-3);
+    box-shadow: 0 0 0 10px var(--fa-borda);
+  }
 }
 
 .concluido__titulo {

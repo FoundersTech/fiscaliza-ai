@@ -57,9 +57,10 @@ function aoContinuar(): void {
   }
 }
 
-function concluir(destino: 'inicio' | 'outra'): void {
+function concluir(destino: 'inicio' | 'outra' | 'minhas'): void {
   registro.limpar();
   if (destino === 'inicio') void router.push('/');
+  if (destino === 'minhas') void router.push('/minhas-ocorrencias');
 }
 
 // Depois do protocolo, quem sai e volta começa um registro novo.
@@ -87,6 +88,7 @@ function voltar(): void {
           :conclusao="registro.conclusao"
           @inicio="concluir('inicio')"
           @outra="concluir('outra')"
+          @minhas="concluir('minhas')"
         />
       </q-page>
     </q-page-container>

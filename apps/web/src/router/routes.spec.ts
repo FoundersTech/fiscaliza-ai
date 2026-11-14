@@ -23,6 +23,11 @@ describe('routes', () => {
     expect(meta('/definir-senha')).toBeUndefined();
   });
 
+  it('minhas ocorrências fica na barra inferior e é só para cidadão', () => {
+    const minhas = routes[0]?.children?.find((rota) => rota.path === 'minhas-ocorrencias');
+    expect(minhas?.meta).toEqual({ auth: true, papeis: ['CIDADAO'] });
+  });
+
   it('deixa a rota coringa (404) por último', () => {
     expect(routes.at(-1)?.path).toBe('/:catchAll(.*)*');
   });

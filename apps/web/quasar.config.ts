@@ -5,7 +5,7 @@ import { defineConfig } from '#q-app';
 export default defineConfig(() => {
   return {
     // O tema é aplicado antes de montar o app, para não piscar claro antes do escuro.
-    boot: ['tema', 'api'],
+    boot: ['tema', 'api', 'pendentes'],
 
     css: ['app.scss'],
 
