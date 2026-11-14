@@ -140,7 +140,9 @@ export class ConsultasOcorrenciasPrisma implements ConsultasOcorrencias {
   pontosNaArea(filtro: FiltroPublico, area: AreaMapa, limite: number): Promise<LinhaPontoMapa[]> {
     const envelope = Prisma.sql`ST_MakeEnvelope(${area.oeste}::float8, ${area.sul}::float8,
       ${area.leste}::float8, ${area.norte}::float8, 4326)`;
-    // O && em `local` usa o índice GiST; a conferência exata é no ponto público, o que aparece.
+    // Para um ponto, o && com o retângulo já é a conferência exata (borda incluída). Ele usa o
+    // índice GiST de local_publico::geometry, que tem estatísticas: numa área pequena o banco
+    // parte dele; na cidade inteira, percorre o índice por data e para no limite.
     return this.prisma.$queryRaw<LinhaPontoMapa[]>`
       SELECT o.id,
              ST_Y(o.local_publico::geometry) AS lat, ST_X(o.local_publico::geometry) AS lng,
@@ -149,8 +151,7 @@ export class ConsultasOcorrenciasPrisma implements ConsultasOcorrencias {
       JOIN categoria c ON c.id = o.categoria_id
       JOIN municipio m ON m.id = o.municipio_id
       WHERE ${condicoes(filtro)}
-        AND o.local && ${envelope}::geography
-        AND ST_Intersects(o.local_publico::geometry, ${envelope})
+        AND o.local_publico::geometry && ${envelope}
       ORDER BY o.criada_em DESC, o.id DESC
       LIMIT ${limite}::int`;
   }

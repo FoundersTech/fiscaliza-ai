@@ -4,7 +4,9 @@
 // - a extensão PostGIS;
 // - os CHECKs (formato de slug e protocolo, tamanhos de texto, papel ⇒ vínculo, etc.);
 // - o índice UNIQUE em lower(email) de usuario;
-// - a coluna gerada ocorrencia.local_publico.
+// - a coluna gerada ocorrencia.local_publico;
+// - os índices das consultas públicas: o parcial por data (só status visíveis) e o GiST de
+//   local_publico::geometry.
 // Ao mudar o schema, gere a migration com `pnpm db:migrar --create-only --name <descricao>`
 // e acrescente à mão o SQL dessas regras antes de aplicá-la.
 

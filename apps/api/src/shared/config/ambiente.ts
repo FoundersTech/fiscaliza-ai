@@ -44,6 +44,9 @@ const esquemaAmbiente = z
     POLITICA_VERSAO: z.string().min(1).default('1'),
     // Atrás do Caddy: o IP do cliente vem do X-Forwarded-For. Sem proxy, deixe false.
     PROXY_CONFIAVEL: booleano.default(false),
+    // Desliga o limite de requisições por IP. Só para o teste de carga, numa API à parte:
+    // todas as requisições do k6 saem do mesmo IP. Nunca ligue na API que atende o público.
+    LIMITE_TAXA_DESLIGADO: booleano.default(false),
     // Endereço reverso. O servidor público aceita no máximo 1 requisição por segundo.
     NOMINATIM_URL: z.url({ protocol: /^https?$/ }).default('https://nominatim.openstreetmap.org'),
     // Map ID do Google Maps que o PWA recebe no /config/publica. DEMO_MAP_ID serve para testes.
