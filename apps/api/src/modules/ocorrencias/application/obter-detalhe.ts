@@ -18,6 +18,7 @@ import { ocorrenciaNaoEncontrada } from './confirmar-ocorrencia.js';
 import {
   CONSULTAS_OCORRENCIAS,
   type ConsultasOcorrencias,
+  type DadosDetalhe,
   type ReferenciaOriginal,
 } from './consultas.js';
 
@@ -49,6 +50,32 @@ export interface Detalhe extends Card {
   acoes: AcoesDoUsuario | null;
 }
 
+/** O detalhe a partir dos dados do banco; quem chama já decidiu que a pessoa pode vê-lo. */
+export function montarDetalhe(
+  dados: DadosDetalhe,
+  agora: Date,
+  acoes: AcoesDoUsuario | null,
+  montadorCard: MontadorCard,
+  urlFotos: UrlFotos,
+): Detalhe {
+  return {
+    ...montadorCard.montar(dados, agora, true),
+    descricao: dados.descricao,
+    atributos: dados.atributos,
+    fotos: dados.fotos.map((foto) => ({
+      url: urlFotos.publica(foto.storageKey),
+      miniaturaUrl: foto.miniaturaKey ? urlFotos.publica(foto.miniaturaKey) : null,
+    })),
+    linhaDoTempo: linhaDoTempo(dados.criadaEm, dados.eventos),
+    respostas: respostasOficiais(dados.eventos),
+    reaberturas: reaberturas(dados.eventos),
+    autorApelido: dados.autorApelido,
+    justificativaRecusa: justificativaRecusa(dados.status, dados.eventos),
+    original: dados.original,
+    acoes,
+  };
+}
+
 @Injectable()
 export class ObterDetalhe {
   constructor(
@@ -65,22 +92,8 @@ export class ObterDetalhe {
     // Recusada e duplicada só existem para o autor; para os demais, 404 como se não existissem.
     if (!ocorrencia.visivelPara(leitor?.usuarioId ?? null)) throw ocorrenciaNaoEncontrada();
 
-    return {
-      ...this.montadorCard.montar(dados, agora, true),
-      descricao: dados.descricao,
-      atributos: dados.atributos,
-      fotos: dados.fotos.map((foto) => ({
-        url: this.urlFotos.publica(foto.storageKey),
-        miniaturaUrl: foto.miniaturaKey ? this.urlFotos.publica(foto.miniaturaKey) : null,
-      })),
-      linhaDoTempo: linhaDoTempo(dados.criadaEm, dados.eventos),
-      respostas: respostasOficiais(dados.eventos),
-      reaberturas: reaberturas(dados.eventos),
-      autorApelido: dados.autorApelido,
-      justificativaRecusa: justificativaRecusa(dados.status, dados.eventos),
-      original: dados.original,
-      acoes: leitor ? await this.acoesDe(ocorrencia, leitor, agora) : null,
-    };
+    const acoes = leitor ? await this.acoesDe(ocorrencia, leitor, agora) : null;
+    return montarDetalhe(dados, agora, acoes, this.montadorCard, this.urlFotos);
   }
 
   private async acoesDe(

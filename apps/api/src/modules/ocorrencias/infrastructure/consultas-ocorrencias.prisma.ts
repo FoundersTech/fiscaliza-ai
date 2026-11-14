@@ -7,9 +7,11 @@ import type {
   ConsultasOcorrencias,
   DadosCard,
   DadosDetalhe,
+  FiltroFila,
   FiltroPublico,
   LinhaDoAutor,
   LinhaFeed,
+  LinhaFila,
   LinhaPontoMapa,
   PosicaoFeed,
   ReferenciaOriginal,
@@ -35,6 +37,7 @@ interface LinhaCardBanco {
 
 interface LinhaDetalheBanco extends LinhaCardBanco {
   municipioId: number;
+  orgaoId: number;
   autorId: string | null;
   autorApelido: string | null;
   atributos: Record<string, unknown>;
@@ -42,6 +45,10 @@ interface LinhaDetalheBanco extends LinhaCardBanco {
   duplicadaDeId: string | null;
   reaberturas: number;
   originalProtocolo: string | null;
+}
+
+interface LinhaFilaBanco extends LinhaCardBanco {
+  reaberturas: number;
 }
 
 interface LinhaDoAutorBanco extends LinhaCardBanco {
@@ -159,7 +166,7 @@ export class ConsultasOcorrenciasPrisma implements ConsultasOcorrencias {
     // O apelido nem sai do banco quando o autor não quis aparecer.
     const [linha] = await this.prisma.$queryRaw<LinhaDetalheBanco[]>`
       SELECT ${COLUNAS_CARD},
-             o.municipio_id AS "municipioId", o.autor_id AS "autorId", o.atributos,
+             o.municipio_id AS "municipioId", o.orgao_id AS "orgaoId", o.autor_id AS "autorId", o.atributos,
              o.triada_em AS "triadaEm", o.duplicada_de_id AS "duplicadaDeId", o.reaberturas,
              CASE WHEN o.publicar_autor THEN u.apelido_publico END AS "autorApelido",
              orig.protocolo AS "originalProtocolo"
@@ -193,6 +200,7 @@ export class ConsultasOcorrenciasPrisma implements ConsultasOcorrencias {
     return {
       ...dadosCard(linha),
       municipioId: linha.municipioId,
+      orgaoId: linha.orgaoId,
       autorId: linha.autorId,
       autorApelido: linha.autorApelido,
       atributos: linha.atributos,
@@ -247,5 +255,33 @@ export class ConsultasOcorrenciasPrisma implements ConsultasOcorrencias {
       justificativaRecusa: linha.justificativaRecusa,
       original: referenciaOriginal(linha.duplicadaDeId, linha.originalProtocolo),
     }));
+  }
+
+  async filaDoOrgao(
+    filtro: FiltroFila,
+    depoisDe: PosicaoFeed | null,
+    limite: number,
+  ): Promise<LinhaFila[]> {
+    const partes = [Prisma.sql`o.orgao_id = ${filtro.orgaoId}::int`];
+    if (filtro.status !== null) {
+      partes.push(Prisma.sql`o.status = ANY(${filtro.status}::status_ocorrencia[])`);
+    }
+    if (filtro.categorias !== null) {
+      partes.push(Prisma.sql`c.slug = ANY(${filtro.categorias}::text[])`);
+    }
+    if (depoisDe) {
+      partes.push(
+        Prisma.sql`(o.criada_em, o.id) > (${depoisDe.criadaEm}::timestamptz, ${depoisDe.id}::uuid)`,
+      );
+    }
+    // O índice (orgao_id, status, criada_em) atende a fila.
+    const linhas = await this.prisma.$queryRaw<LinhaFilaBanco[]>`
+      SELECT ${COLUNAS_CARD}, o.reaberturas
+      FROM ocorrencia o
+      JOIN categoria c ON c.id = o.categoria_id
+      WHERE ${Prisma.join(partes, ' AND ')}
+      ORDER BY o.criada_em ASC, o.id ASC
+      LIMIT ${limite}::int`;
+    return linhas.map((linha) => ({ ...linhaFeed(linha), reaberturas: linha.reaberturas }));
   }
 }

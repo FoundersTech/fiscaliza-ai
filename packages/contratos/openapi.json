@@ -769,6 +769,186 @@
           "ocorrencias"
         ]
       }
+    },
+    "/api/v1/atendimento/ocorrencias": {
+      "get": {
+        "operationId": "AtendimentoController_fila",
+        "parameters": [
+          {
+            "name": "categoria",
+            "required": false,
+            "in": "query",
+            "description": "Slugs das categorias, separados por vírgula",
+            "schema": {
+              "example": "iluminacao,pavimentacao",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "O proximo_cursor da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Status internos, separados por vírgula: RECEBIDA, EM_ANALISE, EM_EXECUCAO, RESOLVIDA, RECUSADA, DUPLICADA. Sem ele, todos.",
+            "schema": {
+              "example": "RECEBIDA,EM_ANALISE",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Só as do órgão do agente, da mais antiga para a mais recente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FilaResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)\n\nACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO (filtro, limite ou cursor inválido)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "atendimento"
+        ]
+      }
+    },
+    "/api/v1/atendimento/ocorrencias/{id}": {
+      "get": {
+        "operationId": "AtendimentoController_detalhe",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetalheAtendimentoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)\n\nACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADA"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "atendimento"
+        ]
+      }
+    },
+    "/api/v1/atendimento/ocorrencias/{id}/transicoes": {
+      "post": {
+        "operationId": "AtendimentoController_transicionar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransicaoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status alterado e evento gravado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransicaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)\n\nACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADA"
+          },
+          "409": {
+            "description": "CONFLITO_STATUS: o status já não é o status_esperado (recarregue a tela)"
+          },
+          "422": {
+            "description": "TRANSICAO_INVALIDA, COMENTARIO_OBRIGATORIO, ORIGINAL_INVALIDA ou VALIDACAO"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "atendimento"
+        ]
+      }
     }
   },
   "info": {
@@ -2048,6 +2228,455 @@
         "required": [
           "itens",
           "proximo_cursor"
+        ]
+      },
+      "ItemFilaResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "protocolo": {
+            "type": "string",
+            "example": "FA-2026-SOR-000123"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaCardResposta"
+          },
+          "status_publico": {
+            "type": "string",
+            "enum": [
+              "RECEBIDO",
+              "EM_ANDAMENTO",
+              "RESOLVIDO"
+            ]
+          },
+          "resumo": {
+            "type": "string",
+            "description": "Até 120 caracteres da descrição"
+          },
+          "endereco": {
+            "type": "string",
+            "nullable": true,
+            "example": "Rua Quinze de Novembro, 482 · Centro",
+            "description": "Null enquanto o endereço não foi preenchido"
+          },
+          "confirmacoes": {
+            "type": "number",
+            "example": 4,
+            "description": "Quantas pessoas disseram \"também vi\""
+          },
+          "urgente": {
+            "type": "boolean",
+            "description": "Atingiu o limiar de confirmações do selo URGENTE"
+          },
+          "dias_em_aberto": {
+            "type": "number",
+            "example": 3,
+            "description": "Dias desde o registro, ou até a resolução"
+          },
+          "miniatura_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Miniatura da primeira foto aprovada"
+          },
+          "foto_em_analise": {
+            "type": "boolean",
+            "description": "Nenhuma foto aprovada ainda: mostrar \"foto em análise\""
+          },
+          "criada_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECEBIDA",
+              "EM_ANALISE",
+              "EM_EXECUCAO",
+              "RESOLVIDA",
+              "RECUSADA",
+              "DUPLICADA"
+            ]
+          },
+          "reaberta": {
+            "type": "boolean",
+            "description": "Já foi reaberta alguma vez: mostrar o selo \"Reaberta\""
+          }
+        },
+        "required": [
+          "id",
+          "protocolo",
+          "categoria",
+          "status_publico",
+          "resumo",
+          "endereco",
+          "confirmacoes",
+          "urgente",
+          "dias_em_aberto",
+          "miniatura_url",
+          "foto_em_analise",
+          "criada_em",
+          "status",
+          "reaberta"
+        ]
+      },
+      "FilaResposta": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "description": "Da mais antiga para a mais recente",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ItemFilaResposta"
+            }
+          },
+          "proximo_cursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Passe em ?cursor= para a página seguinte; null na última"
+          }
+        },
+        "required": [
+          "itens",
+          "proximo_cursor"
+        ]
+      },
+      "EventoResposta": {
+        "type": "object",
+        "properties": {
+          "de_status": {
+            "type": "string",
+            "enum": [
+              "RECEBIDA",
+              "EM_ANALISE",
+              "EM_EXECUCAO",
+              "RESOLVIDA",
+              "RECUSADA",
+              "DUPLICADA"
+            ],
+            "nullable": true,
+            "description": "Null no evento de criação"
+          },
+          "para_status": {
+            "type": "string",
+            "enum": [
+              "RECEBIDA",
+              "EM_ANALISE",
+              "EM_EXECUCAO",
+              "RESOLVIDA",
+              "RECUSADA",
+              "DUPLICADA"
+            ]
+          },
+          "orgao": {
+            "type": "string",
+            "nullable": true,
+            "description": "Órgão que fez a mudança; null quando foi o cidadão (criação ou reabertura)"
+          },
+          "comentario": {
+            "type": "string",
+            "nullable": true,
+            "description": "Resposta oficial, justificativa de recusa ou de reabertura"
+          },
+          "criado_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "de_status",
+          "para_status",
+          "orgao",
+          "comentario",
+          "criado_em"
+        ]
+      },
+      "DetalheAtendimentoResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "protocolo": {
+            "type": "string",
+            "example": "FA-2026-SOR-000123"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaCardResposta"
+          },
+          "resumo": {
+            "type": "string",
+            "description": "Até 120 caracteres da descrição"
+          },
+          "endereco": {
+            "type": "string",
+            "nullable": true,
+            "example": "Rua Quinze de Novembro, 482 · Centro",
+            "description": "Null enquanto o endereço não foi preenchido"
+          },
+          "confirmacoes": {
+            "type": "number",
+            "example": 4,
+            "description": "Quantas pessoas disseram \"também vi\""
+          },
+          "urgente": {
+            "type": "boolean",
+            "description": "Atingiu o limiar de confirmações do selo URGENTE"
+          },
+          "dias_em_aberto": {
+            "type": "number",
+            "example": 3,
+            "description": "Dias desde o registro, ou até a resolução"
+          },
+          "miniatura_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Miniatura da primeira foto aprovada"
+          },
+          "foto_em_analise": {
+            "type": "boolean",
+            "description": "Nenhuma foto aprovada ainda: mostrar \"foto em análise\""
+          },
+          "criada_em": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status_publico": {
+            "type": "string",
+            "enum": [
+              "RECEBIDO",
+              "EM_ANDAMENTO",
+              "RESOLVIDO",
+              "RECUSADO",
+              "DUPLICADO"
+            ],
+            "description": "RECUSADO e DUPLICADO só aparecem para o autor"
+          },
+          "justificativa_recusa": {
+            "type": "string",
+            "nullable": true,
+            "description": "Motivo dado pelo órgão; preenchido só quando foi recusada"
+          },
+          "original": {
+            "nullable": true,
+            "description": "Ocorrência que já tratava do problema; preenchida só quando foi duplicada",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OriginalResposta"
+              }
+            ]
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "atributos": {
+            "type": "object",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "description": "Campos extras da categoria"
+          },
+          "fotos": {
+            "description": "Só as fotos aprovadas",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FotoDetalheResposta"
+            }
+          },
+          "linha_do_tempo": {
+            "description": "Da mais antiga para a mais recente",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EtapaResposta"
+            }
+          },
+          "respostas": {
+            "description": "\"Resposta da prefeitura\"",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RespostaOficialResposta"
+            }
+          },
+          "reaberturas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReaberturaResposta"
+            }
+          },
+          "autor_apelido": {
+            "type": "string",
+            "description": "Só quando o autor escolheu mostrar o apelido"
+          },
+          "minha_confirmacao": {
+            "type": "boolean",
+            "description": "Com token: a pessoa já disse \"também vi\""
+          },
+          "pode_confirmar": {
+            "type": "boolean",
+            "description": "Com token: mostrar o botão \"Também vi\""
+          },
+          "pode_avaliar": {
+            "type": "boolean",
+            "description": "Com token: mostrar \"Avaliar atendimento\""
+          },
+          "pode_reabrir": {
+            "type": "boolean",
+            "description": "Com token: mostrar \"Não foi resolvido\""
+          },
+          "prazo_pos_resolucao_ate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Com token: até quando dá para avaliar ou reabrir; null se não está resolvida"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECEBIDA",
+              "EM_ANALISE",
+              "EM_EXECUCAO",
+              "RESOLVIDA",
+              "RECUSADA",
+              "DUPLICADA"
+            ]
+          },
+          "reaberta": {
+            "type": "boolean",
+            "description": "Já foi reaberta alguma vez"
+          },
+          "eventos": {
+            "description": "Todos, do mais antigo ao mais recente",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventoResposta"
+            }
+          },
+          "transicoes_permitidas": {
+            "type": "array",
+            "description": "Para onde o agente pode levar a ocorrência agora; vazio nos status finais",
+            "items": {
+              "type": "string",
+              "enum": [
+                "RECEBIDA",
+                "EM_ANALISE",
+                "EM_EXECUCAO",
+                "RESOLVIDA",
+                "RECUSADA",
+                "DUPLICADA"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "protocolo",
+          "categoria",
+          "resumo",
+          "endereco",
+          "confirmacoes",
+          "urgente",
+          "dias_em_aberto",
+          "miniatura_url",
+          "foto_em_analise",
+          "criada_em",
+          "status_publico",
+          "justificativa_recusa",
+          "original",
+          "descricao",
+          "atributos",
+          "fotos",
+          "linha_do_tempo",
+          "respostas",
+          "reaberturas",
+          "status",
+          "reaberta",
+          "eventos",
+          "transicoes_permitidas"
+        ]
+      },
+      "TransicaoDto": {
+        "type": "object",
+        "properties": {
+          "status_esperado": {
+            "type": "string",
+            "enum": [
+              "RECEBIDA",
+              "EM_ANALISE",
+              "EM_EXECUCAO",
+              "RESOLVIDA",
+              "RECUSADA",
+              "DUPLICADA"
+            ],
+            "description": "O status que a tela mostrava; se mudou nesse meio-tempo, 409 CONFLITO_STATUS"
+          },
+          "para_status": {
+            "type": "string",
+            "enum": [
+              "RECEBIDA",
+              "EM_ANALISE",
+              "EM_EXECUCAO",
+              "RESOLVIDA",
+              "RECUSADA",
+              "DUPLICADA"
+            ]
+          },
+          "comentario": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Obrigatório para RESOLVIDA (resposta oficial) e RECUSADA (justificativa)"
+          },
+          "protocolo_original": {
+            "type": "string",
+            "example": "FA-2026-SOR-000101",
+            "description": "Obrigatório para DUPLICADA: protocolo da ocorrência original, do mesmo município"
+          }
+        },
+        "required": [
+          "status_esperado",
+          "para_status"
+        ]
+      },
+      "TransicaoResposta": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "RECEBIDA",
+              "EM_ANALISE",
+              "EM_EXECUCAO",
+              "RESOLVIDA",
+              "RECUSADA",
+              "DUPLICADA"
+            ]
+          },
+          "triada_em": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Primeira saída de RECEBIDA"
+          },
+          "resolvida_em": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "status",
+          "triada_em",
+          "resolvida_em"
         ]
       }
     }

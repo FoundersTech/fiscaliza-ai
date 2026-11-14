@@ -21,6 +21,7 @@ function outrasConsultas() {
     detalhe: vi.fn<ConsultasOcorrencias['detalhe']>(),
     vinculo: vi.fn<ConsultasOcorrencias['vinculo']>(),
     doAutor: vi.fn<ConsultasOcorrencias['doAutor']>(),
+    filaDoOrgao: vi.fn<ConsultasOcorrencias['filaDoOrgao']>(),
   };
 }
 

@@ -1,5 +1,10 @@
 import type { Ponto } from '../../territorio/domain/endereco.js';
-import type { DadosOcorrencia, StatusOcorrencia } from '../domain/ocorrencia.js';
+import type {
+  DadosOcorrencia,
+  EventoStatus,
+  OriginalDuplicidade,
+  StatusOcorrencia,
+} from '../domain/ocorrencia.js';
 import type { Atributos } from '../domain/schema-atributos.js';
 
 export const REPOSITORIO_OCORRENCIAS = Symbol('REPOSITORIO_OCORRENCIAS');
@@ -48,6 +53,22 @@ export interface ResultadoGravacao {
   fotoIds: string[];
 }
 
+/** A ocorrência e o órgão responsável por ela. */
+export interface OcorrenciaDoOrgao {
+  dados: DadosOcorrencia;
+  orgaoId: number;
+}
+
+/** Estado novo depois de uma transição do agente, com o evento que a registra. */
+export interface TransicaoGravavel {
+  /** O status lido antes da transição: se outra pessoa mudou antes, nada é gravado. */
+  statusEsperado: StatusOcorrencia;
+  estado: DadosOcorrencia;
+  evento: EventoStatus;
+  agenteId: string;
+  orgaoId: number;
+}
+
 export interface RepositorioOcorrencias {
   buscar(id: string): Promise<OcorrenciaGravada | null>;
   categoriaAtiva(id: number): Promise<CategoriaDoRegistro | null>;
@@ -63,4 +84,8 @@ export interface RepositorioOcorrencias {
   semEnderecoCriadasAntes(antesDe: Date, limite: number): Promise<string[]>;
   carregar(id: string): Promise<DadosOcorrencia | null>;
   confirmar(ocorrenciaId: string, usuarioId: string, criadaEm: Date): Promise<number | null>;
+  carregarComOrgao(id: string): Promise<OcorrenciaDoOrgao | null>;
+  originalPorProtocolo(protocolo: string): Promise<OriginalDuplicidade | null>;
+  /** Devolve o id do evento, ou null quando o status já não era o esperado. */
+  gravarTransicao(transicao: TransicaoGravavel): Promise<number | null>;
 }
