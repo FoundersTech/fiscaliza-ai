@@ -3,13 +3,10 @@ import type { DestinationStream } from 'pino';
 import type { Options } from 'pino-http';
 
 import type { Ambiente } from '../config/ambiente.js';
+import { RequestMethod } from '@nestjs/common';
 
 export const CENSURA = '[Redacted]';
 
-/**
- * Campos que nunca aparecem nos logs, para não vazar dados pessoais.
- * O `*` cobre um nível de profundidade: { usuario: { email } } é ocultado.
- */
 export const CAMINHOS_OCULTOS = [
   'req.headers.authorization',
   'req.headers.cookie',
@@ -22,7 +19,6 @@ export const CAMINHOS_OCULTOS = [
 
 const SUFIXO_HEALTH = '/health';
 
-/** Como middleware do Nest, o `req.url` chega relativo; a URL completa fica em `originalUrl`. */
 function caminhoDaRequisicao(req: { url?: string; originalUrl?: string }): string {
   return req.originalUrl ?? req.url ?? '';
 }
@@ -34,7 +30,6 @@ export function criarConfigLogger(
   const opcoes: Options = {
     level: ambiente.LOG_LEVEL,
     redact: { paths: CAMINHOS_OCULTOS, censor: CENSURA },
-    // O monitor externo chama o /health o tempo todo; não vale encher o log com isso.
     autoLogging: { ignore: (req) => caminhoDaRequisicao(req).endsWith(SUFIXO_HEALTH) },
     ...(ambiente.NODE_ENV === 'development' && !destino
       ? {
@@ -46,5 +41,8 @@ export function criarConfigLogger(
       : {}),
   };
 
-  return { pinoHttp: destino ? [opcoes, destino] : opcoes };
+  return {
+    pinoHttp: destino ? [opcoes, destino] : opcoes,
+    forRoutes: [{ path: '/{*splat}', method: RequestMethod.ALL }],
+  };
 }
