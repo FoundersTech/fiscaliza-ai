@@ -186,7 +186,7 @@ describe('store do registro', () => {
       const segunda = enviar.mock.calls[1]![1];
       expect(segunda.id).not.toBe(idAntigo);
       expect(segunda.fotos[0]!.uploadKey).toBeUndefined();
-      expect(registro.conclusao?.protocolo).toBe('FA-2026-SOR-000011');
+      expect(registro.conclusao).toMatchObject({ protocolo: 'FA-2026-SOR-000011' });
     });
 
     it('"Também vi" conclui com o protocolo da existente e o novo total', async () => {

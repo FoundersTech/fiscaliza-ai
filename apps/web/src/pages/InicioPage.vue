@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import CabecalhoPagina from '@/components/CabecalhoPagina.vue';
 import EstadoVazio from '@/components/EstadoVazio.vue';
+import AvisoPendentes from '@/components/pendentes/AvisoPendentes.vue';
 </script>
 
 <template>
   <q-page>
     <div class="fa-conteudo">
       <CabecalhoPagina titulo="Ocorrências" com-local />
+
+      <AvisoPendentes />
 
       <router-link to="/score" class="selo fa-card" aria-label="Ver a reputação da gestão">
         <div class="selo__nota">
