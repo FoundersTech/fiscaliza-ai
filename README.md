@@ -25,26 +25,43 @@ Dar aos cidadãos uma ferramenta simples para reportar problemas urbanos e, ao m
 ## 🗺️ Roadmap (alto nível)
 
 - [x] Cadastro e autenticação de usuários (cidadãos)
-- [ ] Envio de notificação (foto + descrição + geolocalização)
-- [ ] Listagem/mapa de notificações por região
-- [ ] Fluxo de atualização de status pela prefeitura (recebido → em andamento → resolvido)
+- [x] Envio de notificação (foto + descrição + geolocalização), inclusive sem internet
+- [x] Feed e mapa públicos das notificações, com detalhe e "Também vi"
+- [x] Fluxo de atualização de status pela prefeitura (recebido → em andamento → resolvido)
+- [x] Alertas de mudança de status para quem registrou e para quem confirmou
+- [x] Painel público de acompanhamento
+- [x] Administração do órgão, dos agentes, das categorias e das fotos
+- [x] Exportação dos dados e exclusão da conta
+- [ ] Avaliação do atendimento e reabertura no app (a API já está pronta)
+- [ ] Notificações push
 - [ ] Cálculo e exibição do score da gestão municipal
-- [ ] Painel público de acompanhamento
+- [ ] Tela "Minha conta"
+- [ ] Ambiente de produção
 
-> Este roadmap é conceitual e será refinado conforme o projeto evolui.
+> O andamento detalhado está na lista de tarefas do projeto.
+
+### Telas do app
+
+| Tela                                                   | Quem usa                    |
+| ------------------------------------------------------ | --------------------------- |
+| Início (feed), `/mapa`, `/painel`, `/ocorrencias/:id`  | Qualquer pessoa, sem login  |
+| `/registrar`, `/minhas-ocorrencias`, `/alertas`        | Cidadão                     |
+| `/atendimento`, `/atendimento/:id`                     | Agente do órgão             |
+| `/admin/orgao`, `/admin/agentes`                       | Gestor do município         |
+| `/admin/categorias`, `/admin/gestores`, `/admin/fotos` | Administrador da plataforma |
 
 ## 🛠️ Stack
 
-| Camada         | Tecnologia                                 |
-| -------------- | ------------------------------------------ |
-| Frontend (PWA) | Quasar 2 (app-vite 3) + Vue 3 + TypeScript |
-| Backend        | NestJS 12 (ESM) + Fastify, Node 24         |
-| Banco          | PostgreSQL 16 + PostGIS 3, Prisma 7        |
-| Fila e cache   | Redis 7 + BullMQ 5                         |
-| Storage        | Cloudflare R2                              |
-| Mapa           | Google Maps JavaScript API                 |
-| Endereços      | Nominatim (OpenStreetMap)                  |
-| Testes         | Vitest                                     |
+| Camada         | Tecnologia                                    |
+| -------------- | --------------------------------------------- |
+| Frontend (PWA) | Quasar 2 (app-vite 3) + Vue 3 + TypeScript    |
+| Backend        | NestJS 12 (ESM) + Fastify, Node 24            |
+| Banco          | PostgreSQL 16 + PostGIS 3, Prisma 7           |
+| Fila e cache   | Redis 7 + BullMQ 5                            |
+| Storage        | Cloudflare R2                                 |
+| Mapa           | Google Maps JavaScript API + Places API (New) |
+| Endereços      | Nominatim (OpenStreetMap)                     |
+| Testes         | Vitest; k6 no teste de carga                  |
 
 Monorepo pnpm, TypeScript 6 estrito, ESLint e Prettier.
 
@@ -83,7 +100,7 @@ pnpm typecheck
 pnpm test
 ```
 
-No PWA, os testes que dependem de canvas e de decodificar imagens (arquivos `*.navegador.spec.ts`, como o da compressão das fotos) rodam no Google Chrome instalado na máquina, pelo modo navegador do Vitest. O Chrome precisa estar instalado; nenhum navegador é baixado.
+No PWA, os testes que dependem de canvas e de decodificar imagens (arquivos `*.navegador.spec.ts`, como o da compressão das fotos) rodam no Google Chrome instalado na máquina, pelo modo navegador do Vitest. O Chrome precisa estar instalado; nenhum navegador é baixado. O servidor desse modo usa a porta 5199 (a padrão do Vitest, 63315, cai numa faixa que o Windows reserva quando o Docker Desktop está ligado); para outra porta, use `VITEST_PORTA_NAVEGADOR`.
 
 ```bash
 pnpm build
@@ -109,10 +126,16 @@ Em seguida, carregue os dados. O `db:seed:dev` aplica a carga inicial (Sorocaba,
 pnpm db:seed:dev
 ```
 
-Com o banco, o Redis e o storage de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução, buckets à parte (`fa-uploads-teste`, `fa-fotos-teste` e `fa-backup-teste`) e o banco 1 do Redis, para que uma API de desenvolvimento ligada não pegue os jobs dos testes. O teste do backup usa o `pg_dump` e o `pg_restore` do PATH quando existem (no CI, o runner já os traz) e, senão, os do container `postgres` do Compose (`docker compose exec`), que têm a mesma versão do servidor:
+Com o banco, o Redis e o storage de pé, rode também os testes de integração. Eles usam um banco à parte (`fiscaliza_teste`), recriado e migrado a cada execução, buckets à parte (`fa-uploads-teste`, `fa-fotos-teste` e `fa-backup-teste`) e o banco 1 do Redis, para que uma API de desenvolvimento ligada não pegue os jobs dos testes. O teste do backup usa um `pg_dump` e um `pg_restore` da mesma versão do servidor (16): os do PATH, se forem dessa versão; senão, os do container `postgres` do Compose, se ele estiver no ar; e, senão (caso do CI, cujo runner traz um cliente mais novo), os da imagem do Postgres num container descartável:
 
 ```bash
 pnpm test:int
+```
+
+Para rodar a suíte em duas cópias do repositório ao mesmo tempo (duas worktrees, por exemplo), dê a cada uma um sufixo e um banco do Redis próprios. O sufixo separa o banco de teste (`fiscaliza_teste_<sufixo>`) e os buckets de uploads e de backup; sem isso, uma execução recria o banco da outra no meio:
+
+```bash
+SUFIXO_TESTE=t26 REDIS_URL=redis://localhost:6379/4 pnpm test:int
 ```
 
 Para desenvolver, rode `pnpm --filter @fiscaliza/api start:dev` (API em `http://localhost:3000/api/v1`, Swagger em `http://localhost:3000/docs`) e `pnpm --filter @fiscaliza/web dev` (PWA). Para desligar tudo, use `pnpm infra:down`.
@@ -142,13 +165,13 @@ Para conferir, suba uma API de teste com esse `DATABASE_URL` e outro banco do Re
 
 ### Mapa em desenvolvimento
 
-O mapa do registro usa o Google Maps JavaScript API com a chave de desenvolvimento (`maps-dev`, liberada para `http://localhost:9000`). A chave entra no build do PWA pela variável `GOOGLE_MAPS_API_KEY`; defina-a no terminal antes de subir o PWA, sem gravar em arquivo do repositório:
+O mapa do registro e a tela `/mapa` usam o Google Maps JavaScript API com a chave de desenvolvimento (`maps-dev`, liberada para `http://localhost:9000`). A busca de bairro e endereço da tela `/mapa` usa também a Places API (New), que precisa estar liberada na mesma chave; sem ela, o mapa abre sem a busca. A chave entra no build do PWA pela variável `GOOGLE_MAPS_API_KEY`; defina-a no terminal antes de subir o PWA, sem gravar em arquivo do repositório:
 
 ```bash
 GOOGLE_MAPS_API_KEY=<chave maps-dev> pnpm --filter @fiscaliza/web dev
 ```
 
-Sem a chave, o passo 3 mostra "Mapa indisponível" e o envio segue com o ponto do GPS. O Map ID vem da API, em `GET /api/v1/config/publica` (`DEMO_MAP_ID` no seu computador).
+Sem a chave, ou com a chave recusada, o mapa mostra "Mapa indisponível", e o registro segue com o ponto do GPS. O Map ID vem da API, em `GET /api/v1/config/publica`, a partir de `GOOGLE_MAPS_MAP_ID` (sem a variável, vale o `DEMO_MAP_ID`, o Map ID de testes do Google).
 
 ### E-mails em desenvolvimento
 
@@ -160,11 +183,9 @@ pnpm email:teste --para voce@exemplo.com
 
 O argumento vai direto depois do nome do script, sem `--`: com ele, o comando recusa o `--para`.
 
-### Endereços e mapa em desenvolvimento
+### Endereços em desenvolvimento
 
 O `GET /api/v1/geo/reverso` busca o endereço no servidor público do Nominatim, então precisa de internet também em desenvolvimento. A API faz no máximo uma consulta a cada 1,1 s, como pede a política de uso do servidor, e guarda cada endereço no Redis por 30 dias; sem Redis, ou se o Nominatim demorar mais de 2 s, o endereço vem `null`. Para usar outro servidor, mude `NOMINATIM_URL` no `.env`.
-
-O Map ID do Google Maps que o PWA recebe em `GET /api/v1/config/publica` vem de `GOOGLE_MAPS_MAP_ID`. Sem essa variável, vale o `DEMO_MAP_ID`, o Map ID de testes do Google.
 
 ### Administrador da plataforma
 
@@ -175,6 +196,19 @@ pnpm criar-admin --email voce@exemplo.com --nome "Seu Nome"
 ```
 
 O `--nome` é opcional. No container da API, rode `node dist/cli/criar-admin.js --email voce@exemplo.com`.
+
+Depois de entrar, o administrador da plataforma convida os gestores de cada município em `/admin/gestores`, e cada gestor convida os agentes do seu órgão em `/admin/agentes`. Os convites seguem o mesmo caminho: e-mail com link para definir a senha.
+
+### Segurança
+
+- **CSP do PWA:** `apps/web/public/_headers` vai junto com cada publicação no Cloudflare Pages e define a Content-Security-Policy e outros cabeçalhos de segurança. Um recurso novo de outro domínio (outro serviço de mapas, uma fonte externa) precisa entrar nessa lista, ou o navegador o bloqueia.
+- **API:** cabeçalhos do `@fastify/helmet` em todas as respostas; CORS só para o `WEB_URL` de cada ambiente, com GET, HEAD, POST, PUT, PATCH e DELETE.
+- **Limites de uso** (no Redis, `429` ao passar): leituras públicas (feed, mapa, detalhe, painel e configuração) 120 por minuto por IP, somadas; `/geo/reverso` 30 por minuto e registro de ocorrência 60 por hora por usuário; exclusão de conta 5 a cada 15 minutos por IP. `LIMITE_TAXA_DESLIGADO=true` desliga todos os limites e existe só para o teste de carga.
+- **Logs:** não guardam senha, e-mail, tokens, cookies nem o IP de quem fez a requisição.
+
+### Teste de carga
+
+O roteiro com o k6 e o gerador de 200 mil ocorrências sintéticas, num banco à parte (`fiscaliza_carga`), está em [`apps/api/carga/README.md`](apps/api/carga/README.md). Os números da última rodada, numa máquina de desenvolvimento: p95 de 72 ms no mapa, 15 ms no feed e 10 ms no detalhe.
 
 ### Contratos da API
 

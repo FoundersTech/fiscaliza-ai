@@ -23,6 +23,9 @@ coverage
 #Specs
 /docs/specs
 
+#Skills
+/.agents
+
 # Configuração local do Claude Code
 /.claude
 
