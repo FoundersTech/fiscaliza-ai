@@ -203,7 +203,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["ConsultasController_feed"];
+        get?: never;
         put?: never;
         post: operations["OcorrenciasController_registrar"];
         delete?: never;
@@ -228,32 +228,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/ocorrencias/mapa": {
+    "/api/v1/admin/orgao": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["ConsultasController_mapa"];
+        get: operations["OrgaoController_obter"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["OrgaoController_editar"];
+        trace?: never;
+    };
+    "/api/v1/admin/agentes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AgentesController_listar"];
+        put?: never;
+        post: operations["AgentesController_convidar"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/indicadores/painel": {
+    "/api/v1/admin/agentes/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["IndicadoresController_painel"];
+        get?: never;
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["AgentesController_alterar"];
+        trace?: never;
+    };
+    "/api/v1/admin/gestores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GestoresController_convidar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -525,116 +557,54 @@ export interface components {
              */
             confirmacoes: number;
         };
-        CategoriaCardResposta: {
-            /** @example iluminacao */
-            slug: string;
-            /** @example Iluminação */
+        OrgaoResposta: {
+            id: number;
+            municipio_id: number;
             nome: string;
-            /** @example lightbulb */
-            icone: string;
+            sigla: string;
         };
-        CardResposta: {
+        EdicaoOrgaoDto: {
+            /** @example Prefeitura de Sorocaba */
+            nome?: string;
+            /** @example PMS */
+            sigla?: string;
+        };
+        AgenteResposta: {
             /** Format: uuid */
             id: string;
-            /** @example FA-2026-SOR-000123 */
-            protocolo: string;
-            categoria: components["schemas"]["CategoriaCardResposta"];
-            /** @enum {string} */
-            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO";
-            /** @description Até 120 caracteres da descrição */
-            resumo: string;
-            /**
-             * @description Null enquanto o endereço não foi preenchido
-             * @example Rua Quinze de Novembro, 482 · Centro
-             */
-            endereco: string | null;
-            /**
-             * @description Quantas pessoas disseram "também vi"
-             * @example 4
-             */
-            confirmacoes: number;
-            /** @description Atingiu o limiar de confirmações do selo URGENTE */
-            urgente: boolean;
-            /**
-             * @description Dias desde o registro, ou até a resolução
-             * @example 3
-             */
-            dias_em_aberto: number;
-            /** @description Miniatura da primeira foto aprovada */
-            miniatura_url: string | null;
-            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
-            foto_em_analise: boolean;
-            /** Format: date-time */
-            criada_em: string;
+            nome: string;
+            email: string;
+            ativo: boolean;
+            /** @description Ainda não definiu a senha pelo link do convite */
+            convite_pendente: boolean;
         };
-        FeedResposta: {
-            itens: components["schemas"]["CardResposta"][];
-            /** @description Passe em ?cursor= para a página seguinte; null na última */
-            proximo_cursor: string | null;
+        ConviteDto: {
+            /** @example João Pereira */
+            nome: string;
+            /** @example joao@sorocaba.sp.gov.br */
+            email: string;
         };
-        PontoMapaResposta: {
+        AlteracaoAgenteDto: {
+            /** @description false desativa o agente e encerra todas as sessões dele */
+            ativo: boolean;
+        };
+        ConviteGestorDto: {
+            /** @example João Pereira */
+            nome: string;
+            /** @example joao@sorocaba.sp.gov.br */
+            email: string;
+            /**
+             * @description Código IBGE do município
+             * @example 3552205
+             */
+            municipio_id: number;
+        };
+        GestorResposta: {
             /** Format: uuid */
             id: string;
-            /** @example -23.5015 */
-            lat: number;
-            /** @example -47.4526 */
-            lng: number;
-            /**
-             * @description Define a cor do alfinete
-             * @enum {string}
-             */
-            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO";
-            /** @example iluminacao */
-            categoria_slug: string;
-            urgente: boolean;
-        };
-        MapaResposta: {
-            /** @description No máximo 2000 */
-            pontos: components["schemas"]["PontoMapaResposta"][];
-            /** @description Havia mais pontos na área: o PWA pede para aproximar o mapa */
-            truncado: boolean;
-        };
-        CategoriaPainelResposta: {
-            /** @example iluminacao */
-            slug: string;
-            /** @example Iluminação */
             nome: string;
-            /** @example lightbulb */
-            icone: string;
-            /** @example 12 */
-            total: number;
-            /** @example 7 */
-            resolvidas: number;
-        };
-        PainelResposta: {
-            /** @description Nenhuma ocorrência no período: mostrar "Sem ocorrências no período" */
-            vazio: boolean;
-            /**
-             * @example 30
-             * @enum {number}
-             */
-            periodo_dias: 30 | 90 | 365;
-            /** @example 40 */
-            total: number;
-            /** @example 22 */
-            resolvidas: number;
-            /**
-             * @description Percentual de resolvidas, com uma casa; null quando vazio
-             * @example 55
-             */
-            resolvidas_pct: number | null;
-            /**
-             * @description Mediana de dias entre o registro e a resolução; null sem nenhuma resolvida
-             * @example 6.5
-             */
-            dias_mediana: number | null;
-            /** @description Só as categorias com ocorrências, da maior para a menor */
-            por_categoria: components["schemas"]["CategoriaPainelResposta"][];
-            /**
-             * Format: date-time
-             * @description Quando os números foram calculados (ficam guardados por até 5 minutos)
-             */
-            calculado_em: string;
+            email: string;
+            municipio_id: number;
         };
     };
     responses: never;
@@ -1060,50 +1030,6 @@ export interface operations {
             };
         };
     };
-    ConsultasController_feed: {
-        parameters: {
-            query?: {
-                /** @description Código IBGE; sem ele, todos os municípios atendidos */
-                municipio?: number;
-                /** @description Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO */
-                status?: string;
-                /** @description Slugs das categorias, separados por vírgula */
-                categoria?: string;
-                /** @description O proximo_cursor da página anterior */
-                cursor?: string;
-                limite?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Da mais recente para a mais antiga */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FeedResposta"];
-                };
-            };
-            /** @description VALIDACAO (filtro, limite ou cursor inválido) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Mais de 120 tentativas em 60 s. */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     OcorrenciasController_registrar: {
         parameters: {
             query?: never;
@@ -1228,41 +1154,40 @@ export interface operations {
             };
         };
     };
-    ConsultasController_mapa: {
+    OrgaoController_obter: {
         parameters: {
-            query: {
-                /** @description Código IBGE; sem ele, todos os municípios atendidos */
-                municipio?: number;
-                /** @description Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO */
-                status?: string;
-                /** @description Slugs das categorias, separados por vírgula */
-                categoria?: string;
-                /** @description Área visível do mapa: minLng,minLat,maxLng,maxLat */
-                bbox: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
+            /** @description O órgão do município do gestor */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MapaResposta"];
+                    "application/json": components["schemas"]["OrgaoResposta"];
                 };
             };
-            /** @description BBOX_INVALIDA (área ausente ou malformada) ou VALIDACAO (filtro inválido) */
-            422: {
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Mais de 120 tentativas em 60 s. */
-            429: {
+            /** @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description MUNICIPIO_SEM_ORGAO: falha da carga inicial */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1270,39 +1195,247 @@ export interface operations {
             };
         };
     };
-    IndicadoresController_painel: {
+    OrgaoController_editar: {
         parameters: {
-            query?: {
-                /** @description Código IBGE; sem ele, todos os municípios atendidos */
-                municipio?: number;
-                /** @description Últimos N dias, pela data de registro */
-                periodo?: 30 | 90 | 365;
-                /** @description Slugs das categorias, separados por vírgula */
-                categoria?: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EdicaoOrgaoDto"];
+            };
+        };
         responses: {
+            /** @description Órgão com o nome e a sigla novos */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PainelResposta"];
+                    "application/json": components["schemas"]["OrgaoResposta"];
                 };
             };
-            /** @description VALIDACAO (período, município ou categoria) */
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description Mais de 120 tentativas em 60 s. */
-            429: {
+        };
+    };
+    AgentesController_listar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agentes do órgão do município do gestor, em ordem de nome */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgenteResposta"][];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description MUNICIPIO_SEM_ORGAO: falha da carga inicial */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentesController_convidar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConviteDto"];
+            };
+        };
+        responses: {
+            /** @description Agente criado sem senha; o convite para definir a senha vale por 72 horas */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgenteResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description EMAIL_EM_USO */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AgentesController_alterar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlteracaoAgenteDto"];
+            };
+        };
+        responses: {
+            /** @description Agente ativado ou desativado. Desativar encerra todas as sessões dele na hora. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgenteResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
+             *
+             *     OUTRO_MUNICIPIO: o agente é de outro município. ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADO */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GestoresController_convidar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConviteGestorDto"];
+            };
+        };
+        responses: {
+            /** @description ADMIN_MUNICIPIO criado sem senha; o convite vale por 72 horas */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GestorResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description EMAIL_EM_USO */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO ou MUNICIPIO_INEXISTENTE */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

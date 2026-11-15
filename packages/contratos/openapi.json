@@ -474,82 +474,6 @@
         "tags": [
           "ocorrencias"
         ]
-      },
-      "get": {
-        "operationId": "ConsultasController_feed",
-        "parameters": [
-          {
-            "name": "municipio",
-            "required": false,
-            "in": "query",
-            "description": "Código IBGE; sem ele, todos os municípios atendidos",
-            "schema": {
-              "example": 3552205,
-              "type": "number"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO",
-            "schema": {
-              "example": "RECEBIDO,EM_ANDAMENTO",
-              "type": "string"
-            }
-          },
-          {
-            "name": "categoria",
-            "required": false,
-            "in": "query",
-            "description": "Slugs das categorias, separados por vírgula",
-            "schema": {
-              "example": "iluminacao,pavimentacao",
-              "type": "string"
-            }
-          },
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "O proximo_cursor da página anterior",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limite",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 50,
-              "default": 20,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Da mais recente para a mais antiga",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FeedResposta"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "VALIDACAO (filtro, limite ou cursor inválido)"
-          },
-          "429": {
-            "description": "Mais de 120 tentativas em 60 s."
-          }
-        },
-        "tags": [
-          "ocorrencias"
-        ]
       }
     },
     "/api/v1/ocorrencias/{id}/confirmacoes": {
@@ -602,134 +526,270 @@
         ]
       }
     },
-    "/api/v1/ocorrencias/mapa": {
+    "/api/v1/admin/orgao": {
       "get": {
-        "operationId": "ConsultasController_mapa",
-        "parameters": [
-          {
-            "name": "municipio",
-            "required": false,
-            "in": "query",
-            "description": "Código IBGE; sem ele, todos os municípios atendidos",
-            "schema": {
-              "example": 3552205,
-              "type": "number"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO",
-            "schema": {
-              "example": "RECEBIDO,EM_ANDAMENTO",
-              "type": "string"
-            }
-          },
-          {
-            "name": "categoria",
-            "required": false,
-            "in": "query",
-            "description": "Slugs das categorias, separados por vírgula",
-            "schema": {
-              "example": "iluminacao,pavimentacao",
-              "type": "string"
-            }
-          },
-          {
-            "name": "bbox",
-            "required": true,
-            "in": "query",
-            "description": "Área visível do mapa: minLng,minLat,maxLng,maxLat",
-            "schema": {
-              "example": "-47.55,-23.60,-47.35,-23.40",
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "OrgaoController_obter",
+        "parameters": [],
         "responses": {
           "200": {
-            "description": "",
+            "description": "O órgão do município do gestor",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MapaResposta"
+                  "$ref": "#/components/schemas/OrgaoResposta"
                 }
               }
             }
           },
-          "422": {
-            "description": "BBOX_INVALIDA (área ausente ou malformada) ou VALIDACAO (filtro inválido)"
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
           },
-          "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "MUNICIPIO_SEM_ORGAO: falha da carga inicial"
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "ocorrencias"
+          "administracao"
+        ]
+      },
+      "patch": {
+        "operationId": "OrgaoController_editar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdicaoOrgaoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Órgão com o nome e a sigla novos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
         ]
       }
     },
-    "/api/v1/indicadores/painel": {
+    "/api/v1/admin/agentes": {
       "get": {
-        "operationId": "IndicadoresController_painel",
-        "parameters": [
-          {
-            "name": "municipio",
-            "required": false,
-            "in": "query",
-            "description": "Código IBGE; sem ele, todos os municípios atendidos",
-            "schema": {
-              "example": 3552205,
-              "type": "number"
-            }
-          },
-          {
-            "name": "periodo",
-            "required": false,
-            "in": "query",
-            "description": "Últimos N dias, pela data de registro",
-            "schema": {
-              "default": 30,
-              "type": "number",
-              "enum": [
-                30,
-                90,
-                365
-              ]
-            }
-          },
-          {
-            "name": "categoria",
-            "required": false,
-            "in": "query",
-            "description": "Slugs das categorias, separados por vírgula",
-            "schema": {
-              "example": "iluminacao,pavimentacao",
-              "type": "string"
-            }
-          }
-        ],
+        "operationId": "AgentesController_listar",
+        "parameters": [],
         "responses": {
           "200": {
-            "description": "",
+            "description": "Agentes do órgão do município do gestor, em ordem de nome",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PainelResposta"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgenteResposta"
+                  }
                 }
               }
             }
           },
-          "422": {
-            "description": "VALIDACAO (período, município ou categoria)"
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
           },
-          "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "MUNICIPIO_SEM_ORGAO: falha da carga inicial"
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
         "tags": [
-          "indicadores"
+          "administracao"
+        ]
+      },
+      "post": {
+        "operationId": "AgentesController_convidar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agente criado sem senha; o convite para definir a senha vale por 72 horas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgenteResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "409": {
+            "description": "EMAIL_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
+    "/api/v1/admin/agentes/{id}": {
+      "patch": {
+        "operationId": "AgentesController_alterar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlteracaoAgenteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agente ativado ou desativado. Desativar encerra todas as sessões dele na hora.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgenteResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.\n\nOUTRO_MUNICIPIO: o agente é de outro município. ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADO"
+          },
+          "422": {
+            "description": "VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
+    "/api/v1/admin/gestores": {
+      "post": {
+        "operationId": "GestoresController_convidar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConviteGestorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "ADMIN_MUNICIPIO criado sem senha; o convite vale por 72 horas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GestorResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "409": {
+            "description": "EMAIL_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou MUNICIPIO_INEXISTENTE"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
         ]
       }
     }
@@ -1454,274 +1514,155 @@
           "confirmacoes"
         ]
       },
-      "CategoriaCardResposta": {
-        "type": "object",
-        "properties": {
-          "slug": {
-            "type": "string",
-            "example": "iluminacao"
-          },
-          "nome": {
-            "type": "string",
-            "example": "Iluminação"
-          },
-          "icone": {
-            "type": "string",
-            "example": "lightbulb"
-          }
-        },
-        "required": [
-          "slug",
-          "nome",
-          "icone"
-        ]
-      },
-      "CardResposta": {
+      "OrgaoResposta": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "type": "number"
           },
-          "protocolo": {
-            "type": "string",
-            "example": "FA-2026-SOR-000123"
+          "municipio_id": {
+            "type": "number"
           },
-          "categoria": {
-            "$ref": "#/components/schemas/CategoriaCardResposta"
+          "nome": {
+            "type": "string"
           },
-          "status_publico": {
-            "type": "string",
-            "enum": [
-              "RECEBIDO",
-              "EM_ANDAMENTO",
-              "RESOLVIDO"
-            ]
-          },
-          "resumo": {
-            "type": "string",
-            "description": "Até 120 caracteres da descrição"
-          },
-          "endereco": {
-            "type": "string",
-            "nullable": true,
-            "example": "Rua Quinze de Novembro, 482 · Centro",
-            "description": "Null enquanto o endereço não foi preenchido"
-          },
-          "confirmacoes": {
-            "type": "number",
-            "example": 4,
-            "description": "Quantas pessoas disseram \"também vi\""
-          },
-          "urgente": {
-            "type": "boolean",
-            "description": "Atingiu o limiar de confirmações do selo URGENTE"
-          },
-          "dias_em_aberto": {
-            "type": "number",
-            "example": 3,
-            "description": "Dias desde o registro, ou até a resolução"
-          },
-          "miniatura_url": {
-            "type": "string",
-            "nullable": true,
-            "description": "Miniatura da primeira foto aprovada"
-          },
-          "foto_em_analise": {
-            "type": "boolean",
-            "description": "Nenhuma foto aprovada ainda: mostrar \"foto em análise\""
-          },
-          "criada_em": {
-            "type": "string",
-            "format": "date-time"
+          "sigla": {
+            "type": "string"
           }
         },
         "required": [
           "id",
-          "protocolo",
-          "categoria",
-          "status_publico",
-          "resumo",
-          "endereco",
-          "confirmacoes",
-          "urgente",
-          "dias_em_aberto",
-          "miniatura_url",
-          "foto_em_analise",
-          "criada_em"
+          "municipio_id",
+          "nome",
+          "sigla"
         ]
       },
-      "FeedResposta": {
+      "EdicaoOrgaoDto": {
         "type": "object",
         "properties": {
-          "itens": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CardResposta"
-            }
-          },
-          "proximo_cursor": {
+          "nome": {
             "type": "string",
-            "nullable": true,
-            "description": "Passe em ?cursor= para a página seguinte; null na última"
+            "example": "Prefeitura de Sorocaba",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "sigla": {
+            "type": "string",
+            "example": "PMS",
+            "minLength": 2,
+            "maxLength": 10
           }
-        },
-        "required": [
-          "itens",
-          "proximo_cursor"
-        ]
+        }
       },
-      "PontoMapaResposta": {
+      "AgenteResposta": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
             "format": "uuid"
           },
-          "lat": {
-            "type": "number",
-            "example": -23.5015
+          "nome": {
+            "type": "string"
           },
-          "lng": {
-            "type": "number",
-            "example": -47.4526
+          "email": {
+            "type": "string"
           },
-          "status_publico": {
-            "type": "string",
-            "enum": [
-              "RECEBIDO",
-              "EM_ANDAMENTO",
-              "RESOLVIDO"
-            ],
-            "description": "Define a cor do alfinete"
-          },
-          "categoria_slug": {
-            "type": "string",
-            "example": "iluminacao"
-          },
-          "urgente": {
+          "ativo": {
             "type": "boolean"
+          },
+          "convite_pendente": {
+            "type": "boolean",
+            "description": "Ainda não definiu a senha pelo link do convite"
           }
         },
         "required": [
           "id",
-          "lat",
-          "lng",
-          "status_publico",
-          "categoria_slug",
-          "urgente"
+          "nome",
+          "email",
+          "ativo",
+          "convite_pendente"
         ]
       },
-      "MapaResposta": {
+      "ConviteDto": {
         "type": "object",
         "properties": {
-          "pontos": {
-            "description": "No máximo 2000",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PontoMapaResposta"
-            }
-          },
-          "truncado": {
-            "type": "boolean",
-            "description": "Havia mais pontos na área: o PWA pede para aproximar o mapa"
-          }
-        },
-        "required": [
-          "pontos",
-          "truncado"
-        ]
-      },
-      "CategoriaPainelResposta": {
-        "type": "object",
-        "properties": {
-          "slug": {
-            "type": "string",
-            "example": "iluminacao"
-          },
           "nome": {
             "type": "string",
-            "example": "Iluminação"
+            "example": "João Pereira",
+            "minLength": 2,
+            "maxLength": 100
           },
-          "icone": {
+          "email": {
             "type": "string",
-            "example": "lightbulb"
-          },
-          "total": {
-            "type": "number",
-            "example": 12
-          },
-          "resolvidas": {
-            "type": "number",
-            "example": 7
+            "example": "joao@sorocaba.sp.gov.br",
+            "maxLength": 254
           }
         },
         "required": [
-          "slug",
           "nome",
-          "icone",
-          "total",
-          "resolvidas"
+          "email"
         ]
       },
-      "PainelResposta": {
+      "AlteracaoAgenteDto": {
         "type": "object",
         "properties": {
-          "vazio": {
+          "ativo": {
             "type": "boolean",
-            "description": "Nenhuma ocorrência no período: mostrar \"Sem ocorrências no período\""
-          },
-          "periodo_dias": {
-            "type": "number",
-            "enum": [
-              30,
-              90,
-              365
-            ],
-            "example": 30
-          },
-          "total": {
-            "type": "number",
-            "example": 40
-          },
-          "resolvidas": {
-            "type": "number",
-            "example": 22
-          },
-          "resolvidas_pct": {
-            "type": "number",
-            "nullable": true,
-            "example": 55,
-            "description": "Percentual de resolvidas, com uma casa; null quando vazio"
-          },
-          "dias_mediana": {
-            "type": "number",
-            "nullable": true,
-            "example": 6.5,
-            "description": "Mediana de dias entre o registro e a resolução; null sem nenhuma resolvida"
-          },
-          "por_categoria": {
-            "description": "Só as categorias com ocorrências, da maior para a menor",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CategoriaPainelResposta"
-            }
-          },
-          "calculado_em": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Quando os números foram calculados (ficam guardados por até 5 minutos)"
+            "description": "false desativa o agente e encerra todas as sessões dele"
           }
         },
         "required": [
-          "vazio",
-          "periodo_dias",
-          "total",
-          "resolvidas",
-          "resolvidas_pct",
-          "dias_mediana",
-          "por_categoria",
-          "calculado_em"
+          "ativo"
+        ]
+      },
+      "ConviteGestorDto": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "example": "João Pereira",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "example": "joao@sorocaba.sp.gov.br",
+            "maxLength": 254
+          },
+          "municipio_id": {
+            "type": "number",
+            "example": 3552205,
+            "description": "Código IBGE do município"
+          }
+        },
+        "required": [
+          "nome",
+          "email",
+          "municipio_id"
+        ]
+      },
+      "GestorResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "municipio_id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "email",
+          "municipio_id"
         ]
       }
     }
