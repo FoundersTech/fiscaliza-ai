@@ -35,7 +35,7 @@ import {
   ErroDuplicidadeResposta,
   OcorrenciaCriadaResposta,
   ReaberturaDto,
-  ReaberturaResposta,
+  ReaberturaFeitaResposta,
   RegistroDto,
 } from './dto.js';
 
@@ -146,7 +146,7 @@ export class OcorrenciasController {
   @HttpCode(200)
   @Autenticado(Papel.CIDADAO)
   @ApiOkResponse({
-    type: ReaberturaResposta,
+    type: ReaberturaFeitaResposta,
     description: 'Reaberta: volta para a análise do órgão, e quem acompanha é avisado',
   })
   @ApiForbiddenResponse({
@@ -165,7 +165,7 @@ export class OcorrenciasController {
     @Param('id', ID) id: string,
     @Body() dto: ReaberturaDto,
     @UsuarioAtual() usuario: DadosToken,
-  ): Promise<ReaberturaResposta> {
+  ): Promise<ReaberturaFeitaResposta> {
     const { estado } = await this.reabrirOcorrencia.executar({
       ocorrenciaId: id,
       usuarioId: usuario.usuarioId,

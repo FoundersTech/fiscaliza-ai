@@ -214,7 +214,7 @@ export class ReaberturaDto {
   justificativa!: string;
 }
 
-export class ReaberturaResposta {
+export class ReaberturaFeitaResposta {
   @ApiProperty({ enum: [StatusOcorrencia.EM_ANALISE] })
   status!: StatusOcorrencia;
 
