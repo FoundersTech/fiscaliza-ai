@@ -196,7 +196,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/ocorrencias": {
+    "/api/v1/admin/fotos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AdminFotosController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/fotos/{id}/rejeicao": {
         parameters: {
             query?: never;
             header?: never;
@@ -204,6 +220,22 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
+        post: operations["AdminFotosController_rejeitar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ocorrencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ConsultasController_feed"];
         put?: never;
         post: operations["OcorrenciasController_registrar"];
         delete?: never;
@@ -228,39 +260,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/orgao": {
+    "/api/v1/ocorrencias/mapa": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["OrgaoController_obter"];
+        get: operations["ConsultasController_mapa"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch: operations["OrgaoController_editar"];
-        trace?: never;
-    };
-    "/api/v1/admin/agentes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["AgentesController_listar"];
-        put?: never;
-        post: operations["AgentesController_convidar"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/agentes/{id}": {
+    "/api/v1/admin/categorias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CategoriasController_listar"];
+        put?: never;
+        post: operations["CategoriasController_criar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/categorias/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -273,23 +305,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["AgentesController_alterar"];
-        trace?: never;
-    };
-    "/api/v1/admin/gestores": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["GestoresController_convidar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
+        patch: operations["CategoriasController_editar"];
         trace?: never;
     };
 }
@@ -474,6 +490,34 @@ export interface components {
             /** Format: date-time */
             expira_em: string;
         };
+        FotoRevisaoResposta: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ocorrencia_id: string;
+            /** @example FA-2026-SOR-000123 */
+            protocolo: string;
+            /** @enum {number} */
+            ordem: 1 | 2;
+            /** @enum {string} */
+            moderacao: "PENDENTE" | "APROVADA" | "REJEITADA";
+            /** @description Só da foto aprovada */
+            url: string | null;
+            /** @description Só da foto aprovada */
+            miniatura_url: string | null;
+            motivo_rejeicao: string | null;
+            /** Format: date-time */
+            criada_em: string;
+        };
+        RevisaoFotosResposta: {
+            itens: components["schemas"]["FotoRevisaoResposta"][];
+            /** @description Passe em ?cursor= para a página seguinte; null na última */
+            proximo_cursor: string | null;
+        };
+        RejeicaoFotoDto: {
+            /** @example Mostra o rosto de uma pessoa */
+            motivo: string;
+        };
         LocalDto: {
             /** @example -23.5015 */
             lat: number;
@@ -557,54 +601,133 @@ export interface components {
              */
             confirmacoes: number;
         };
-        OrgaoResposta: {
-            id: number;
-            municipio_id: number;
+        CategoriaCardResposta: {
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
             nome: string;
-            sigla: string;
+            /** @example lightbulb */
+            icone: string;
         };
-        EdicaoOrgaoDto: {
-            /** @example Prefeitura de Sorocaba */
-            nome?: string;
-            /** @example PMS */
-            sigla?: string;
-        };
-        AgenteResposta: {
+        CardResposta: {
             /** Format: uuid */
             id: string;
-            nome: string;
-            email: string;
-            ativo: boolean;
-            /** @description Ainda não definiu a senha pelo link do convite */
-            convite_pendente: boolean;
-        };
-        ConviteDto: {
-            /** @example João Pereira */
-            nome: string;
-            /** @example joao@sorocaba.sp.gov.br */
-            email: string;
-        };
-        AlteracaoAgenteDto: {
-            /** @description false desativa o agente e encerra todas as sessões dele */
-            ativo: boolean;
-        };
-        ConviteGestorDto: {
-            /** @example João Pereira */
-            nome: string;
-            /** @example joao@sorocaba.sp.gov.br */
-            email: string;
+            /** @example FA-2026-SOR-000123 */
+            protocolo: string;
+            categoria: components["schemas"]["CategoriaCardResposta"];
+            /** @enum {string} */
+            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO";
+            /** @description Até 120 caracteres da descrição */
+            resumo: string;
             /**
-             * @description Código IBGE do município
-             * @example 3552205
+             * @description Null enquanto o endereço não foi preenchido
+             * @example Rua Quinze de Novembro, 482 · Centro
              */
-            municipio_id: number;
+            endereco: string | null;
+            /**
+             * @description Quantas pessoas disseram "também vi"
+             * @example 4
+             */
+            confirmacoes: number;
+            /** @description Atingiu o limiar de confirmações do selo URGENTE */
+            urgente: boolean;
+            /**
+             * @description Dias desde o registro, ou até a resolução
+             * @example 3
+             */
+            dias_em_aberto: number;
+            /** @description Miniatura da primeira foto aprovada */
+            miniatura_url: string | null;
+            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
+            foto_em_analise: boolean;
+            /** Format: date-time */
+            criada_em: string;
         };
-        GestorResposta: {
+        FeedResposta: {
+            itens: components["schemas"]["CardResposta"][];
+            /** @description Passe em ?cursor= para a página seguinte; null na última */
+            proximo_cursor: string | null;
+        };
+        PontoMapaResposta: {
             /** Format: uuid */
             id: string;
+            /** @example -23.5015 */
+            lat: number;
+            /** @example -47.4526 */
+            lng: number;
+            /**
+             * @description Define a cor do alfinete
+             * @enum {string}
+             */
+            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO";
+            /** @example iluminacao */
+            categoria_slug: string;
+            urgente: boolean;
+        };
+        MapaResposta: {
+            /** @description No máximo 2000 */
+            pontos: components["schemas"]["PontoMapaResposta"][];
+            /** @description Havia mais pontos na área: o PWA pede para aproximar o mapa */
+            truncado: boolean;
+        };
+        CategoriaAdminResposta: {
+            id: number;
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
             nome: string;
-            email: string;
-            municipio_id: number;
+            /** @example lightbulb */
+            icone: string;
+            /** @example 15 */
+            sla_dias: number;
+            schema_atributos: components["schemas"]["CampoAtributoResposta"][];
+            ativa: boolean;
+        };
+        NovaCategoriaDto: {
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
+            nome: string;
+            /**
+             * @description Nome de um ícone do Material Icons
+             * @example lightbulb
+             */
+            icone: string;
+            /**
+             * @description Prazo em dias
+             * @example 15
+             */
+            sla_dias: number;
+            /** @description Campos extras do registro. Pode ser vazio. */
+            schema_atributos: components["schemas"]["CampoAtributoResposta"][];
+            /**
+             * @description false tira a categoria do registro
+             * @default true
+             */
+            ativa: boolean;
+        };
+        EdicaoCategoriaDto: {
+            /** @example iluminacao */
+            slug?: string;
+            /** @example Iluminação */
+            nome?: string;
+            /**
+             * @description Nome de um ícone do Material Icons
+             * @example lightbulb
+             */
+            icone?: string;
+            /**
+             * @description Prazo em dias
+             * @example 15
+             */
+            sla_dias?: number;
+            /** @description Campos extras do registro. Pode ser vazio. */
+            schema_atributos?: components["schemas"]["CampoAtributoResposta"][];
+            /**
+             * @description false tira a categoria do registro
+             * @default true
+             */
+            ativa: boolean;
         };
     };
     responses: never;
@@ -1030,6 +1153,155 @@ export interface operations {
             };
         };
     };
+    AdminFotosController_listar: {
+        parameters: {
+            query?: {
+                moderacao?: "PENDENTE" | "APROVADA" | "REJEITADA";
+                /** @description O proximo_cursor da página anterior */
+                cursor?: string;
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Das mais recentes às mais antigas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisaoFotosResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFotosController_rejeitar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejeicaoFotoDto"];
+            };
+        };
+        responses: {
+            /** @description A foto some das telas públicas na hora, e ela e a miniatura são apagadas do bucket público. Repetir o pedido não muda o motivo. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description FOTO_EM_ANALISE: a foto ainda não foi processada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsultasController_feed: {
+        parameters: {
+            query?: {
+                /** @description Código IBGE; sem ele, todos os municípios atendidos */
+                municipio?: number;
+                /** @description Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO */
+                status?: string;
+                /** @description Slugs das categorias, separados por vírgula */
+                categoria?: string;
+                /** @description O proximo_cursor da página anterior */
+                cursor?: string;
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Da mais recente para a mais antiga */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedResposta"];
+                };
+            };
+            /** @description VALIDACAO (filtro, limite ou cursor inválido) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     OcorrenciasController_registrar: {
         parameters: {
             query?: never;
@@ -1154,7 +1426,49 @@ export interface operations {
             };
         };
     };
-    OrgaoController_obter: {
+    ConsultasController_mapa: {
+        parameters: {
+            query: {
+                /** @description Código IBGE; sem ele, todos os municípios atendidos */
+                municipio?: number;
+                /** @description Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO */
+                status?: string;
+                /** @description Slugs das categorias, separados por vírgula */
+                categoria?: string;
+                /** @description Área visível do mapa: minLng,minLat,maxLng,maxLat */
+                bbox: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapaResposta"];
+                };
+            };
+            /** @description BBOX_INVALIDA (área ausente ou malformada) ou VALIDACAO (filtro inválido) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriasController_listar: {
         parameters: {
             query?: never;
             header?: never;
@@ -1163,254 +1477,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description O órgão do município do gestor */
+            /** @description Todas as categorias, ativas e inativas, em ordem de nome */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OrgaoResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description MUNICIPIO_SEM_ORGAO: falha da carga inicial */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OrgaoController_editar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EdicaoOrgaoDto"];
-            };
-        };
-        responses: {
-            /** @description Órgão com o nome e a sigla novos */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrgaoResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentesController_listar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Agentes do órgão do município do gestor, em ordem de nome */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgenteResposta"][];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description MUNICIPIO_SEM_ORGAO: falha da carga inicial */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentesController_convidar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConviteDto"];
-            };
-        };
-        responses: {
-            /** @description Agente criado sem senha; o convite para definir a senha vale por 72 horas */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgenteResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description EMAIL_EM_USO */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AgentesController_alterar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AlteracaoAgenteDto"];
-            };
-        };
-        responses: {
-            /** @description Agente ativado ou desativado. Desativar encerra todas as sessões dele na hora. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgenteResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /**
-             * @description ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             *
-             *     OUTRO_MUNICIPIO: o agente é de outro município. ACESSO_NEGADO: só para ADMIN_MUNICIPIO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NAO_ENCONTRADO */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDACAO ou MUNICIPIO_SEM_ORGAO: falha da carga inicial */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    GestoresController_convidar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConviteGestorDto"];
-            };
-        };
-        responses: {
-            /** @description ADMIN_MUNICIPIO criado sem senha; o convite vale por 72 horas */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GestorResposta"];
+                    "application/json": components["schemas"]["CategoriaAdminResposta"][];
                 };
             };
             /** @description Sem token, ou token inválido ou expirado. */
@@ -1427,14 +1500,112 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description EMAIL_EM_USO */
+        };
+    };
+    CategoriasController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NovaCategoriaDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriaAdminResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description SLUG_EM_USO */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description VALIDACAO ou MUNICIPIO_INEXISTENTE */
+            /** @description VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CategoriasController_editar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EdicaoCategoriaDto"];
+            };
+        };
+        responses: {
+            /** @description Categoria alterada. Inativa, ela sai do registro de novas ocorrências; as que já existem continuam com ela. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriaAdminResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description SLUG_EM_USO */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados) */
             422: {
                 headers: {
                     [name: string]: unknown;
