@@ -228,6 +228,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ocorrencias/{id}/avaliacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OcorrenciasController_avaliar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ocorrencias/{id}/reabertura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OcorrenciasController_reabrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ocorrencias/mapa": {
         parameters: {
             query?: never;
@@ -589,6 +621,28 @@ export interface components {
              */
             confirmacoes: number;
         };
+        AvaliacaoDto: {
+            /** @example 4 */
+            nota: number;
+            comentario?: string;
+        };
+        AvaliacaoResposta: {
+            /** @example 4 */
+            nota: number;
+            comentario: string | null;
+        };
+        ReaberturaDto: {
+            justificativa: string;
+        };
+        ReaberturaResposta: {
+            /** @enum {string} */
+            status: "EM_ANALISE";
+            /**
+             * @description Quantas vezes a ocorrência já foi reaberta
+             * @example 1
+             */
+            reaberturas: number;
+        };
         CategoriaCardResposta: {
             /** @example iluminacao */
             slug: string;
@@ -681,11 +735,6 @@ export interface components {
             /** @example Prefeitura de Sorocaba */
             orgao: string;
             comentario: string;
-            /** Format: date-time */
-            data: string;
-        };
-        ReaberturaResposta: {
-            justificativa: string;
             /** Format: date-time */
             data: string;
         };
@@ -1549,6 +1598,136 @@ export interface operations {
                 content?: never;
             };
             /** @description OCORRENCIA_FECHADA: resolvida */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OcorrenciasController_avaliar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvaliacaoDto"];
+            };
+        };
+        responses: {
+            /** @description Avaliação do atendimento gravada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvaliacaoResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description SEM_VINCULO: só o autor ou quem confirmou avalia. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
+             *
+             *     ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description JA_AVALIADA: o usuário já avaliou esta ocorrência */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para avaliar depois da resolução. VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OcorrenciasController_reabrir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReaberturaDto"];
+            };
+        };
+        responses: {
+            /** @description Reaberta: volta para a análise do órgão, e quem acompanha é avisado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReaberturaResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description SEM_VINCULO: só o autor ou quem confirmou reabre. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
+             *
+             *     ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
+             */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CONFLITO_STATUS: o órgão mudou o status enquanto a pessoa via a ocorrência */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para reabrir depois da resolução. VALIDACAO */
             422: {
                 headers: {
                     [name: string]: unknown;

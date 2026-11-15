@@ -41,6 +41,8 @@ function montar() {
     carregarComOrgao: vi.fn<RepositorioOcorrencias['carregarComOrgao']>(),
     originalPorProtocolo: vi.fn<RepositorioOcorrencias['originalPorProtocolo']>(),
     gravarTransicao: vi.fn<RepositorioOcorrencias['gravarTransicao']>(),
+    gravarReabertura: vi.fn<RepositorioOcorrencias['gravarReabertura']>(),
+    avaliar: vi.fn<RepositorioOcorrencias['avaliar']>(),
   };
   const territorio = {
     executar: vi

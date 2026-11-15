@@ -1,4 +1,13 @@
-import { Body, Controller, HttpStatus, Param, ParseUUIDPipe, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Res,
+} from '@nestjs/common';
 import {
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -16,13 +25,20 @@ import {
   ConfirmarOcorrencia,
   ocorrenciaNaoEncontrada,
 } from '../application/confirmar-ocorrencia.js';
+import { AvaliarAtendimento, ReabrirOcorrencia } from '../application/pos-resolucao.js';
 import { RegistrarOcorrencia } from '../application/registrar-ocorrencia.js';
 import {
+  AvaliacaoDto,
+  AvaliacaoResposta,
   ConfirmacaoResposta,
   ErroDuplicidadeResposta,
   OcorrenciaCriadaResposta,
+  ReaberturaDto,
+  ReaberturaResposta,
   RegistroDto,
 } from './dto.js';
+
+const ID = new ParseUUIDPipe({ exceptionFactory: ocorrenciaNaoEncontrada });
 
 interface Resposta {
   status(codigo: number): { send(corpo: unknown): unknown };
@@ -34,6 +50,8 @@ export class OcorrenciasController {
   constructor(
     private readonly registrarOcorrencia: RegistrarOcorrencia,
     private readonly confirmarOcorrencia: ConfirmarOcorrencia,
+    private readonly avaliarAtendimento: AvaliarAtendimento,
+    private readonly reabrirOcorrencia: ReabrirOcorrencia,
   ) {}
 
   @Post()
@@ -87,9 +105,69 @@ export class OcorrenciasController {
   @ApiConflictResponse({ description: 'JA_CONFIRMADA: o usuário já confirmou esta ocorrência' })
   @ApiUnprocessableEntityResponse({ description: 'OCORRENCIA_FECHADA: resolvida' })
   async confirmar(
-    @Param('id', new ParseUUIDPipe({ exceptionFactory: ocorrenciaNaoEncontrada })) id: string,
+    @Param('id', ID) id: string,
     @UsuarioAtual() usuario: DadosToken,
   ): Promise<ConfirmacaoResposta> {
     return { confirmacoes: await this.confirmarOcorrencia.executar(id, usuario.usuarioId) };
+  }
+
+  @Post(':id/avaliacoes')
+  @Autenticado(Papel.CIDADAO)
+  @ApiCreatedResponse({ type: AvaliacaoResposta, description: 'Avaliação do atendimento gravada' })
+  @ApiForbiddenResponse({
+    description:
+      'SEM_VINCULO: só o autor ou quem confirmou avalia. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.',
+  })
+  @ApiNotFoundResponse({ description: 'NAO_ENCONTRADA' })
+  @ApiConflictResponse({ description: 'JA_AVALIADA: o usuário já avaliou esta ocorrência' })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para avaliar depois da resolução. VALIDACAO',
+  })
+  async avaliar(
+    @Param('id', ID) id: string,
+    @Body() dto: AvaliacaoDto,
+    @UsuarioAtual() usuario: DadosToken,
+  ): Promise<AvaliacaoResposta> {
+    const comentario = dto.comentario || null;
+    await this.avaliarAtendimento.executar({
+      ocorrenciaId: id,
+      usuarioId: usuario.usuarioId,
+      nota: dto.nota,
+      comentario,
+    });
+    return { nota: dto.nota, comentario };
+  }
+
+  @Post(':id/reabertura')
+  @HttpCode(200)
+  @Autenticado(Papel.CIDADAO)
+  @ApiOkResponse({
+    type: ReaberturaResposta,
+    description: 'Reaberta: volta para a análise do órgão, e quem acompanha é avisado',
+  })
+  @ApiForbiddenResponse({
+    description:
+      'SEM_VINCULO: só o autor ou quem confirmou reabre. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.',
+  })
+  @ApiNotFoundResponse({ description: 'NAO_ENCONTRADA' })
+  @ApiConflictResponse({
+    description: 'CONFLITO_STATUS: o órgão mudou o status enquanto a pessoa via a ocorrência',
+  })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para reabrir depois da resolução. VALIDACAO',
+  })
+  async reabrir(
+    @Param('id', ID) id: string,
+    @Body() dto: ReaberturaDto,
+    @UsuarioAtual() usuario: DadosToken,
+  ): Promise<ReaberturaResposta> {
+    const { estado } = await this.reabrirOcorrencia.executar({
+      ocorrenciaId: id,
+      usuarioId: usuario.usuarioId,
+      justificativa: dto.justificativa,
+    });
+    return { status: estado.status, reaberturas: estado.reaberturas };
   }
 }

@@ -7,10 +7,12 @@ import type { Ponto } from '../../territorio/domain/endereco.js';
 import type {
   CandidataDuplicidade,
   CategoriaDoRegistro,
+  NovaAvaliacao,
   NovaOcorrencia,
   OcorrenciaDoOrgao,
   OcorrenciaGravada,
   RepositorioOcorrencias,
+  ReaberturaGravavel,
   ResultadoGravacao,
   TransicaoGravavel,
 } from '../application/portas.js';
@@ -196,6 +198,38 @@ export class RepositorioOcorrenciasPrisma implements RepositorioOcorrencias {
       });
       return id;
     });
+  }
+
+  gravarReabertura({ estado, evento, usuarioId }: ReaberturaGravavel): Promise<number | null> {
+    return this.prisma.$transaction(async (tx) => {
+      // Só reabre se ainda estiver resolvida: uma ação do agente no meio do caminho vence.
+      const { count } = await tx.ocorrencia.updateMany({
+        where: { id: estado.id, status: StatusOcorrencia.RESOLVIDA },
+        data: { status: estado.status, resolvidaEm: null, reaberturas: { increment: 1 } },
+      });
+      if (!count) return null;
+      const { id } = await tx.ocorrenciaEvento.create({
+        data: {
+          ocorrenciaId: estado.id,
+          deStatus: evento.deStatus,
+          paraStatus: evento.paraStatus,
+          autorId: usuarioId,
+          comentario: evento.comentario,
+          criadoEm: evento.criadoEm,
+        },
+        select: { id: true },
+      });
+      return id;
+    });
+  }
+
+  async avaliar(avaliacao: NovaAvaliacao): Promise<boolean> {
+    // A chave (ocorrencia_id, usuario_id) barra a segunda avaliação, mesmo em paralelo.
+    const { count } = await this.prisma.avaliacao.createMany({
+      data: [avaliacao],
+      skipDuplicates: true,
+    });
+    return count > 0;
   }
 
   async confirmar(ocorrenciaId: string, usuarioId: string, criadaEm: Date): Promise<number | null> {

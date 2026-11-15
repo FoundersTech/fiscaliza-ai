@@ -19,6 +19,7 @@ import { ListarMapa } from './application/listar-mapa.js';
 import { ListarMinhas } from './application/listar-minhas.js';
 import { ObterDetalhe } from './application/obter-detalhe.js';
 import { REPOSITORIO_OCORRENCIAS } from './application/portas.js';
+import { AvaliarAtendimento, ReabrirOcorrencia } from './application/pos-resolucao.js';
 import { RegistrarOcorrencia } from './application/registrar-ocorrencia.js';
 import { TransicionarStatus } from './application/transicionar-status.js';
 import { ConsultasOcorrenciasPrisma } from './infrastructure/consultas-ocorrencias.prisma.js';
@@ -33,7 +34,7 @@ import { OcorrenciasController } from './presentation/ocorrencias.controller.js'
 
 /**
  * Registro, confirmação, feed, mapa e detalhe de ocorrências, a lista do autor, o atendimento
- * pelo órgão e o endereço das que nasceram sem ele.
+ * pelo órgão, a avaliação e a reabertura depois da resolução, e o endereço das que nasceram sem ele.
  */
 @Module({
   imports: [
@@ -59,6 +60,8 @@ import { OcorrenciasController } from './presentation/ocorrencias.controller.js'
     ListarFilaOrgao,
     ObterDetalheAtendimento,
     TransicionarStatus,
+    AvaliarAtendimento,
+    ReabrirOcorrencia,
     FilaEnderecos,
     PreencherEndereco,
     ReconciliarEnderecos,

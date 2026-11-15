@@ -69,6 +69,22 @@ export interface TransicaoGravavel {
   orgaoId: number;
 }
 
+/** Reabertura pelo cidadão: o estado novo e o evento com a justificativa. */
+export interface ReaberturaGravavel {
+  estado: DadosOcorrencia;
+  evento: EventoStatus;
+  /** Quem reabriu: autor ou alguém que confirmou. */
+  usuarioId: string;
+}
+
+export interface NovaAvaliacao {
+  ocorrenciaId: string;
+  usuarioId: string;
+  nota: number;
+  comentario: string | null;
+  criadaEm: Date;
+}
+
 export interface RepositorioOcorrencias {
   buscar(id: string): Promise<OcorrenciaGravada | null>;
   categoriaAtiva(id: number): Promise<CategoriaDoRegistro | null>;
@@ -88,4 +104,8 @@ export interface RepositorioOcorrencias {
   originalPorProtocolo(protocolo: string): Promise<OriginalDuplicidade | null>;
   /** Devolve o id do evento, ou null quando o status já não era o esperado. */
   gravarTransicao(transicao: TransicaoGravavel): Promise<number | null>;
+  /** Devolve o id do evento, ou null quando a ocorrência já não estava resolvida. */
+  gravarReabertura(reabertura: ReaberturaGravavel): Promise<number | null>;
+  /** Falso quando o usuário já tinha avaliado a ocorrência. */
+  avaliar(avaliacao: NovaAvaliacao): Promise<boolean>;
 }
