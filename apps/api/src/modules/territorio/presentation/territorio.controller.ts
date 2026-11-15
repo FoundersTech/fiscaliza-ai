@@ -6,6 +6,11 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
+import {
+  LEITURA_PUBLICA,
+  LimiteTaxa,
+  porUsuario,
+} from '../../../shared/limite-taxa/limite-taxa.js';
 import { Papel } from '../../identidade/domain/papel.js';
 import { Autenticado } from '../../identidade/presentation/autenticacao.js';
 import { ObterConfigPublica } from '../application/config-publica.js';
@@ -21,6 +26,7 @@ export class TerritorioController {
   ) {}
 
   @Get('config/publica')
+  @LimiteTaxa(LEITURA_PUBLICA)
   @ApiOkResponse({ type: ConfigPublicaResposta })
   @ApiServiceUnavailableResponse({ description: 'MUNICIPIO_NAO_CONFIGURADO' })
   async configPublica(): Promise<ConfigPublicaResposta> {
@@ -28,6 +34,8 @@ export class TerritorioController {
   }
 
   @Get('geo/reverso')
+  // Acima do @Autenticado: conta por usuário, que só existe depois do login conferido.
+  @LimiteTaxa(porUsuario('geo-reverso', 30, 60))
   @Autenticado(Papel.CIDADAO)
   @ApiOkResponse({ type: GeoReversoResposta })
   @ApiUnprocessableEntityResponse({ description: 'VALIDACAO' })

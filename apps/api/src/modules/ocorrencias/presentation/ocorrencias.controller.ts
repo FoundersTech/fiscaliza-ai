@@ -9,6 +9,7 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
+import { LimiteTaxa, porUsuario } from '../../../shared/limite-taxa/limite-taxa.js';
 import type { DadosToken } from '../../identidade/application/portas.js';
 import { Papel } from '../../identidade/domain/papel.js';
 import { Autenticado, UsuarioAtual } from '../../identidade/presentation/autenticacao.js';
@@ -37,6 +38,8 @@ export class OcorrenciasController {
   ) {}
 
   @Post()
+  // Só contra robôs, não é limite de negócio. Acima do @Autenticado: conta por usuário.
+  @LimiteTaxa(porUsuario('registro-ocorrencia', 60, 3600))
   @Autenticado(Papel.CIDADAO)
   @ApiCreatedResponse({ type: OcorrenciaCriadaResposta, description: 'Ocorrência criada' })
   @ApiOkResponse({

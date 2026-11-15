@@ -13,6 +13,12 @@ export const CENSURA = '[Redacted]';
 export const CAMINHOS_OCULTOS = [
   'req.headers.authorization',
   'req.headers.cookie',
+  // O IP do cliente é dado pessoal: nem o do socket nem o que o Caddy repassa vão para o log.
+  'req.remoteAddress',
+  'req.remotePort',
+  'req.headers["x-forwarded-for"]',
+  'req.headers["x-real-ip"]',
+  'req.headers["cf-connecting-ip"]',
   'res.headers["set-cookie"]',
   ...['senha', 'email', 'token', 'access_token', 'refresh_token'].flatMap((campo) => [
     campo,

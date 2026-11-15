@@ -72,6 +72,22 @@ describe('logs da API (pino)', () => {
     expect(log).not.toContain('fa_refresh=abc');
   });
 
+  it('não registra o IP do cliente, nem o do socket nem o repassado pelo proxy', async () => {
+    const antes = captura.linhas.length;
+
+    await app.inject({
+      method: 'GET',
+      url: '/ocorrencias',
+      remoteAddress: '203.0.113.7',
+      headers: { 'x-forwarded-for': '198.51.100.23', 'x-real-ip': '198.51.100.23' },
+    });
+
+    const log = captura.linhas.slice(antes).join('');
+    expect(log).toContain('/ocorrencias');
+    expect(log).not.toContain('203.0.113.7');
+    expect(log).not.toContain('198.51.100.23');
+  });
+
   it('não registra as chamadas ao /health', async () => {
     const antes = captura.linhas.length;
 

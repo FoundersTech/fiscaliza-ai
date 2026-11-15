@@ -19,6 +19,8 @@ import { REDIS } from '../redis/redis.module.js';
 export interface RequisicaoLimitada {
   ip: string;
   body?: unknown;
+  /** Preenchido pelo guard de autenticação, quando a rota exige login. */
+  usuario?: { usuarioId: string };
 }
 
 export interface RegraLimiteTaxa {
@@ -29,6 +31,30 @@ export interface RegraLimiteTaxa {
 }
 
 const REGRA = Symbol('REGRA_LIMITE_TAXA');
+
+/** GETs abertos a visitantes: 120 por minuto por IP, somando todas as rotas públicas. */
+export const LEITURA_PUBLICA: RegraLimiteTaxa = {
+  nome: 'leitura-publica',
+  maximo: 120,
+  janelaSegundos: 60,
+  chave: ({ ip }) => ip,
+};
+
+/**
+ * Regra contada por conta, não por IP. O decorator @LimiteTaxa com ela fica ACIMA do
+ * @Autenticado: o guard de baixo roda primeiro, e o usuário só existe depois dele.
+ */
+export function porUsuario(nome: string, maximo: number, janelaSegundos: number): RegraLimiteTaxa {
+  return {
+    nome,
+    maximo,
+    janelaSegundos,
+    chave: ({ usuario }) => {
+      if (!usuario) throw new Error(`Limite ${nome} por usuário checado antes da autenticação`);
+      return usuario.usuarioId;
+    },
+  };
+}
 
 /**
  * Limita quantas vezes a mesma chave chama a rota numa janela fixa. Passou do máximo: 429 com

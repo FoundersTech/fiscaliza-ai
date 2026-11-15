@@ -338,6 +338,9 @@
               }
             }
           },
+          "429": {
+            "description": "Mais de 120 tentativas em 60 s."
+          },
           "503": {
             "description": "MUNICIPIO_NAO_CONFIGURADO"
           }
@@ -393,6 +396,9 @@
           },
           "422": {
             "description": "VALIDACAO"
+          },
+          "429": {
+            "description": "Mais de 30 tentativas em 60 s."
           }
         },
         "security": [
@@ -626,6 +632,9 @@
           },
           "422": {
             "description": "FORA_DA_AREA, CATEGORIA_INATIVA, ATRIBUTOS_INVALIDOS, FOTO_NAO_ENVIADA ou VALIDACAO"
+          },
+          "429": {
+            "description": "Mais de 60 tentativas em 3600 s."
           }
         },
         "security": [

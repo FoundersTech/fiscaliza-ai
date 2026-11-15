@@ -1463,6 +1463,13 @@ export interface operations {
                     "application/json": components["schemas"]["ConfigPublicaResposta"];
                 };
             };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description MUNICIPIO_NAO_CONFIGURADO */
             503: {
                 headers: {
@@ -1508,6 +1515,13 @@ export interface operations {
             };
             /** @description VALIDACAO */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 30 tentativas em 60 s. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1765,6 +1779,13 @@ export interface operations {
             };
             /** @description FORA_DA_AREA, CATEGORIA_INATIVA, ATRIBUTOS_INVALIDOS, FOTO_NAO_ENVIADA ou VALIDACAO */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 60 tentativas em 3600 s. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

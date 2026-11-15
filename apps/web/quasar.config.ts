@@ -52,6 +52,10 @@ export default defineConfig(() => {
     // InjectManifest: o service worker próprio recebe o handler de push.
     pwa: {
       workboxMode: 'InjectManifest',
+      // O _headers é configuração do Cloudflare Pages, não um arquivo servido: fora do cache.
+      extendPWAInjectManifestOptions(opcoes) {
+        opcoes.globIgnores = [...(opcoes.globIgnores ?? []), '_headers'];
+      },
     },
   };
 });
