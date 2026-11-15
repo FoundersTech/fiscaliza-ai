@@ -28,6 +28,12 @@ describe('routes', () => {
     expect(minhas?.meta).toEqual({ auth: true, papeis: ['CIDADAO'] });
   });
 
+  it('o detalhe da ocorrência abre sem login, para o link compartilhado', () => {
+    const detalhe = routes[0]?.children?.find((rota) => rota.path === 'ocorrencias/:id');
+    expect(detalhe).toBeDefined();
+    expect(detalhe?.meta).toBeUndefined();
+  });
+
   it('deixa a rota coringa (404) por último', () => {
     expect(routes.at(-1)?.path).toBe('/:catchAll(.*)*');
   });
