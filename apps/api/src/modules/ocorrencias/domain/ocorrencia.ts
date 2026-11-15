@@ -29,6 +29,11 @@ const EXIGEM_COMENTARIO: readonly StatusOcorrencia[] = [RECUSADA, RESOLVIDA];
 
 const UM_DIA_MS = 24 * 60 * 60 * 1000;
 
+const TEXTOS_POS_RESOLUCAO = {
+  avaliar: { verbo: 'avaliá-la', participio: 'avaliada', nome: 'A avaliação' },
+  reabrir: { verbo: 'reabri-la', participio: 'reaberta', nome: 'A reabertura' },
+} as const;
+
 export interface DadosOcorrencia {
   id: string;
   municipioId: number;
@@ -61,13 +66,17 @@ export interface ComandoTransicao {
   agora: Date;
 }
 
-export interface ComandoReabertura {
+/** Quem pede a avaliação ou a reabertura, e quando. */
+export interface ComandoPosResolucao {
   usuarioId: string;
   confirmou: boolean;
-  justificativa: string;
   agora: Date;
   /** `janela_pos_resolucao_dias` de parametros.json*/
   janelaDias: number;
+}
+
+export interface ComandoReabertura extends ComandoPosResolucao {
+  justificativa: string;
 }
 
 /** O que se sabe da pessoa logada em relação à ocorrência. */
@@ -212,24 +221,14 @@ export class Ocorrencia {
     return { deStatus: de, paraStatus: para, comentario, criadoEm: comando.agora };
   }
 
+  /** Avaliar o atendimento: autor ou quem confirmou, nos dias seguintes à resolução. */
+  validarAvaliacao(comando: ComandoPosResolucao): void {
+    this.conferirPosResolucao(comando, TEXTOS_POS_RESOLUCAO.avaliar);
+  }
+
+  /** "Não foi resolvido": volta para a análise do órgão, com a justificativa no evento. */
   reabrir(comando: ComandoReabertura): EventoStatus {
-    if (!this.temVinculo(comando.usuarioId, comando.confirmou)) {
-      throw new ErroDominio(
-        'SEM_VINCULO',
-        'Só o autor ou quem confirmou a ocorrência pode reabri-la.',
-      );
-    }
-    if (this.dados.status !== RESOLVIDA) {
-      throw new ErroDominio('NAO_RESOLVIDA', 'Só uma ocorrência resolvida pode ser reaberta.', {
-        status: this.dados.status,
-      });
-    }
-    if (!this.dentroDaJanelaPosResolucao(comando.agora, comando.janelaDias)) {
-      throw new ErroDominio(
-        'FORA_DO_PRAZO',
-        `A reabertura só é aceita até ${comando.janelaDias} dias depois da resolução.`,
-      );
-    }
+    this.conferirPosResolucao(comando, TEXTOS_POS_RESOLUCAO.reabrir);
     const justificativa = comando.justificativa.trim();
     if (!justificativa) {
       throw new ErroDominio('COMENTARIO_OBRIGATORIO', 'Informe por que não foi resolvido.');
@@ -245,6 +244,34 @@ export class Ocorrencia {
       comentario: justificativa,
       criadoEm: comando.agora,
     };
+  }
+
+  private conferirPosResolucao(
+    comando: ComandoPosResolucao,
+    textos: (typeof TEXTOS_POS_RESOLUCAO)[keyof typeof TEXTOS_POS_RESOLUCAO],
+  ): void {
+    if (!this.temVinculo(comando.usuarioId, comando.confirmou)) {
+      throw new ErroDominio(
+        'SEM_VINCULO',
+        `Só o autor ou quem confirmou a ocorrência pode ${textos.verbo}.`,
+      );
+    }
+    if (this.dados.status !== RESOLVIDA) {
+      throw new ErroDominio(
+        'NAO_RESOLVIDA',
+        `Só uma ocorrência resolvida pode ser ${textos.participio}.`,
+        {
+          status: this.dados.status,
+        },
+      );
+    }
+    if (!this.dentroDaJanelaPosResolucao(comando.agora, comando.janelaDias)) {
+      throw new ErroDominio(
+        'FORA_DO_PRAZO',
+        `${textos.nome} só é aceita até ${comando.janelaDias} dias depois da resolução.`,
+        { prazo: this.prazoPosResolucao(comando.janelaDias)?.toISOString() ?? null },
+      );
+    }
   }
 
   /** ("DUPLICADA apontando para ela mesma, para outra DUPLICADA ou outro município"). */

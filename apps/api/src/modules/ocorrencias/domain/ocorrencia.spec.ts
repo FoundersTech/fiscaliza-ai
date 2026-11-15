@@ -231,6 +231,56 @@ describe('Ocorrencia: reabertura', () => {
   });
 });
 
+describe('Ocorrencia: avaliação do atendimento', () => {
+  const resolvidaEm = new Date('2026-10-10T12:00:00Z');
+  const resolvida = () => ocorrencia({ status: RESOLVIDA, triadaEm: CRIADA, resolvidaEm });
+  const avaliar = (
+    alvo: Ocorrencia,
+    mudancas: Partial<Parameters<Ocorrencia['validarAvaliacao']>[0]> = {},
+  ) =>
+    alvo.validarAvaliacao({
+      usuarioId: AUTOR,
+      confirmou: false,
+      agora: new Date(resolvidaEm.getTime() + 3 * UM_DIA),
+      janelaDias: 10,
+      ...mudancas,
+    });
+
+  it('aceita no 10º dia e rejeita no 11º, sem mudar a ocorrência', () => {
+    const limite = new Date(resolvidaEm.getTime() + 10 * UM_DIA);
+    expect(codigo(() => avaliar(resolvida(), { agora: limite }))).toBeUndefined();
+
+    const alvo = resolvida();
+    expect(codigo(() => avaliar(alvo, { agora: new Date(limite.getTime() + 1) }))).toBe(
+      'FORA_DO_PRAZO',
+    );
+    expect(alvo.estado).toMatchObject({ status: RESOLVIDA, resolvidaEm });
+  });
+
+  it('autor e quem confirmou avaliam; outra pessoa não', () => {
+    expect(
+      codigo(() => avaliar(resolvida(), { usuarioId: 'vizinho', confirmou: true })),
+    ).toBeUndefined();
+    expect(codigo(() => avaliar(resolvida(), { usuarioId: 'vizinho' }))).toBe('SEM_VINCULO');
+  });
+
+  it.each(TODOS.filter((status) => status !== RESOLVIDA))('%s não pode ser avaliada', (status) => {
+    expect(codigo(() => avaliar(ocorrencia({ status, resolvidaEm })))).toBe('NAO_RESOLVIDA');
+  });
+
+  it('fora do prazo, o erro informa até quando dava', () => {
+    let detalhes: unknown;
+    try {
+      avaliar(resolvida(), { agora: new Date(resolvidaEm.getTime() + 11 * UM_DIA) });
+    } catch (erro) {
+      detalhes = (erro as { detalhes?: unknown }).detalhes;
+    }
+    expect(detalhes).toEqual({
+      prazo: new Date(resolvidaEm.getTime() + 10 * UM_DIA).toISOString(),
+    });
+  });
+});
+
 describe('Ocorrencia: aberta', () => {
   it.each([
     [RECEBIDA, true],

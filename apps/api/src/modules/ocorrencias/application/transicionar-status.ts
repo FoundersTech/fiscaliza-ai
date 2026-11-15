@@ -95,7 +95,7 @@ export class TransicionarStatus {
   }
 }
 
-function conflito(atual: StatusOcorrencia | null): ErroAplicacao {
+export function conflito(atual: StatusOcorrencia | null): ErroAplicacao {
   return new ErroAplicacao(
     'CONFLITO_STATUS',
     'A ocorrência mudou de status enquanto você a via. Recarregue para ver o estado atual.',

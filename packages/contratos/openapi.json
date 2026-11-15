@@ -715,6 +715,126 @@
         ]
       }
     },
+    "/api/v1/ocorrencias/{id}/avaliacoes": {
+      "post": {
+        "operationId": "OcorrenciasController_avaliar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvaliacaoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Avaliação do atendimento gravada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvaliacaoResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "SEM_VINCULO: só o autor ou quem confirmou avalia. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.\n\nACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADA"
+          },
+          "409": {
+            "description": "JA_AVALIADA: o usuário já avaliou esta ocorrência"
+          },
+          "422": {
+            "description": "NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para avaliar depois da resolução. VALIDACAO"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ocorrencias"
+        ]
+      }
+    },
+    "/api/v1/ocorrencias/{id}/reabertura": {
+      "post": {
+        "operationId": "OcorrenciasController_reabrir",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReaberturaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reaberta: volta para a análise do órgão, e quem acompanha é avisado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReaberturaResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "SEM_VINCULO: só o autor ou quem confirmou reabre. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.\n\nACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADA"
+          },
+          "409": {
+            "description": "CONFLITO_STATUS: o órgão mudou o status enquanto a pessoa via a ocorrência"
+          },
+          "422": {
+            "description": "NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para reabrir depois da resolução. VALIDACAO"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ocorrencias"
+        ]
+      }
+    },
     "/api/v1/ocorrencias/mapa": {
       "get": {
         "operationId": "ConsultasController_mapa",
@@ -1861,6 +1981,74 @@
           "confirmacoes"
         ]
       },
+      "AvaliacaoDto": {
+        "type": "object",
+        "properties": {
+          "nota": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "example": 4
+          },
+          "comentario": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "nota"
+        ]
+      },
+      "AvaliacaoResposta": {
+        "type": "object",
+        "properties": {
+          "nota": {
+            "type": "number",
+            "example": 4
+          },
+          "comentario": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "nota",
+          "comentario"
+        ]
+      },
+      "ReaberturaDto": {
+        "type": "object",
+        "properties": {
+          "justificativa": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "justificativa"
+        ]
+      },
+      "ReaberturaResposta": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "EM_ANALISE"
+            ]
+          },
+          "reaberturas": {
+            "type": "number",
+            "example": 1,
+            "description": "Quantas vezes a ocorrência já foi reaberta"
+          }
+        },
+        "required": [
+          "status",
+          "reaberturas"
+        ]
+      },
       "CategoriaCardResposta": {
         "type": "object",
         "properties": {
@@ -2115,22 +2303,6 @@
         "required": [
           "orgao",
           "comentario",
-          "data"
-        ]
-      },
-      "ReaberturaResposta": {
-        "type": "object",
-        "properties": {
-          "justificativa": {
-            "type": "string"
-          },
-          "data": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "justificativa",
           "data"
         ]
       },
