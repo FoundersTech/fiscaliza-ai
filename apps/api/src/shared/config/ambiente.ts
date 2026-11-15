@@ -56,6 +56,12 @@ const esquemaAmbiente = z
     R2_BUCKET_UPLOADS: z.string().min(1).default('fa-uploads'),
     // Bucket público: só as fotos já recodificadas e aprovadas.
     R2_BUCKET_FOTOS: z.string().min(1).default('fa-fotos'),
+    // Endereço público do bucket de fotos (em staging, https://fotos-staging.fiscalizaai.app).
+    // Fora de produção, sem ela, as fotos saem do próprio storage: <R2_ENDPOINT>/<R2_BUCKET_FOTOS>.
+    R2_URL_PUBLICA: z.preprocess(
+      (valor) => (valor === '' ? undefined : valor),
+      z.url({ protocol: /^https?$/ }).optional(),
+    ),
   })
   .superRefine((ambiente, contexto) => {
     if (ambiente.NODE_ENV === 'production' && !ambiente.JWT_SECRET) {
@@ -87,28 +93,34 @@ const esquemaAmbiente = z
           message: 'obrigatória em produção (ou R2_ENDPOINT)',
         });
       }
-      for (const campo of ['R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY'] as const) {
+      for (const campo of ['R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_URL_PUBLICA'] as const) {
         if (!ambiente[campo]) {
           contexto.addIssue({ code: 'custom', path: [campo], message: 'obrigatória em produção' });
         }
       }
     }
   })
-  .transform((ambiente) => ({
-    ...ambiente,
-    WEB_URL: ambiente.WEB_URL.replace(/\/+$/, ''),
-    NOMINATIM_URL: ambiente.NOMINATIM_URL.replace(/\/+$/, ''),
-    JWT_SECRET: ambiente.JWT_SECRET ?? JWT_SECRET_DESENVOLVIMENTO,
-    SWAGGER_HABILITADO: ambiente.SWAGGER_HABILITADO ?? ambiente.NODE_ENV !== 'production',
-    R2_ENDPOINT: (
+  .transform((ambiente) => {
+    const endpoint = (
       ambiente.R2_ENDPOINT ??
       (ambiente.R2_ACCOUNT_ID
         ? `https://${ambiente.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
         : STORAGE_LOCAL.endpoint)
-    ).replace(/\/+$/, ''),
-    R2_ACCESS_KEY_ID: ambiente.R2_ACCESS_KEY_ID ?? STORAGE_LOCAL.chave,
-    R2_SECRET_ACCESS_KEY: ambiente.R2_SECRET_ACCESS_KEY ?? STORAGE_LOCAL.segredo,
-  }));
+    ).replace(/\/+$/, '');
+    return {
+      ...ambiente,
+      WEB_URL: ambiente.WEB_URL.replace(/\/+$/, ''),
+      NOMINATIM_URL: ambiente.NOMINATIM_URL.replace(/\/+$/, ''),
+      JWT_SECRET: ambiente.JWT_SECRET ?? JWT_SECRET_DESENVOLVIMENTO,
+      SWAGGER_HABILITADO: ambiente.SWAGGER_HABILITADO ?? ambiente.NODE_ENV !== 'production',
+      R2_ENDPOINT: endpoint,
+      R2_ACCESS_KEY_ID: ambiente.R2_ACCESS_KEY_ID ?? STORAGE_LOCAL.chave,
+      R2_SECRET_ACCESS_KEY: ambiente.R2_SECRET_ACCESS_KEY ?? STORAGE_LOCAL.segredo,
+      R2_URL_PUBLICA: (
+        ambiente.R2_URL_PUBLICA ?? `${endpoint}/${ambiente.R2_BUCKET_FOTOS}`
+      ).replace(/\/+$/, ''),
+    };
+  });
 
 export type Ambiente = z.output<typeof esquemaAmbiente>;
 

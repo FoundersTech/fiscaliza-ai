@@ -6,6 +6,7 @@ import { ErroAplicacao } from '../../../shared/erros/erro-aplicacao.js';
 import { ConferirUploads, FilaFotos } from '../../midia/application/fotos-enviadas.js';
 import { EnderecoReverso, ResolverTerritorio } from '../../territorio/application/territorio.js';
 import type { Ponto } from '../../territorio/domain/endereco.js';
+import { resumir } from '../domain/exibicao-publica.js';
 import { type Atributos, SchemaAtributos } from '../domain/schema-atributos.js';
 import { FilaEnderecos } from './enderecos.js';
 import {
@@ -139,8 +140,6 @@ function validarOrdens(fotos: PedidoRegistro['fotos']): void {
   }
 }
 
-const TAMANHO_RESUMO = 120;
-
 function erroDuplicata(candidatas: CandidataDuplicidade[]): ErroAplicacao {
   return new ErroAplicacao(
     'DUPLICATA_POSSIVEL',
@@ -150,10 +149,7 @@ function erroDuplicata(candidatas: CandidataDuplicidade[]): ErroAplicacao {
       candidatas: candidatas.map((candidata) => ({
         id: candidata.id,
         protocolo: candidata.protocolo,
-        resumo:
-          candidata.descricao.length > TAMANHO_RESUMO
-            ? `${candidata.descricao.slice(0, TAMANHO_RESUMO - 1).trimEnd()}…`
-            : candidata.descricao,
+        resumo: resumir(candidata.descricao),
         distancia_m: Math.round(candidata.distanciaM),
         confirmacoes: candidata.confirmacoes,
       })),

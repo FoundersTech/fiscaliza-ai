@@ -203,7 +203,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["ConsultasController_feed"];
         put?: never;
         post: operations["OcorrenciasController_registrar"];
         delete?: never;
@@ -222,6 +222,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["OcorrenciasController_confirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ocorrencias/mapa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ConsultasController_mapa"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -492,6 +508,75 @@ export interface components {
              * @example 4
              */
             confirmacoes: number;
+        };
+        CategoriaCardResposta: {
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
+            nome: string;
+            /** @example lightbulb */
+            icone: string;
+        };
+        CardResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @example FA-2026-SOR-000123 */
+            protocolo: string;
+            categoria: components["schemas"]["CategoriaCardResposta"];
+            /** @enum {string} */
+            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO";
+            /** @description Até 120 caracteres da descrição */
+            resumo: string;
+            /**
+             * @description Null enquanto o endereço não foi preenchido
+             * @example Rua Quinze de Novembro, 482 · Centro
+             */
+            endereco: string | null;
+            /**
+             * @description Quantas pessoas disseram "também vi"
+             * @example 4
+             */
+            confirmacoes: number;
+            /** @description Atingiu o limiar de confirmações do selo URGENTE */
+            urgente: boolean;
+            /**
+             * @description Dias desde o registro, ou até a resolução
+             * @example 3
+             */
+            dias_em_aberto: number;
+            /** @description Miniatura da primeira foto aprovada */
+            miniatura_url: string | null;
+            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
+            foto_em_analise: boolean;
+            /** Format: date-time */
+            criada_em: string;
+        };
+        FeedResposta: {
+            itens: components["schemas"]["CardResposta"][];
+            /** @description Passe em ?cursor= para a página seguinte; null na última */
+            proximo_cursor: string | null;
+        };
+        PontoMapaResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @example -23.5015 */
+            lat: number;
+            /** @example -47.4526 */
+            lng: number;
+            /**
+             * @description Define a cor do alfinete
+             * @enum {string}
+             */
+            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO";
+            /** @example iluminacao */
+            categoria_slug: string;
+            urgente: boolean;
+        };
+        MapaResposta: {
+            /** @description No máximo 2000 */
+            pontos: components["schemas"]["PontoMapaResposta"][];
+            /** @description Havia mais pontos na área: o PWA pede para aproximar o mapa */
+            truncado: boolean;
         };
     };
     responses: never;
@@ -917,6 +1002,50 @@ export interface operations {
             };
         };
     };
+    ConsultasController_feed: {
+        parameters: {
+            query?: {
+                /** @description Código IBGE; sem ele, todos os municípios atendidos */
+                municipio?: number;
+                /** @description Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO */
+                status?: string;
+                /** @description Slugs das categorias, separados por vírgula */
+                categoria?: string;
+                /** @description O proximo_cursor da página anterior */
+                cursor?: string;
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Da mais recente para a mais antiga */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedResposta"];
+                };
+            };
+            /** @description VALIDACAO (filtro, limite ou cursor inválido) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     OcorrenciasController_registrar: {
         parameters: {
             query?: never;
@@ -1034,6 +1163,48 @@ export interface operations {
             };
             /** @description OCORRENCIA_FECHADA: resolvida */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsultasController_mapa: {
+        parameters: {
+            query: {
+                /** @description Código IBGE; sem ele, todos os municípios atendidos */
+                municipio?: number;
+                /** @description Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO */
+                status?: string;
+                /** @description Slugs das categorias, separados por vírgula */
+                categoria?: string;
+                /** @description Área visível do mapa: minLng,minLat,maxLng,maxLat */
+                bbox: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapaResposta"];
+                };
+            };
+            /** @description BBOX_INVALIDA (área ausente ou malformada) ou VALIDACAO (filtro inválido) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
