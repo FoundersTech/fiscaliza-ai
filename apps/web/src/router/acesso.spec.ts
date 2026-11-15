@@ -31,7 +31,7 @@ describe('decidirAcesso', () => {
     });
   });
 
-  it.each(['', 'mapa', 'score'])('a rota pública "/%s" abre sem login', (caminho) => {
+  it.each(['', 'mapa', 'score', 'painel'])('a rota pública "/%s" abre sem login', (caminho) => {
     expect(decidirAcesso({ fullPath: `/${caminho}`, meta: metaDe(caminho) }, DESLOGADO)).toBe(true);
   });
 
