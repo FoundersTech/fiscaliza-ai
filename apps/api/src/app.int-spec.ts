@@ -84,6 +84,21 @@ describe('API com Postgres e Redis reais', () => {
     expect(deFora.headers['access-control-allow-origin']).toBeUndefined();
   });
 
+  it.each(['PATCH', 'DELETE'])('o CORS libera o %s do PWA', async (metodo) => {
+    const resposta = await app.inject({
+      method: 'OPTIONS',
+      url: `/${PREFIXO_API}/admin/categorias/1`,
+      headers: {
+        origin: 'http://localhost:9000',
+        'access-control-request-method': metodo,
+        'access-control-request-headers': 'authorization,content-type',
+      },
+    });
+
+    expect(resposta.statusCode).toBe(204);
+    expect(String(resposta.headers['access-control-allow-methods'])).toContain(metodo);
+  });
+
   it('o BullMQ conecta no Redis e enfileira jobs', async () => {
     const fila = app.get<Queue>(getQueueToken(FILA_TESTE));
 

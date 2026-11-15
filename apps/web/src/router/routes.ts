@@ -31,6 +31,39 @@ const routes: RouteRecordRaw[] = [
         name: 'politica-privacidade',
         component: () => import('@/pages/PoliticaPage.vue'),
       },
+
+      // Administração: o gestor do município cuida do órgão e dos agentes; o admin da
+      // plataforma, das categorias, dos gestores e das fotos.
+      {
+        path: 'admin/orgao',
+        name: 'admin-orgao',
+        component: () => import('@/pages/admin/AdminOrgaoPage.vue'),
+        meta: { auth: true, papeis: ['ADMIN_MUNICIPIO'] },
+      },
+      {
+        path: 'admin/agentes',
+        name: 'admin-agentes',
+        component: () => import('@/pages/admin/AdminAgentesPage.vue'),
+        meta: { auth: true, papeis: ['ADMIN_MUNICIPIO'] },
+      },
+      {
+        path: 'admin/categorias',
+        name: 'admin-categorias',
+        component: () => import('@/pages/admin/AdminCategoriasPage.vue'),
+        meta: { auth: true, papeis: ['ADMIN_PLATAFORMA'] },
+      },
+      {
+        path: 'admin/gestores',
+        name: 'admin-gestores',
+        component: () => import('@/pages/admin/AdminGestoresPage.vue'),
+        meta: { auth: true, papeis: ['ADMIN_PLATAFORMA'] },
+      },
+      {
+        path: 'admin/fotos',
+        name: 'admin-fotos',
+        component: () => import('@/pages/admin/AdminFotosPage.vue'),
+        meta: { auth: true, papeis: ['ADMIN_PLATAFORMA'] },
+      },
     ],
   },
 

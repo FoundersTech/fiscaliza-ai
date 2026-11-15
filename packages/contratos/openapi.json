@@ -597,6 +597,82 @@
         "tags": [
           "ocorrencias"
         ]
+      },
+      "get": {
+        "operationId": "ConsultasController_feed",
+        "parameters": [
+          {
+            "name": "municipio",
+            "required": false,
+            "in": "query",
+            "description": "Código IBGE; sem ele, todos os municípios atendidos",
+            "schema": {
+              "example": 3552205,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO",
+            "schema": {
+              "example": "RECEBIDO,EM_ANDAMENTO",
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoria",
+            "required": false,
+            "in": "query",
+            "description": "Slugs das categorias, separados por vírgula",
+            "schema": {
+              "example": "iluminacao,pavimentacao",
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "O proximo_cursor da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Da mais recente para a mais antiga",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedResposta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDACAO (filtro, limite ou cursor inválido)"
+          },
+          "429": {
+            "description": "Mais de 120 tentativas em 60 s."
+          }
+        },
+        "tags": [
+          "ocorrencias"
+        ]
       }
     },
     "/api/v1/ocorrencias/{id}/confirmacoes": {
@@ -646,6 +722,215 @@
         ],
         "tags": [
           "ocorrencias"
+        ]
+      }
+    },
+    "/api/v1/ocorrencias/mapa": {
+      "get": {
+        "operationId": "ConsultasController_mapa",
+        "parameters": [
+          {
+            "name": "municipio",
+            "required": false,
+            "in": "query",
+            "description": "Código IBGE; sem ele, todos os municípios atendidos",
+            "schema": {
+              "example": 3552205,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Status como aparecem no app, separados por vírgula: RECEBIDO, EM_ANDAMENTO, RESOLVIDO",
+            "schema": {
+              "example": "RECEBIDO,EM_ANDAMENTO",
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoria",
+            "required": false,
+            "in": "query",
+            "description": "Slugs das categorias, separados por vírgula",
+            "schema": {
+              "example": "iluminacao,pavimentacao",
+              "type": "string"
+            }
+          },
+          {
+            "name": "bbox",
+            "required": true,
+            "in": "query",
+            "description": "Área visível do mapa: minLng,minLat,maxLng,maxLat",
+            "schema": {
+              "example": "-47.55,-23.60,-47.35,-23.40",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapaResposta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "BBOX_INVALIDA (área ausente ou malformada) ou VALIDACAO (filtro inválido)"
+          },
+          "429": {
+            "description": "Mais de 120 tentativas em 60 s."
+          }
+        },
+        "tags": [
+          "ocorrencias"
+        ]
+      }
+    },
+    "/api/v1/admin/categorias": {
+      "get": {
+        "operationId": "CategoriasController_listar",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Todas as categorias, ativas e inativas, em ordem de nome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoriaAdminResposta"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      },
+      "post": {
+        "operationId": "CategoriasController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NovaCategoriaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriaAdminResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "409": {
+            "description": "SLUG_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
+        ]
+      }
+    },
+    "/api/v1/admin/categorias/{id}": {
+      "patch": {
+        "operationId": "CategoriasController_editar",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdicaoCategoriaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Categoria alterada. Inativa, ela sai do registro de novas ocorrências; as que já existem continuam com ela.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriaAdminResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "404": {
+            "description": "NAO_ENCONTRADA"
+          },
+          "409": {
+            "description": "SLUG_EM_USO"
+          },
+          "422": {
+            "description": "VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "administracao"
         ]
       }
     },
@@ -904,147 +1189,6 @@
           },
           "422": {
             "description": "VALIDACAO ou MUNICIPIO_INEXISTENTE"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracao"
-        ]
-      }
-    },
-    "/api/v1/admin/categorias": {
-      "get": {
-        "operationId": "CategoriasController_listar",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Todas as categorias, ativas e inativas, em ordem de nome",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CategoriaAdminResposta"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracao"
-        ]
-      },
-      "post": {
-        "operationId": "CategoriasController_criar",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NovaCategoriaDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CategoriaAdminResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "409": {
-            "description": "SLUG_EM_USO"
-          },
-          "422": {
-            "description": "VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados)"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "administracao"
-        ]
-      }
-    },
-    "/api/v1/admin/categorias/{id}": {
-      "patch": {
-        "operationId": "CategoriasController_editar",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "number"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/EdicaoCategoriaDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Categoria alterada. Inativa, ela sai do registro de novas ocorrências; as que já existem continuam com ela.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CategoriaAdminResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "ACESSO_NEGADO: só para ADMIN_PLATAFORMA. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "404": {
-            "description": "NAO_ENCONTRADA"
-          },
-          "409": {
-            "description": "SLUG_EM_USO"
-          },
-          "422": {
-            "description": "VALIDACAO ou SCHEMA_INVALIDO (campos extras malformados)"
           }
         },
         "security": [
@@ -1873,6 +2017,313 @@
           "confirmacoes"
         ]
       },
+      "CategoriaCardResposta": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "iluminacao"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação"
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb"
+          }
+        },
+        "required": [
+          "slug",
+          "nome",
+          "icone"
+        ]
+      },
+      "CardResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "protocolo": {
+            "type": "string",
+            "example": "FA-2026-SOR-000123"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaCardResposta"
+          },
+          "status_publico": {
+            "type": "string",
+            "enum": [
+              "RECEBIDO",
+              "EM_ANDAMENTO",
+              "RESOLVIDO"
+            ]
+          },
+          "resumo": {
+            "type": "string",
+            "description": "Até 120 caracteres da descrição"
+          },
+          "endereco": {
+            "type": "string",
+            "nullable": true,
+            "example": "Rua Quinze de Novembro, 482 · Centro",
+            "description": "Null enquanto o endereço não foi preenchido"
+          },
+          "confirmacoes": {
+            "type": "number",
+            "example": 4,
+            "description": "Quantas pessoas disseram \"também vi\""
+          },
+          "urgente": {
+            "type": "boolean",
+            "description": "Atingiu o limiar de confirmações do selo URGENTE"
+          },
+          "dias_em_aberto": {
+            "type": "number",
+            "example": 3,
+            "description": "Dias desde o registro, ou até a resolução"
+          },
+          "miniatura_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "Miniatura da primeira foto aprovada"
+          },
+          "foto_em_analise": {
+            "type": "boolean",
+            "description": "Nenhuma foto aprovada ainda: mostrar \"foto em análise\""
+          },
+          "criada_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "protocolo",
+          "categoria",
+          "status_publico",
+          "resumo",
+          "endereco",
+          "confirmacoes",
+          "urgente",
+          "dias_em_aberto",
+          "miniatura_url",
+          "foto_em_analise",
+          "criada_em"
+        ]
+      },
+      "FeedResposta": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardResposta"
+            }
+          },
+          "proximo_cursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Passe em ?cursor= para a página seguinte; null na última"
+          }
+        },
+        "required": [
+          "itens",
+          "proximo_cursor"
+        ]
+      },
+      "PontoMapaResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lat": {
+            "type": "number",
+            "example": -23.5015
+          },
+          "lng": {
+            "type": "number",
+            "example": -47.4526
+          },
+          "status_publico": {
+            "type": "string",
+            "enum": [
+              "RECEBIDO",
+              "EM_ANDAMENTO",
+              "RESOLVIDO"
+            ],
+            "description": "Define a cor do alfinete"
+          },
+          "categoria_slug": {
+            "type": "string",
+            "example": "iluminacao"
+          },
+          "urgente": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "lat",
+          "lng",
+          "status_publico",
+          "categoria_slug",
+          "urgente"
+        ]
+      },
+      "MapaResposta": {
+        "type": "object",
+        "properties": {
+          "pontos": {
+            "description": "No máximo 2000",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PontoMapaResposta"
+            }
+          },
+          "truncado": {
+            "type": "boolean",
+            "description": "Havia mais pontos na área: o PWA pede para aproximar o mapa"
+          }
+        },
+        "required": [
+          "pontos",
+          "truncado"
+        ]
+      },
+      "CategoriaAdminResposta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "slug": {
+            "type": "string",
+            "example": "iluminacao"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação"
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb"
+          },
+          "sla_dias": {
+            "type": "number",
+            "example": 15
+          },
+          "schema_atributos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAtributoResposta"
+            }
+          },
+          "ativa": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "nome",
+          "icone",
+          "sla_dias",
+          "schema_atributos",
+          "ativa"
+        ]
+      },
+      "NovaCategoriaDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "iluminacao",
+            "pattern": "^[a-z0-9-]{2,40}$"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb",
+            "description": "Nome de um ícone do Material Icons"
+          },
+          "sla_dias": {
+            "type": "number",
+            "example": 15,
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Prazo em dias"
+          },
+          "schema_atributos": {
+            "description": "Campos extras do registro. Pode ser vazio.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAtributoResposta"
+            }
+          },
+          "ativa": {
+            "type": "boolean",
+            "default": true,
+            "description": "false tira a categoria do registro"
+          }
+        },
+        "required": [
+          "slug",
+          "nome",
+          "icone",
+          "sla_dias",
+          "schema_atributos"
+        ]
+      },
+      "EdicaoCategoriaDto": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "iluminacao",
+            "pattern": "^[a-z0-9-]{2,40}$"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação",
+            "minLength": 2,
+            "maxLength": 60
+          },
+          "icone": {
+            "type": "string",
+            "example": "lightbulb",
+            "description": "Nome de um ícone do Material Icons"
+          },
+          "sla_dias": {
+            "type": "number",
+            "example": 15,
+            "minimum": 1,
+            "maximum": 365,
+            "description": "Prazo em dias"
+          },
+          "schema_atributos": {
+            "description": "Campos extras do registro. Pode ser vazio.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoAtributoResposta"
+            }
+          },
+          "ativa": {
+            "type": "boolean",
+            "default": true,
+            "description": "false tira a categoria do registro"
+          }
+        }
+      },
       "OrgaoResposta": {
         "type": "object",
         "properties": {
@@ -2023,135 +2474,6 @@
           "email",
           "municipio_id"
         ]
-      },
-      "CategoriaAdminResposta": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number"
-          },
-          "slug": {
-            "type": "string",
-            "example": "iluminacao"
-          },
-          "nome": {
-            "type": "string",
-            "example": "Iluminação"
-          },
-          "icone": {
-            "type": "string",
-            "example": "lightbulb"
-          },
-          "sla_dias": {
-            "type": "number",
-            "example": 15
-          },
-          "schema_atributos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CampoAtributoResposta"
-            }
-          },
-          "ativa": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "slug",
-          "nome",
-          "icone",
-          "sla_dias",
-          "schema_atributos",
-          "ativa"
-        ]
-      },
-      "NovaCategoriaDto": {
-        "type": "object",
-        "properties": {
-          "slug": {
-            "type": "string",
-            "example": "iluminacao",
-            "pattern": "^[a-z0-9-]{2,40}$"
-          },
-          "nome": {
-            "type": "string",
-            "example": "Iluminação",
-            "minLength": 2,
-            "maxLength": 60
-          },
-          "icone": {
-            "type": "string",
-            "example": "lightbulb",
-            "description": "Nome de um ícone do Material Icons"
-          },
-          "sla_dias": {
-            "type": "number",
-            "example": 15,
-            "minimum": 1,
-            "maximum": 365,
-            "description": "Prazo em dias"
-          },
-          "schema_atributos": {
-            "description": "Campos extras do registro. Pode ser vazio.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CampoAtributoResposta"
-            }
-          },
-          "ativa": {
-            "type": "boolean",
-            "default": true,
-            "description": "false tira a categoria do registro"
-          }
-        },
-        "required": [
-          "slug",
-          "nome",
-          "icone",
-          "sla_dias",
-          "schema_atributos"
-        ]
-      },
-      "EdicaoCategoriaDto": {
-        "type": "object",
-        "properties": {
-          "slug": {
-            "type": "string",
-            "example": "iluminacao",
-            "pattern": "^[a-z0-9-]{2,40}$"
-          },
-          "nome": {
-            "type": "string",
-            "example": "Iluminação",
-            "minLength": 2,
-            "maxLength": 60
-          },
-          "icone": {
-            "type": "string",
-            "example": "lightbulb",
-            "description": "Nome de um ícone do Material Icons"
-          },
-          "sla_dias": {
-            "type": "number",
-            "example": 15,
-            "minimum": 1,
-            "maximum": 365,
-            "description": "Prazo em dias"
-          },
-          "schema_atributos": {
-            "description": "Campos extras do registro. Pode ser vazio.",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CampoAtributoResposta"
-            }
-          },
-          "ativa": {
-            "type": "boolean",
-            "default": true,
-            "description": "false tira a categoria do registro"
-          }
-        }
       }
     }
   }

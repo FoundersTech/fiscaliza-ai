@@ -2,8 +2,10 @@
 import { computed } from 'vue';
 
 import { useTema } from '@/composables/useTema';
+import { inicioAdmin } from '@/services/administracao';
 import { rotuloAcessivelAlertas, rotuloDoIndicador } from '@/services/alertas';
 import { useAlertasStore } from '@/stores/alertas';
+import { useAuthStore } from '@/stores/auth';
 
 withDefaults(
   defineProps<{
@@ -19,6 +21,9 @@ withDefaults(
 const { escuro, alternarTema } = useTema();
 const alertas = useAlertasStore();
 const indicador = computed(() => rotuloDoIndicador(alertas.novos));
+const auth = useAuthStore();
+/** Atalho para as telas de administração, só para quem administra. */
+const rotaAdmin = computed(() => inicioAdmin(auth.papel));
 </script>
 
 <template>
@@ -33,6 +38,15 @@ const indicador = computed(() => rotuloDoIndicador(alertas.novos));
     </div>
 
     <div class="cabecalho__acoes">
+      <q-btn
+        v-if="rotaAdmin"
+        round
+        flat
+        class="fa-botao-redondo"
+        icon="sym_o_admin_panel_settings"
+        :to="rotaAdmin"
+        aria-label="Administração"
+      />
       <q-btn
         round
         flat
