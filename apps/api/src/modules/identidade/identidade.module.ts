@@ -67,6 +67,7 @@ import { GuardAutenticacao, GuardAutenticacaoOpcional } from './presentation/aut
     GuardAutenticacaoOpcional,
     ConvidarUsuario,
     AlterarAtivacaoConta,
+    HASHER_SENHA,
   ],
 })
 export class IdentidadeModule {}

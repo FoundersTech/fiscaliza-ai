@@ -126,7 +126,7 @@ export interface paths {
         get: operations["MeController_perfil"];
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["PrivacidadeController_excluir"];
         options?: never;
         head?: never;
         patch?: never;
@@ -366,6 +366,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["GestoresController_convidar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/exportacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PrivacidadeController_exportacoes"];
+        put?: never;
+        post: operations["PrivacidadeController_exportar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/exportacoes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PrivacidadeController_exportacao"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -842,6 +874,37 @@ export interface components {
             email: string;
             municipio_id: number;
         };
+        /** @enum {string} */
+        StatusExportacao: "PROCESSANDO" | "PRONTA" | "FALHOU" | "EXPIRADA";
+        ExportacaoCriadaResposta: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["StatusExportacao"];
+        };
+        ExportacaoResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @description Pronta com o prazo vencido já aparece como EXPIRADA */
+            status: components["schemas"]["StatusExportacao"];
+            /** Format: date-time */
+            solicitada_em: string;
+            /** Format: date-time */
+            pronta_em?: string;
+            /**
+             * Format: date-time
+             * @description O arquivo some 7 dias depois de pronto
+             */
+            expira_em?: string;
+            /** @description Só quando PRONTA. Link do arquivo JSON, válido por 15 minutos. */
+            download_url?: string;
+        };
+        ExcluirContaDto: {
+            /**
+             * Format: password
+             * @description Senha atual, para confirmar a exclusão
+             */
+            senha: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -1109,6 +1172,60 @@ export interface operations {
             };
             /** @description Sem token, ou token inválido ou expirado. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PrivacidadeController_excluir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExcluirContaDto"];
+            };
+        };
+        responses: {
+            /** @description Conta anonimizada, sessões encerradas e cookie de refresh apagado. As ocorrências continuam públicas, sem autor. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /**
+             * @description SENHA_INCORRETA
+             *
+             *     Sem token, ou token inválido ou expirado.
+             */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 5 tentativas em 900 s. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2009,6 +2126,116 @@ export interface operations {
             };
             /** @description VALIDACAO ou MUNICIPIO_INEXISTENTE */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PrivacidadeController_exportacoes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description As últimas exportações do usuário, das mais recentes para as mais antigas. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportacaoResposta"][];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PrivacidadeController_exportar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exportação dos dados pedida; o arquivo é gerado em segundo plano. Se já há uma em andamento ou pronta para baixar, devolve essa mesma. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportacaoCriadaResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PrivacidadeController_exportacao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportacaoResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description EXPORTACAO_NAO_ENCONTRADA (inclusive a de outra pessoa) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
