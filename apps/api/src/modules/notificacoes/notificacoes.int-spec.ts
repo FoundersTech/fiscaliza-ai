@@ -10,6 +10,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { AMBIENTE, validarAmbiente } from '../../shared/config/ambiente.js';
 import { ConfiguracaoModule } from '../../shared/config/configuracao.module.js';
 import { FilasModule } from '../../shared/filas/filas.module.js';
+import { PrismaModule } from '../../shared/prisma/prisma.module.js';
+import { RedisModule } from '../../shared/redis/redis.module.js';
+import { IdentidadeModule } from '../identidade/identidade.module.js';
 import { EMAIL_PORT, type EmailPort, ErroEmailPermanente } from './application/email.port.js';
 import { FILA_EMAIL, OPCOES_FILA_EMAIL, ServicoEmail } from './application/servico-email.js';
 import { NotificacoesModule } from './notificacoes.module.js';
@@ -20,7 +23,15 @@ async function criarModulo(
   ajustar: (builder: ReturnType<typeof Test.createTestingModule>) => void,
 ): Promise<TestingModule> {
   const builder = Test.createTestingModule({
-    imports: [ConfiguracaoModule, FilasModule, NotificacoesModule],
+    // Prisma, Redis e identidade: a aba Alertas, do mesmo módulo, lê os eventos e exige login.
+    imports: [
+      ConfiguracaoModule,
+      PrismaModule,
+      RedisModule,
+      FilasModule,
+      IdentidadeModule,
+      NotificacoesModule,
+    ],
   });
   ajustar(builder);
   const modulo = await builder.compile();

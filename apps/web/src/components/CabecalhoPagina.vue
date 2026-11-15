@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 import { useTema } from '@/composables/useTema';
+import { rotuloAcessivelAlertas, rotuloDoIndicador } from '@/services/alertas';
+import { useAlertasStore } from '@/stores/alertas';
 
 withDefaults(
   defineProps<{
@@ -13,6 +17,8 @@ withDefaults(
 );
 
 const { escuro, alternarTema } = useTema();
+const alertas = useAlertasStore();
+const indicador = computed(() => rotuloDoIndicador(alertas.novos));
 </script>
 
 <template>
@@ -42,8 +48,17 @@ const { escuro, alternarTema } = useTema();
         class="fa-botao-redondo"
         icon="sym_o_notifications"
         to="/alertas"
-        aria-label="Alertas"
-      />
+        :aria-label="rotuloAcessivelAlertas(alertas.novos)"
+      >
+        <q-badge
+          v-if="indicador"
+          floating
+          rounded
+          color="negative"
+          :label="indicador"
+          data-teste="indicador-sino"
+        />
+      </q-btn>
     </div>
   </header>
 </template>

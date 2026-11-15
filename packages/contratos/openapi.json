@@ -32,6 +32,119 @@
         ]
       }
     },
+    "/api/v1/me/alertas": {
+      "get": {
+        "operationId": "AlertasController_listar",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "O proximo_cursor da página anterior",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limite",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Do mais recente para o mais antigo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertasResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO (limite ou cursor inválido)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notificacoes"
+        ]
+      }
+    },
+    "/api/v1/me/alertas/novos": {
+      "get": {
+        "operationId": "AlertasController_novos",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertasNovosResposta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notificacoes"
+        ]
+      }
+    },
+    "/api/v1/me/alertas/vistos": {
+      "post": {
+        "operationId": "AlertasController_vistos",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Zera o indicador de alertas novos"
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notificacoes"
+        ]
+      }
+    },
     "/api/v1/auth/cadastro": {
       "post": {
         "operationId": "AuthController_cadastrar",
@@ -1004,6 +1117,83 @@
           "versao",
           "db",
           "redis"
+        ]
+      },
+      "AlertaResposta": {
+        "type": "object",
+        "properties": {
+          "evento_id": {
+            "type": "number",
+            "example": 42
+          },
+          "ocorrencia_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "protocolo": {
+            "type": "string",
+            "example": "FA-2026-SOR-000123"
+          },
+          "para_status_publico": {
+            "type": "string",
+            "enum": [
+              "RECEBIDO",
+              "EM_ANDAMENTO",
+              "RESOLVIDO",
+              "RECUSADO",
+              "DUPLICADO"
+            ],
+            "description": "O status depois da mudança; RECUSADO e DUPLICADO só chegam para o autor"
+          },
+          "reaberta": {
+            "type": "boolean",
+            "description": "A ocorrência foi reaberta: voltou de resolvida para em análise"
+          },
+          "criado_em": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "evento_id",
+          "ocorrencia_id",
+          "protocolo",
+          "para_status_publico",
+          "reaberta",
+          "criado_em"
+        ]
+      },
+      "AlertasResposta": {
+        "type": "object",
+        "properties": {
+          "itens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertaResposta"
+            }
+          },
+          "proximo_cursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Passe em ?cursor= para a página seguinte; null na última"
+          }
+        },
+        "required": [
+          "itens",
+          "proximo_cursor"
+        ]
+      },
+      "AlertasNovosResposta": {
+        "type": "object",
+        "properties": {
+          "quantidade": {
+            "type": "number",
+            "example": 2,
+            "description": "Alertas desde a última visita à aba"
+          }
+        },
+        "required": [
+          "quantidade"
         ]
       },
       "CadastroDto": {
