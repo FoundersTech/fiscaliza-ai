@@ -20,54 +20,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/me/alertas": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["AlertasController_listar"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/me/alertas/novos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["AlertasController_novos"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/me/alertas/vistos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["AlertasController_vistos"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/auth/cadastro": {
         parameters: {
             query?: never;
@@ -276,38 +228,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/ocorrencias/{id}/avaliacoes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OcorrenciasController_avaliar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/ocorrencias/{id}/reabertura": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OcorrenciasController_reabrir"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/ocorrencias/mapa": {
         parameters: {
             query?: never;
@@ -324,80 +244,16 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/ocorrencias/{id}": {
+    "/api/v1/indicadores/painel": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["ConsultasController_detalhe"];
+        get: operations["IndicadoresController_painel"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/me/ocorrencias": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["MinhasOcorrenciasController_minhas"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/atendimento/ocorrencias": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["AtendimentoController_fila"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/atendimento/ocorrencias/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["AtendimentoController_detalhe"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/atendimento/ocorrencias/{id}/transicoes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["AtendimentoController_transicionar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -423,35 +279,6 @@ export interface components {
             db: "ok" | "erro";
             /** @enum {string} */
             redis: "ok" | "erro";
-        };
-        AlertaResposta: {
-            /** @example 42 */
-            evento_id: number;
-            /** Format: uuid */
-            ocorrencia_id: string;
-            /** @example FA-2026-SOR-000123 */
-            protocolo: string;
-            /**
-             * @description O status depois da mudança; RECUSADO e DUPLICADO só chegam para o autor
-             * @enum {string}
-             */
-            para_status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "RECUSADO" | "DUPLICADO";
-            /** @description A ocorrência foi reaberta: voltou de resolvida para em análise */
-            reaberta: boolean;
-            /** Format: date-time */
-            criado_em: string;
-        };
-        AlertasResposta: {
-            itens: components["schemas"]["AlertaResposta"][];
-            /** @description Passe em ?cursor= para a página seguinte; null na última */
-            proximo_cursor: string | null;
-        };
-        AlertasNovosResposta: {
-            /**
-             * @description Alertas desde a última visita à aba
-             * @example 2
-             */
-            quantidade: number;
         };
         CadastroDto: {
             /** @example Maria da Silva */
@@ -698,28 +525,6 @@ export interface components {
              */
             confirmacoes: number;
         };
-        AvaliacaoDto: {
-            /** @example 4 */
-            nota: number;
-            comentario?: string;
-        };
-        AvaliacaoResposta: {
-            /** @example 4 */
-            nota: number;
-            comentario: string | null;
-        };
-        ReaberturaDto: {
-            justificativa: string;
-        };
-        ReaberturaResposta: {
-            /** @enum {string} */
-            status: "EM_ANALISE";
-            /**
-             * @description Quantas vezes a ocorrência já foi reaberta
-             * @example 1
-             */
-            reaberturas: number;
-        };
         CategoriaCardResposta: {
             /** @example iluminacao */
             slug: string;
@@ -789,307 +594,47 @@ export interface components {
             /** @description Havia mais pontos na área: o PWA pede para aproximar o mapa */
             truncado: boolean;
         };
-        OriginalResposta: {
-            /** Format: uuid */
-            id: string;
-            /** @example FA-2026-SOR-000101 */
-            protocolo: string;
+        CategoriaPainelResposta: {
+            /** @example iluminacao */
+            slug: string;
+            /** @example Iluminação */
+            nome: string;
+            /** @example lightbulb */
+            icone: string;
+            /** @example 12 */
+            total: number;
+            /** @example 7 */
+            resolvidas: number;
         };
-        FotoDetalheResposta: {
-            url: string;
-            miniatura_url: string | null;
-        };
-        EtapaResposta: {
+        PainelResposta: {
+            /** @description Nenhuma ocorrência no período: mostrar "Sem ocorrências no período" */
+            vazio: boolean;
             /**
-             * @description REABERTO marca cada vez que alguém disse "Não foi resolvido"
-             * @enum {string}
+             * @example 30
+             * @enum {number}
              */
-            etapa: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "REABERTO" | "RECUSADO" | "DUPLICADO";
-            /** Format: date-time */
-            data: string;
-        };
-        RespostaOficialResposta: {
-            /** @example Prefeitura de Sorocaba */
-            orgao: string;
-            comentario: string;
-            /** Format: date-time */
-            data: string;
-        };
-        DetalheResposta: {
-            /** Format: uuid */
-            id: string;
-            /** @example FA-2026-SOR-000123 */
-            protocolo: string;
-            categoria: components["schemas"]["CategoriaCardResposta"];
-            /** @description Até 120 caracteres da descrição */
-            resumo: string;
+            periodo_dias: 30 | 90 | 365;
+            /** @example 40 */
+            total: number;
+            /** @example 22 */
+            resolvidas: number;
             /**
-             * @description Null enquanto o endereço não foi preenchido
-             * @example Rua Quinze de Novembro, 482 · Centro
+             * @description Percentual de resolvidas, com uma casa; null quando vazio
+             * @example 55
              */
-            endereco: string | null;
+            resolvidas_pct: number | null;
             /**
-             * @description Quantas pessoas disseram "também vi"
-             * @example 4
+             * @description Mediana de dias entre o registro e a resolução; null sem nenhuma resolvida
+             * @example 6.5
              */
-            confirmacoes: number;
-            /** @description Atingiu o limiar de confirmações do selo URGENTE */
-            urgente: boolean;
-            /**
-             * @description Dias desde o registro, ou até a resolução
-             * @example 3
-             */
-            dias_em_aberto: number;
-            /** @description Miniatura da primeira foto aprovada */
-            miniatura_url: string | null;
-            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
-            foto_em_analise: boolean;
-            /** Format: date-time */
-            criada_em: string;
-            /**
-             * @description RECUSADO e DUPLICADO só aparecem para o autor
-             * @enum {string}
-             */
-            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "RECUSADO" | "DUPLICADO";
-            /** @description Motivo dado pelo órgão; preenchido só quando foi recusada */
-            justificativa_recusa: string | null;
-            /** @description Ocorrência que já tratava do problema; preenchida só quando foi duplicada */
-            original: components["schemas"]["OriginalResposta"] | null;
-            descricao: string;
-            /** @description Campos extras da categoria */
-            atributos: {
-                [key: string]: string | number;
-            };
-            /** @description Só as fotos aprovadas */
-            fotos: components["schemas"]["FotoDetalheResposta"][];
-            /** @description Da mais antiga para a mais recente */
-            linha_do_tempo: components["schemas"]["EtapaResposta"][];
-            /** @description "Resposta da prefeitura" */
-            respostas: components["schemas"]["RespostaOficialResposta"][];
-            reaberturas: components["schemas"]["ReaberturaResposta"][];
-            /** @description Só quando o autor escolheu mostrar o apelido */
-            autor_apelido?: string;
-            /** @description Com token: a pessoa já disse "também vi" */
-            minha_confirmacao?: boolean;
-            /** @description Com token: mostrar o botão "Também vi" */
-            pode_confirmar?: boolean;
-            /** @description Com token: mostrar "Avaliar atendimento" */
-            pode_avaliar?: boolean;
-            /** @description Com token: mostrar "Não foi resolvido" */
-            pode_reabrir?: boolean;
+            dias_mediana: number | null;
+            /** @description Só as categorias com ocorrências, da maior para a menor */
+            por_categoria: components["schemas"]["CategoriaPainelResposta"][];
             /**
              * Format: date-time
-             * @description Com token: até quando dá para avaliar ou reabrir; null se não está resolvida
+             * @description Quando os números foram calculados (ficam guardados por até 5 minutos)
              */
-            prazo_pos_resolucao_ate?: string | null;
-        };
-        MinhaOcorrenciaResposta: {
-            /** Format: uuid */
-            id: string;
-            /** @example FA-2026-SOR-000123 */
-            protocolo: string;
-            categoria: components["schemas"]["CategoriaCardResposta"];
-            /** @description Até 120 caracteres da descrição */
-            resumo: string;
-            /**
-             * @description Null enquanto o endereço não foi preenchido
-             * @example Rua Quinze de Novembro, 482 · Centro
-             */
-            endereco: string | null;
-            /**
-             * @description Quantas pessoas disseram "também vi"
-             * @example 4
-             */
-            confirmacoes: number;
-            /** @description Atingiu o limiar de confirmações do selo URGENTE */
-            urgente: boolean;
-            /**
-             * @description Dias desde o registro, ou até a resolução
-             * @example 3
-             */
-            dias_em_aberto: number;
-            /** @description Miniatura da primeira foto aprovada */
-            miniatura_url: string | null;
-            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
-            foto_em_analise: boolean;
-            /** Format: date-time */
-            criada_em: string;
-            /**
-             * @description RECUSADO e DUPLICADO só aparecem para o autor
-             * @enum {string}
-             */
-            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "RECUSADO" | "DUPLICADO";
-            /** @description Motivo dado pelo órgão; preenchido só quando foi recusada */
-            justificativa_recusa: string | null;
-            /** @description Ocorrência que já tratava do problema; preenchida só quando foi duplicada */
-            original: components["schemas"]["OriginalResposta"] | null;
-        };
-        MinhasResposta: {
-            itens: components["schemas"]["MinhaOcorrenciaResposta"][];
-            /** @description Passe em ?cursor= para a página seguinte; null na última */
-            proximo_cursor: string | null;
-        };
-        ItemFilaResposta: {
-            /** Format: uuid */
-            id: string;
-            /** @example FA-2026-SOR-000123 */
-            protocolo: string;
-            categoria: components["schemas"]["CategoriaCardResposta"];
-            /** @enum {string} */
-            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO";
-            /** @description Até 120 caracteres da descrição */
-            resumo: string;
-            /**
-             * @description Null enquanto o endereço não foi preenchido
-             * @example Rua Quinze de Novembro, 482 · Centro
-             */
-            endereco: string | null;
-            /**
-             * @description Quantas pessoas disseram "também vi"
-             * @example 4
-             */
-            confirmacoes: number;
-            /** @description Atingiu o limiar de confirmações do selo URGENTE */
-            urgente: boolean;
-            /**
-             * @description Dias desde o registro, ou até a resolução
-             * @example 3
-             */
-            dias_em_aberto: number;
-            /** @description Miniatura da primeira foto aprovada */
-            miniatura_url: string | null;
-            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
-            foto_em_analise: boolean;
-            /** Format: date-time */
-            criada_em: string;
-            /** @enum {string} */
-            status: "RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA";
-            /** @description Já foi reaberta alguma vez: mostrar o selo "Reaberta" */
-            reaberta: boolean;
-        };
-        FilaResposta: {
-            /** @description Da mais antiga para a mais recente */
-            itens: components["schemas"]["ItemFilaResposta"][];
-            /** @description Passe em ?cursor= para a página seguinte; null na última */
-            proximo_cursor: string | null;
-        };
-        EventoResposta: {
-            /**
-             * @description Null no evento de criação
-             * @enum {string|null}
-             */
-            de_status: "RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA" | null;
-            /** @enum {string} */
-            para_status: "RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA";
-            /** @description Órgão que fez a mudança; null quando foi o cidadão (criação ou reabertura) */
-            orgao: string | null;
-            /** @description Resposta oficial, justificativa de recusa ou de reabertura */
-            comentario: string | null;
-            /** Format: date-time */
-            criado_em: string;
-        };
-        DetalheAtendimentoResposta: {
-            /** Format: uuid */
-            id: string;
-            /** @example FA-2026-SOR-000123 */
-            protocolo: string;
-            categoria: components["schemas"]["CategoriaCardResposta"];
-            /** @description Até 120 caracteres da descrição */
-            resumo: string;
-            /**
-             * @description Null enquanto o endereço não foi preenchido
-             * @example Rua Quinze de Novembro, 482 · Centro
-             */
-            endereco: string | null;
-            /**
-             * @description Quantas pessoas disseram "também vi"
-             * @example 4
-             */
-            confirmacoes: number;
-            /** @description Atingiu o limiar de confirmações do selo URGENTE */
-            urgente: boolean;
-            /**
-             * @description Dias desde o registro, ou até a resolução
-             * @example 3
-             */
-            dias_em_aberto: number;
-            /** @description Miniatura da primeira foto aprovada */
-            miniatura_url: string | null;
-            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
-            foto_em_analise: boolean;
-            /** Format: date-time */
-            criada_em: string;
-            /**
-             * @description RECUSADO e DUPLICADO só aparecem para o autor
-             * @enum {string}
-             */
-            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "RECUSADO" | "DUPLICADO";
-            /** @description Motivo dado pelo órgão; preenchido só quando foi recusada */
-            justificativa_recusa: string | null;
-            /** @description Ocorrência que já tratava do problema; preenchida só quando foi duplicada */
-            original: components["schemas"]["OriginalResposta"] | null;
-            descricao: string;
-            /** @description Campos extras da categoria */
-            atributos: {
-                [key: string]: string | number;
-            };
-            /** @description Só as fotos aprovadas */
-            fotos: components["schemas"]["FotoDetalheResposta"][];
-            /** @description Da mais antiga para a mais recente */
-            linha_do_tempo: components["schemas"]["EtapaResposta"][];
-            /** @description "Resposta da prefeitura" */
-            respostas: components["schemas"]["RespostaOficialResposta"][];
-            reaberturas: components["schemas"]["ReaberturaResposta"][];
-            /** @description Só quando o autor escolheu mostrar o apelido */
-            autor_apelido?: string;
-            /** @description Com token: a pessoa já disse "também vi" */
-            minha_confirmacao?: boolean;
-            /** @description Com token: mostrar o botão "Também vi" */
-            pode_confirmar?: boolean;
-            /** @description Com token: mostrar "Avaliar atendimento" */
-            pode_avaliar?: boolean;
-            /** @description Com token: mostrar "Não foi resolvido" */
-            pode_reabrir?: boolean;
-            /**
-             * Format: date-time
-             * @description Com token: até quando dá para avaliar ou reabrir; null se não está resolvida
-             */
-            prazo_pos_resolucao_ate?: string | null;
-            /** @enum {string} */
-            status: "RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA";
-            /** @description Já foi reaberta alguma vez */
-            reaberta: boolean;
-            /** @description Todos, do mais antigo ao mais recente */
-            eventos: components["schemas"]["EventoResposta"][];
-            /** @description Para onde o agente pode levar a ocorrência agora; vazio nos status finais */
-            transicoes_permitidas: ("RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA")[];
-        };
-        TransicaoDto: {
-            /**
-             * @description O status que a tela mostrava; se mudou nesse meio-tempo, 409 CONFLITO_STATUS
-             * @enum {string}
-             */
-            status_esperado: "RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA";
-            /** @enum {string} */
-            para_status: "RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA";
-            /** @description Obrigatório para RESOLVIDA (resposta oficial) e RECUSADA (justificativa) */
-            comentario?: string;
-            /**
-             * @description Obrigatório para DUPLICADA: protocolo da ocorrência original, do mesmo município
-             * @example FA-2026-SOR-000101
-             */
-            protocolo_original?: string;
-        };
-        TransicaoResposta: {
-            /** @enum {string} */
-            status: "RECEBIDA" | "EM_ANALISE" | "EM_EXECUCAO" | "RESOLVIDA" | "RECUSADA" | "DUPLICADA";
-            /**
-             * Format: date-time
-             * @description Primeira saída de RECEBIDA
-             */
-            triada_em: string | null;
-            /** Format: date-time */
-            resolvida_em: string | null;
+            calculado_em: string;
         };
     };
     responses: never;
@@ -1126,116 +671,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RelatorioSaudeResposta"];
                 };
-            };
-        };
-    };
-    AlertasController_listar: {
-        parameters: {
-            query?: {
-                /** @description O proximo_cursor da página anterior */
-                cursor?: string;
-                limite?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Do mais recente para o mais antigo */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AlertasResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDACAO (limite ou cursor inválido) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AlertasController_novos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AlertasNovosResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AlertasController_vistos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Zera o indicador de alertas novos */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
@@ -1793,136 +1228,6 @@ export interface operations {
             };
         };
     };
-    OcorrenciasController_avaliar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AvaliacaoDto"];
-            };
-        };
-        responses: {
-            /** @description Avaliação do atendimento gravada */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AvaliacaoResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /**
-             * @description SEM_VINCULO: só o autor ou quem confirmou avalia. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             *
-             *     ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NAO_ENCONTRADA */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description JA_AVALIADA: o usuário já avaliou esta ocorrência */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para avaliar depois da resolução. VALIDACAO */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OcorrenciasController_reabrir: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReaberturaDto"];
-            };
-        };
-        responses: {
-            /** @description Reaberta: volta para a análise do órgão, e quem acompanha é avisado */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReaberturaResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /**
-             * @description SEM_VINCULO: só o autor ou quem confirmou reabre. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             *
-             *     ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NAO_ENCONTRADA */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description CONFLITO_STATUS: o órgão mudou o status enquanto a pessoa via a ocorrência */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para reabrir depois da resolução. VALIDACAO */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     ConsultasController_mapa: {
         parameters: {
             query: {
@@ -1965,35 +1270,32 @@ export interface operations {
             };
         };
     };
-    ConsultasController_detalhe: {
+    IndicadoresController_painel: {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
+            query?: {
+                /** @description Código IBGE; sem ele, todos os municípios atendidos */
+                municipio?: number;
+                /** @description Últimos N dias, pela data de registro */
+                periodo?: 30 | 90 | 365;
+                /** @description Slugs das categorias, separados por vírgula */
+                categoria?: string;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Com token, vêm também os campos pessoais (pode_confirmar, pode_avaliar…) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DetalheResposta"];
+                    "application/json": components["schemas"]["PainelResposta"];
                 };
             };
-            /** @description Token enviado, mas inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NAO_ENCONTRADA: id inexistente, inválido, ou recusada/duplicada de outra pessoa */
-            404: {
+            /** @description VALIDACAO (período, município ou categoria) */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2001,215 +1303,6 @@ export interface operations {
             };
             /** @description Mais de 120 tentativas em 60 s. */
             429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MinhasOcorrenciasController_minhas: {
-        parameters: {
-            query?: {
-                /** @description O proximo_cursor da página anterior */
-                cursor?: string;
-                limite?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Da mais recente para a mais antiga */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MinhasResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDACAO (limite ou cursor inválido) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AtendimentoController_fila: {
-        parameters: {
-            query?: {
-                /** @description Slugs das categorias, separados por vírgula */
-                categoria?: string;
-                /** @description O proximo_cursor da página anterior */
-                cursor?: string;
-                limite?: number;
-                /** @description Status internos, separados por vírgula: RECEBIDA, EM_ANALISE, EM_EXECUCAO, RESOLVIDA, RECUSADA, DUPLICADA. Sem ele, todos. */
-                status?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Só as do órgão do agente, da mais antiga para a mais recente */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FilaResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /**
-             * @description OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)
-             *
-             *     ACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description VALIDACAO (filtro, limite ou cursor inválido) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AtendimentoController_detalhe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DetalheAtendimentoResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /**
-             * @description OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)
-             *
-             *     ACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NAO_ENCONTRADA */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AtendimentoController_transicionar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TransicaoDto"];
-            };
-        };
-        responses: {
-            /** @description Status alterado e evento gravado */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TransicaoResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /**
-             * @description OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)
-             *
-             *     ACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.
-             */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description NAO_ENCONTRADA */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description CONFLITO_STATUS: o status já não é o status_esperado (recarregue a tela) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description TRANSICAO_INVALIDA, COMENTARIO_OBRIGATORIO, ORIGINAL_INVALIDA ou VALIDACAO */
-            422: {
                 headers: {
                     [name: string]: unknown;
                 };

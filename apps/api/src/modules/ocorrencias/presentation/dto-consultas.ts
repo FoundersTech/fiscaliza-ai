@@ -27,7 +27,7 @@ export const lista = Transform(({ value }: { value: unknown }) => {
 });
 
 // Texto vazio continua vazio, para não virar 0 e passar como número.
-const inteiro = Transform(({ value }: { value: unknown }) =>
+export const inteiro = Transform(({ value }: { value: unknown }) =>
   typeof value === 'string' && value.trim() !== '' ? Number(value) : value,
 );
 

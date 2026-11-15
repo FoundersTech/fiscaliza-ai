@@ -32,119 +32,6 @@
         ]
       }
     },
-    "/api/v1/me/alertas": {
-      "get": {
-        "operationId": "AlertasController_listar",
-        "parameters": [
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "O proximo_cursor da página anterior",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limite",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 50,
-              "default": 20,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Do mais recente para o mais antigo",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AlertasResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "422": {
-            "description": "VALIDACAO (limite ou cursor inválido)"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "notificacoes"
-        ]
-      }
-    },
-    "/api/v1/me/alertas/novos": {
-      "get": {
-        "operationId": "AlertasController_novos",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AlertasNovosResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "notificacoes"
-        ]
-      }
-    },
-    "/api/v1/me/alertas/vistos": {
-      "post": {
-        "operationId": "AlertasController_vistos",
-        "parameters": [],
-        "responses": {
-          "204": {
-            "description": "Zera o indicador de alertas novos"
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "notificacoes"
-        ]
-      }
-    },
     "/api/v1/auth/cadastro": {
       "post": {
         "operationId": "AuthController_cadastrar",
@@ -715,126 +602,6 @@
         ]
       }
     },
-    "/api/v1/ocorrencias/{id}/avaliacoes": {
-      "post": {
-        "operationId": "OcorrenciasController_avaliar",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AvaliacaoDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Avaliação do atendimento gravada",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AvaliacaoResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "SEM_VINCULO: só o autor ou quem confirmou avalia. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.\n\nACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "404": {
-            "description": "NAO_ENCONTRADA"
-          },
-          "409": {
-            "description": "JA_AVALIADA: o usuário já avaliou esta ocorrência"
-          },
-          "422": {
-            "description": "NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para avaliar depois da resolução. VALIDACAO"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ocorrencias"
-        ]
-      }
-    },
-    "/api/v1/ocorrencias/{id}/reabertura": {
-      "post": {
-        "operationId": "OcorrenciasController_reabrir",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReaberturaDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Reaberta: volta para a análise do órgão, e quem acompanha é avisado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReaberturaResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "SEM_VINCULO: só o autor ou quem confirmou reabre. ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política.\n\nACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "404": {
-            "description": "NAO_ENCONTRADA"
-          },
-          "409": {
-            "description": "CONFLITO_STATUS: o órgão mudou o status enquanto a pessoa via a ocorrência"
-          },
-          "422": {
-            "description": "NAO_RESOLVIDA: a ocorrência não está resolvida. FORA_DO_PRAZO: passaram os dias para reabrir depois da resolução. VALIDACAO"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ocorrencias"
-        ]
-      }
-    },
     "/api/v1/ocorrencias/mapa": {
       "get": {
         "operationId": "ConsultasController_mapa",
@@ -903,110 +670,35 @@
         ]
       }
     },
-    "/api/v1/ocorrencias/{id}": {
+    "/api/v1/indicadores/painel": {
       "get": {
-        "operationId": "ConsultasController_detalhe",
+        "operationId": "IndicadoresController_painel",
         "parameters": [
           {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Com token, vêm também os campos pessoais (pode_confirmar, pode_avaliar…)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DetalheResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Token enviado, mas inválido ou expirado."
-          },
-          "404": {
-            "description": "NAO_ENCONTRADA: id inexistente, inválido, ou recusada/duplicada de outra pessoa"
-          },
-          "429": {
-            "description": "Mais de 120 tentativas em 60 s."
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ocorrencias"
-        ]
-      }
-    },
-    "/api/v1/me/ocorrencias": {
-      "get": {
-        "operationId": "MinhasOcorrenciasController_minhas",
-        "parameters": [
-          {
-            "name": "cursor",
+            "name": "municipio",
             "required": false,
             "in": "query",
-            "description": "O proximo_cursor da página anterior",
+            "description": "Código IBGE; sem ele, todos os municípios atendidos",
             "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limite",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 50,
-              "default": 20,
+              "example": 3552205,
               "type": "number"
             }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Da mais recente para a mais antiga",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MinhasResposta"
-                }
-              }
+          },
+          {
+            "name": "periodo",
+            "required": false,
+            "in": "query",
+            "description": "Últimos N dias, pela data de registro",
+            "schema": {
+              "default": 30,
+              "type": "number",
+              "enum": [
+                30,
+                90,
+                365
+              ]
             }
           },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "422": {
-            "description": "VALIDACAO (limite ou cursor inválido)"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "ocorrencias"
-        ]
-      }
-    },
-    "/api/v1/atendimento/ocorrencias": {
-      "get": {
-        "operationId": "AtendimentoController_fila",
-        "parameters": [
           {
             "name": "categoria",
             "required": false,
@@ -1014,80 +706,6 @@
             "description": "Slugs das categorias, separados por vírgula",
             "schema": {
               "example": "iluminacao,pavimentacao",
-              "type": "string"
-            }
-          },
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "description": "O proximo_cursor da página anterior",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limite",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 50,
-              "default": 20,
-              "type": "number"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Status internos, separados por vírgula: RECEBIDA, EM_ANALISE, EM_EXECUCAO, RESOLVIDA, RECUSADA, DUPLICADA. Sem ele, todos.",
-            "schema": {
-              "example": "RECEBIDA,EM_ANALISE",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Só as do órgão do agente, da mais antiga para a mais recente",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FilaResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)\n\nACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "422": {
-            "description": "VALIDACAO (filtro, limite ou cursor inválido)"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "atendimento"
-        ]
-      }
-    },
-    "/api/v1/atendimento/ocorrencias/{id}": {
-      "get": {
-        "operationId": "AtendimentoController_detalhe",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
               "type": "string"
             }
           }
@@ -1098,88 +716,20 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DetalheAtendimentoResposta"
+                  "$ref": "#/components/schemas/PainelResposta"
                 }
               }
             }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)\n\nACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "404": {
-            "description": "NAO_ENCONTRADA"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "atendimento"
-        ]
-      }
-    },
-    "/api/v1/atendimento/ocorrencias/{id}/transicoes": {
-      "post": {
-        "operationId": "AtendimentoController_transicionar",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TransicaoDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Status alterado e evento gravado",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TransicaoResposta"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Sem token, ou token inválido ou expirado."
-          },
-          "403": {
-            "description": "OUTRO_ORGAO, ACESSO_NEGADO (só AGENTE_ORGAO)\n\nACESSO_NEGADO: só para AGENTE_ORGAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
-          },
-          "404": {
-            "description": "NAO_ENCONTRADA"
-          },
-          "409": {
-            "description": "CONFLITO_STATUS: o status já não é o status_esperado (recarregue a tela)"
           },
           "422": {
-            "description": "TRANSICAO_INVALIDA, COMENTARIO_OBRIGATORIO, ORIGINAL_INVALIDA ou VALIDACAO"
+            "description": "VALIDACAO (período, município ou categoria)"
+          },
+          "429": {
+            "description": "Mais de 120 tentativas em 60 s."
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "tags": [
-          "atendimento"
+          "indicadores"
         ]
       }
     }
@@ -1237,83 +787,6 @@
           "versao",
           "db",
           "redis"
-        ]
-      },
-      "AlertaResposta": {
-        "type": "object",
-        "properties": {
-          "evento_id": {
-            "type": "number",
-            "example": 42
-          },
-          "ocorrencia_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "protocolo": {
-            "type": "string",
-            "example": "FA-2026-SOR-000123"
-          },
-          "para_status_publico": {
-            "type": "string",
-            "enum": [
-              "RECEBIDO",
-              "EM_ANDAMENTO",
-              "RESOLVIDO",
-              "RECUSADO",
-              "DUPLICADO"
-            ],
-            "description": "O status depois da mudança; RECUSADO e DUPLICADO só chegam para o autor"
-          },
-          "reaberta": {
-            "type": "boolean",
-            "description": "A ocorrência foi reaberta: voltou de resolvida para em análise"
-          },
-          "criado_em": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "evento_id",
-          "ocorrencia_id",
-          "protocolo",
-          "para_status_publico",
-          "reaberta",
-          "criado_em"
-        ]
-      },
-      "AlertasResposta": {
-        "type": "object",
-        "properties": {
-          "itens": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AlertaResposta"
-            }
-          },
-          "proximo_cursor": {
-            "type": "string",
-            "nullable": true,
-            "description": "Passe em ?cursor= para a página seguinte; null na última"
-          }
-        },
-        "required": [
-          "itens",
-          "proximo_cursor"
-        ]
-      },
-      "AlertasNovosResposta": {
-        "type": "object",
-        "properties": {
-          "quantidade": {
-            "type": "number",
-            "example": 2,
-            "description": "Alertas desde a última visita à aba"
-          }
-        },
-        "required": [
-          "quantidade"
         ]
       },
       "CadastroDto": {
@@ -1981,74 +1454,6 @@
           "confirmacoes"
         ]
       },
-      "AvaliacaoDto": {
-        "type": "object",
-        "properties": {
-          "nota": {
-            "type": "number",
-            "minimum": 1,
-            "maximum": 5,
-            "example": 4
-          },
-          "comentario": {
-            "type": "string",
-            "maxLength": 500
-          }
-        },
-        "required": [
-          "nota"
-        ]
-      },
-      "AvaliacaoResposta": {
-        "type": "object",
-        "properties": {
-          "nota": {
-            "type": "number",
-            "example": 4
-          },
-          "comentario": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "nota",
-          "comentario"
-        ]
-      },
-      "ReaberturaDto": {
-        "type": "object",
-        "properties": {
-          "justificativa": {
-            "type": "string",
-            "minLength": 10,
-            "maxLength": 500
-          }
-        },
-        "required": [
-          "justificativa"
-        ]
-      },
-      "ReaberturaResposta": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "EM_ANALISE"
-            ]
-          },
-          "reaberturas": {
-            "type": "number",
-            "example": 1,
-            "description": "Quantas vezes a ocorrência já foi reaberta"
-          }
-        },
-        "required": [
-          "status",
-          "reaberturas"
-        ]
-      },
       "CategoriaCardResposta": {
         "type": "object",
         "properties": {
@@ -2227,818 +1632,96 @@
           "truncado"
         ]
       },
-      "OriginalResposta": {
+      "CategoriaPainelResposta": {
         "type": "object",
         "properties": {
-          "id": {
+          "slug": {
             "type": "string",
-            "format": "uuid"
+            "example": "iluminacao"
           },
-          "protocolo": {
+          "nome": {
             "type": "string",
-            "example": "FA-2026-SOR-000101"
-          }
-        },
-        "required": [
-          "id",
-          "protocolo"
-        ]
-      },
-      "FotoDetalheResposta": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string"
+            "example": "Iluminação"
           },
-          "miniatura_url": {
+          "icone": {
             "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "url",
-          "miniatura_url"
-        ]
-      },
-      "EtapaResposta": {
-        "type": "object",
-        "properties": {
-          "etapa": {
-            "type": "string",
-            "enum": [
-              "RECEBIDO",
-              "EM_ANDAMENTO",
-              "RESOLVIDO",
-              "REABERTO",
-              "RECUSADO",
-              "DUPLICADO"
-            ],
-            "description": "REABERTO marca cada vez que alguém disse \"Não foi resolvido\""
+            "example": "lightbulb"
           },
-          "data": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "etapa",
-          "data"
-        ]
-      },
-      "RespostaOficialResposta": {
-        "type": "object",
-        "properties": {
-          "orgao": {
-            "type": "string",
-            "example": "Prefeitura de Sorocaba"
-          },
-          "comentario": {
-            "type": "string"
-          },
-          "data": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "orgao",
-          "comentario",
-          "data"
-        ]
-      },
-      "DetalheResposta": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "protocolo": {
-            "type": "string",
-            "example": "FA-2026-SOR-000123"
-          },
-          "categoria": {
-            "$ref": "#/components/schemas/CategoriaCardResposta"
-          },
-          "resumo": {
-            "type": "string",
-            "description": "Até 120 caracteres da descrição"
-          },
-          "endereco": {
-            "type": "string",
-            "nullable": true,
-            "example": "Rua Quinze de Novembro, 482 · Centro",
-            "description": "Null enquanto o endereço não foi preenchido"
-          },
-          "confirmacoes": {
+          "total": {
             "type": "number",
-            "example": 4,
-            "description": "Quantas pessoas disseram \"também vi\""
+            "example": 12
           },
-          "urgente": {
-            "type": "boolean",
-            "description": "Atingiu o limiar de confirmações do selo URGENTE"
-          },
-          "dias_em_aberto": {
+          "resolvidas": {
             "type": "number",
-            "example": 3,
-            "description": "Dias desde o registro, ou até a resolução"
-          },
-          "miniatura_url": {
-            "type": "string",
-            "nullable": true,
-            "description": "Miniatura da primeira foto aprovada"
-          },
-          "foto_em_analise": {
+            "example": 7
+          }
+        },
+        "required": [
+          "slug",
+          "nome",
+          "icone",
+          "total",
+          "resolvidas"
+        ]
+      },
+      "PainelResposta": {
+        "type": "object",
+        "properties": {
+          "vazio": {
             "type": "boolean",
-            "description": "Nenhuma foto aprovada ainda: mostrar \"foto em análise\""
+            "description": "Nenhuma ocorrência no período: mostrar \"Sem ocorrências no período\""
           },
-          "criada_em": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status_publico": {
-            "type": "string",
+          "periodo_dias": {
+            "type": "number",
             "enum": [
-              "RECEBIDO",
-              "EM_ANDAMENTO",
-              "RESOLVIDO",
-              "RECUSADO",
-              "DUPLICADO"
+              30,
+              90,
+              365
             ],
-            "description": "RECUSADO e DUPLICADO só aparecem para o autor"
+            "example": 30
           },
-          "justificativa_recusa": {
-            "type": "string",
+          "total": {
+            "type": "number",
+            "example": 40
+          },
+          "resolvidas": {
+            "type": "number",
+            "example": 22
+          },
+          "resolvidas_pct": {
+            "type": "number",
             "nullable": true,
-            "description": "Motivo dado pelo órgão; preenchido só quando foi recusada"
+            "example": 55,
+            "description": "Percentual de resolvidas, com uma casa; null quando vazio"
           },
-          "original": {
+          "dias_mediana": {
+            "type": "number",
             "nullable": true,
-            "description": "Ocorrência que já tratava do problema; preenchida só quando foi duplicada",
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/OriginalResposta"
-              }
-            ]
+            "example": 6.5,
+            "description": "Mediana de dias entre o registro e a resolução; null sem nenhuma resolvida"
           },
-          "descricao": {
-            "type": "string"
-          },
-          "atributos": {
-            "type": "object",
-            "additionalProperties": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                }
-              ]
-            },
-            "description": "Campos extras da categoria"
-          },
-          "fotos": {
-            "description": "Só as fotos aprovadas",
+          "por_categoria": {
+            "description": "Só as categorias com ocorrências, da maior para a menor",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/FotoDetalheResposta"
+              "$ref": "#/components/schemas/CategoriaPainelResposta"
             }
           },
-          "linha_do_tempo": {
-            "description": "Da mais antiga para a mais recente",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EtapaResposta"
-            }
-          },
-          "respostas": {
-            "description": "\"Resposta da prefeitura\"",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RespostaOficialResposta"
-            }
-          },
-          "reaberturas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReaberturaResposta"
-            }
-          },
-          "autor_apelido": {
-            "type": "string",
-            "description": "Só quando o autor escolheu mostrar o apelido"
-          },
-          "minha_confirmacao": {
-            "type": "boolean",
-            "description": "Com token: a pessoa já disse \"também vi\""
-          },
-          "pode_confirmar": {
-            "type": "boolean",
-            "description": "Com token: mostrar o botão \"Também vi\""
-          },
-          "pode_avaliar": {
-            "type": "boolean",
-            "description": "Com token: mostrar \"Avaliar atendimento\""
-          },
-          "pode_reabrir": {
-            "type": "boolean",
-            "description": "Com token: mostrar \"Não foi resolvido\""
-          },
-          "prazo_pos_resolucao_ate": {
+          "calculado_em": {
             "type": "string",
             "format": "date-time",
-            "nullable": true,
-            "description": "Com token: até quando dá para avaliar ou reabrir; null se não está resolvida"
+            "description": "Quando os números foram calculados (ficam guardados por até 5 minutos)"
           }
         },
         "required": [
-          "id",
-          "protocolo",
-          "categoria",
-          "resumo",
-          "endereco",
-          "confirmacoes",
-          "urgente",
-          "dias_em_aberto",
-          "miniatura_url",
-          "foto_em_analise",
-          "criada_em",
-          "status_publico",
-          "justificativa_recusa",
-          "original",
-          "descricao",
-          "atributos",
-          "fotos",
-          "linha_do_tempo",
-          "respostas",
-          "reaberturas"
-        ]
-      },
-      "MinhaOcorrenciaResposta": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "protocolo": {
-            "type": "string",
-            "example": "FA-2026-SOR-000123"
-          },
-          "categoria": {
-            "$ref": "#/components/schemas/CategoriaCardResposta"
-          },
-          "resumo": {
-            "type": "string",
-            "description": "Até 120 caracteres da descrição"
-          },
-          "endereco": {
-            "type": "string",
-            "nullable": true,
-            "example": "Rua Quinze de Novembro, 482 · Centro",
-            "description": "Null enquanto o endereço não foi preenchido"
-          },
-          "confirmacoes": {
-            "type": "number",
-            "example": 4,
-            "description": "Quantas pessoas disseram \"também vi\""
-          },
-          "urgente": {
-            "type": "boolean",
-            "description": "Atingiu o limiar de confirmações do selo URGENTE"
-          },
-          "dias_em_aberto": {
-            "type": "number",
-            "example": 3,
-            "description": "Dias desde o registro, ou até a resolução"
-          },
-          "miniatura_url": {
-            "type": "string",
-            "nullable": true,
-            "description": "Miniatura da primeira foto aprovada"
-          },
-          "foto_em_analise": {
-            "type": "boolean",
-            "description": "Nenhuma foto aprovada ainda: mostrar \"foto em análise\""
-          },
-          "criada_em": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status_publico": {
-            "type": "string",
-            "enum": [
-              "RECEBIDO",
-              "EM_ANDAMENTO",
-              "RESOLVIDO",
-              "RECUSADO",
-              "DUPLICADO"
-            ],
-            "description": "RECUSADO e DUPLICADO só aparecem para o autor"
-          },
-          "justificativa_recusa": {
-            "type": "string",
-            "nullable": true,
-            "description": "Motivo dado pelo órgão; preenchido só quando foi recusada"
-          },
-          "original": {
-            "nullable": true,
-            "description": "Ocorrência que já tratava do problema; preenchida só quando foi duplicada",
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/OriginalResposta"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "protocolo",
-          "categoria",
-          "resumo",
-          "endereco",
-          "confirmacoes",
-          "urgente",
-          "dias_em_aberto",
-          "miniatura_url",
-          "foto_em_analise",
-          "criada_em",
-          "status_publico",
-          "justificativa_recusa",
-          "original"
-        ]
-      },
-      "MinhasResposta": {
-        "type": "object",
-        "properties": {
-          "itens": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MinhaOcorrenciaResposta"
-            }
-          },
-          "proximo_cursor": {
-            "type": "string",
-            "nullable": true,
-            "description": "Passe em ?cursor= para a página seguinte; null na última"
-          }
-        },
-        "required": [
-          "itens",
-          "proximo_cursor"
-        ]
-      },
-      "ItemFilaResposta": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "protocolo": {
-            "type": "string",
-            "example": "FA-2026-SOR-000123"
-          },
-          "categoria": {
-            "$ref": "#/components/schemas/CategoriaCardResposta"
-          },
-          "status_publico": {
-            "type": "string",
-            "enum": [
-              "RECEBIDO",
-              "EM_ANDAMENTO",
-              "RESOLVIDO"
-            ]
-          },
-          "resumo": {
-            "type": "string",
-            "description": "Até 120 caracteres da descrição"
-          },
-          "endereco": {
-            "type": "string",
-            "nullable": true,
-            "example": "Rua Quinze de Novembro, 482 · Centro",
-            "description": "Null enquanto o endereço não foi preenchido"
-          },
-          "confirmacoes": {
-            "type": "number",
-            "example": 4,
-            "description": "Quantas pessoas disseram \"também vi\""
-          },
-          "urgente": {
-            "type": "boolean",
-            "description": "Atingiu o limiar de confirmações do selo URGENTE"
-          },
-          "dias_em_aberto": {
-            "type": "number",
-            "example": 3,
-            "description": "Dias desde o registro, ou até a resolução"
-          },
-          "miniatura_url": {
-            "type": "string",
-            "nullable": true,
-            "description": "Miniatura da primeira foto aprovada"
-          },
-          "foto_em_analise": {
-            "type": "boolean",
-            "description": "Nenhuma foto aprovada ainda: mostrar \"foto em análise\""
-          },
-          "criada_em": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "RECEBIDA",
-              "EM_ANALISE",
-              "EM_EXECUCAO",
-              "RESOLVIDA",
-              "RECUSADA",
-              "DUPLICADA"
-            ]
-          },
-          "reaberta": {
-            "type": "boolean",
-            "description": "Já foi reaberta alguma vez: mostrar o selo \"Reaberta\""
-          }
-        },
-        "required": [
-          "id",
-          "protocolo",
-          "categoria",
-          "status_publico",
-          "resumo",
-          "endereco",
-          "confirmacoes",
-          "urgente",
-          "dias_em_aberto",
-          "miniatura_url",
-          "foto_em_analise",
-          "criada_em",
-          "status",
-          "reaberta"
-        ]
-      },
-      "FilaResposta": {
-        "type": "object",
-        "properties": {
-          "itens": {
-            "description": "Da mais antiga para a mais recente",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ItemFilaResposta"
-            }
-          },
-          "proximo_cursor": {
-            "type": "string",
-            "nullable": true,
-            "description": "Passe em ?cursor= para a página seguinte; null na última"
-          }
-        },
-        "required": [
-          "itens",
-          "proximo_cursor"
-        ]
-      },
-      "EventoResposta": {
-        "type": "object",
-        "properties": {
-          "de_status": {
-            "type": "string",
-            "enum": [
-              "RECEBIDA",
-              "EM_ANALISE",
-              "EM_EXECUCAO",
-              "RESOLVIDA",
-              "RECUSADA",
-              "DUPLICADA"
-            ],
-            "nullable": true,
-            "description": "Null no evento de criação"
-          },
-          "para_status": {
-            "type": "string",
-            "enum": [
-              "RECEBIDA",
-              "EM_ANALISE",
-              "EM_EXECUCAO",
-              "RESOLVIDA",
-              "RECUSADA",
-              "DUPLICADA"
-            ]
-          },
-          "orgao": {
-            "type": "string",
-            "nullable": true,
-            "description": "Órgão que fez a mudança; null quando foi o cidadão (criação ou reabertura)"
-          },
-          "comentario": {
-            "type": "string",
-            "nullable": true,
-            "description": "Resposta oficial, justificativa de recusa ou de reabertura"
-          },
-          "criado_em": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "de_status",
-          "para_status",
-          "orgao",
-          "comentario",
-          "criado_em"
-        ]
-      },
-      "DetalheAtendimentoResposta": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "protocolo": {
-            "type": "string",
-            "example": "FA-2026-SOR-000123"
-          },
-          "categoria": {
-            "$ref": "#/components/schemas/CategoriaCardResposta"
-          },
-          "resumo": {
-            "type": "string",
-            "description": "Até 120 caracteres da descrição"
-          },
-          "endereco": {
-            "type": "string",
-            "nullable": true,
-            "example": "Rua Quinze de Novembro, 482 · Centro",
-            "description": "Null enquanto o endereço não foi preenchido"
-          },
-          "confirmacoes": {
-            "type": "number",
-            "example": 4,
-            "description": "Quantas pessoas disseram \"também vi\""
-          },
-          "urgente": {
-            "type": "boolean",
-            "description": "Atingiu o limiar de confirmações do selo URGENTE"
-          },
-          "dias_em_aberto": {
-            "type": "number",
-            "example": 3,
-            "description": "Dias desde o registro, ou até a resolução"
-          },
-          "miniatura_url": {
-            "type": "string",
-            "nullable": true,
-            "description": "Miniatura da primeira foto aprovada"
-          },
-          "foto_em_analise": {
-            "type": "boolean",
-            "description": "Nenhuma foto aprovada ainda: mostrar \"foto em análise\""
-          },
-          "criada_em": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status_publico": {
-            "type": "string",
-            "enum": [
-              "RECEBIDO",
-              "EM_ANDAMENTO",
-              "RESOLVIDO",
-              "RECUSADO",
-              "DUPLICADO"
-            ],
-            "description": "RECUSADO e DUPLICADO só aparecem para o autor"
-          },
-          "justificativa_recusa": {
-            "type": "string",
-            "nullable": true,
-            "description": "Motivo dado pelo órgão; preenchido só quando foi recusada"
-          },
-          "original": {
-            "nullable": true,
-            "description": "Ocorrência que já tratava do problema; preenchida só quando foi duplicada",
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/OriginalResposta"
-              }
-            ]
-          },
-          "descricao": {
-            "type": "string"
-          },
-          "atributos": {
-            "type": "object",
-            "additionalProperties": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "number"
-                }
-              ]
-            },
-            "description": "Campos extras da categoria"
-          },
-          "fotos": {
-            "description": "Só as fotos aprovadas",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FotoDetalheResposta"
-            }
-          },
-          "linha_do_tempo": {
-            "description": "Da mais antiga para a mais recente",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EtapaResposta"
-            }
-          },
-          "respostas": {
-            "description": "\"Resposta da prefeitura\"",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RespostaOficialResposta"
-            }
-          },
-          "reaberturas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ReaberturaResposta"
-            }
-          },
-          "autor_apelido": {
-            "type": "string",
-            "description": "Só quando o autor escolheu mostrar o apelido"
-          },
-          "minha_confirmacao": {
-            "type": "boolean",
-            "description": "Com token: a pessoa já disse \"também vi\""
-          },
-          "pode_confirmar": {
-            "type": "boolean",
-            "description": "Com token: mostrar o botão \"Também vi\""
-          },
-          "pode_avaliar": {
-            "type": "boolean",
-            "description": "Com token: mostrar \"Avaliar atendimento\""
-          },
-          "pode_reabrir": {
-            "type": "boolean",
-            "description": "Com token: mostrar \"Não foi resolvido\""
-          },
-          "prazo_pos_resolucao_ate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true,
-            "description": "Com token: até quando dá para avaliar ou reabrir; null se não está resolvida"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "RECEBIDA",
-              "EM_ANALISE",
-              "EM_EXECUCAO",
-              "RESOLVIDA",
-              "RECUSADA",
-              "DUPLICADA"
-            ]
-          },
-          "reaberta": {
-            "type": "boolean",
-            "description": "Já foi reaberta alguma vez"
-          },
-          "eventos": {
-            "description": "Todos, do mais antigo ao mais recente",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventoResposta"
-            }
-          },
-          "transicoes_permitidas": {
-            "type": "array",
-            "description": "Para onde o agente pode levar a ocorrência agora; vazio nos status finais",
-            "items": {
-              "type": "string",
-              "enum": [
-                "RECEBIDA",
-                "EM_ANALISE",
-                "EM_EXECUCAO",
-                "RESOLVIDA",
-                "RECUSADA",
-                "DUPLICADA"
-              ]
-            }
-          }
-        },
-        "required": [
-          "id",
-          "protocolo",
-          "categoria",
-          "resumo",
-          "endereco",
-          "confirmacoes",
-          "urgente",
-          "dias_em_aberto",
-          "miniatura_url",
-          "foto_em_analise",
-          "criada_em",
-          "status_publico",
-          "justificativa_recusa",
-          "original",
-          "descricao",
-          "atributos",
-          "fotos",
-          "linha_do_tempo",
-          "respostas",
-          "reaberturas",
-          "status",
-          "reaberta",
-          "eventos",
-          "transicoes_permitidas"
-        ]
-      },
-      "TransicaoDto": {
-        "type": "object",
-        "properties": {
-          "status_esperado": {
-            "type": "string",
-            "enum": [
-              "RECEBIDA",
-              "EM_ANALISE",
-              "EM_EXECUCAO",
-              "RESOLVIDA",
-              "RECUSADA",
-              "DUPLICADA"
-            ],
-            "description": "O status que a tela mostrava; se mudou nesse meio-tempo, 409 CONFLITO_STATUS"
-          },
-          "para_status": {
-            "type": "string",
-            "enum": [
-              "RECEBIDA",
-              "EM_ANALISE",
-              "EM_EXECUCAO",
-              "RESOLVIDA",
-              "RECUSADA",
-              "DUPLICADA"
-            ]
-          },
-          "comentario": {
-            "type": "string",
-            "maxLength": 1000,
-            "description": "Obrigatório para RESOLVIDA (resposta oficial) e RECUSADA (justificativa)"
-          },
-          "protocolo_original": {
-            "type": "string",
-            "example": "FA-2026-SOR-000101",
-            "description": "Obrigatório para DUPLICADA: protocolo da ocorrência original, do mesmo município"
-          }
-        },
-        "required": [
-          "status_esperado",
-          "para_status"
-        ]
-      },
-      "TransicaoResposta": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "RECEBIDA",
-              "EM_ANALISE",
-              "EM_EXECUCAO",
-              "RESOLVIDA",
-              "RECUSADA",
-              "DUPLICADA"
-            ]
-          },
-          "triada_em": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true,
-            "description": "Primeira saída de RECEBIDA"
-          },
-          "resolvida_em": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "status",
-          "triada_em",
-          "resolvida_em"
+          "vazio",
+          "periodo_dias",
+          "total",
+          "resolvidas",
+          "resolvidas_pct",
+          "dias_mediana",
+          "por_categoria",
+          "calculado_em"
         ]
       }
     }
