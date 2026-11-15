@@ -176,3 +176,48 @@ export class ErroDuplicidadeResposta {
   @ApiProperty({ type: DetalhesDuplicidade, description: 'Vazio no ID_EM_USO' })
   detalhes!: DetalhesDuplicidade;
 }
+
+const TAMANHO_TEXTO_POS_RESOLUCAO = 500;
+
+export class AvaliacaoDto {
+  @ApiProperty({ minimum: 1, maximum: 5, example: 4 })
+  @IsInt({ message: 'dê uma nota de 1 a 5' })
+  @Min(1, { message: 'dê uma nota de 1 a 5' })
+  @Max(5, { message: 'dê uma nota de 1 a 5' })
+  nota!: number;
+
+  @ApiPropertyOptional({ maxLength: TAMANHO_TEXTO_POS_RESOLUCAO })
+  @IsOptional()
+  @aparar
+  @IsString({ message: 'o comentário deve ser um texto' })
+  @MaxLength(TAMANHO_TEXTO_POS_RESOLUCAO, {
+    message: `o comentário deve ter até ${TAMANHO_TEXTO_POS_RESOLUCAO} caracteres`,
+  })
+  comentario?: string;
+}
+
+export class AvaliacaoResposta {
+  @ApiProperty({ example: 4 })
+  nota!: number;
+
+  @ApiProperty({ type: String, nullable: true })
+  comentario!: string | null;
+}
+
+export class ReaberturaDto {
+  @ApiProperty({ minLength: 10, maxLength: TAMANHO_TEXTO_POS_RESOLUCAO })
+  @aparar
+  @IsString({ message: 'conte por que não foi resolvido' })
+  @Length(10, TAMANHO_TEXTO_POS_RESOLUCAO, {
+    message: `a justificativa deve ter de 10 a ${TAMANHO_TEXTO_POS_RESOLUCAO} caracteres`,
+  })
+  justificativa!: string;
+}
+
+export class ReaberturaFeitaResposta {
+  @ApiProperty({ enum: [StatusOcorrencia.EM_ANALISE] })
+  status!: StatusOcorrencia;
+
+  @ApiProperty({ example: 1, description: 'Quantas vezes a ocorrência já foi reaberta' })
+  reaberturas!: number;
+}

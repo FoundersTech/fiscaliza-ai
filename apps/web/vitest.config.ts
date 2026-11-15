@@ -31,6 +31,10 @@ export default defineConfig({
         test: {
           name: 'navegador',
           include: [SO_NO_NAVEGADOR],
+          // A porta padrão do servidor do modo navegador (63315) cai numa faixa que o Windows
+          // reserva quando o Hyper-V ou o Docker Desktop estão ligados. VITEST_PORTA_NAVEGADOR
+          // separa execuções simultâneas.
+          api: { port: Number(process.env.VITEST_PORTA_NAVEGADOR) || 5199 },
           browser: {
             enabled: true,
             headless: true,

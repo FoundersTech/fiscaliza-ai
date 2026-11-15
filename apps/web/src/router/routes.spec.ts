@@ -15,12 +15,31 @@ describe('routes', () => {
     expect(registrar?.meta).toEqual({ auth: true, papeis: ['CIDADAO'] });
   });
 
+  it('a fila e o detalhe do atendimento são só para o agente do órgão, sem a barra inferior', () => {
+    for (const caminho of ['/atendimento', '/atendimento/:id']) {
+      const rota = routes.find((item) => item.path === caminho);
+      expect(rota?.meta).toEqual({ auth: true, papeis: ['AGENTE_ORGAO'] });
+    }
+    expect(routes[0]?.children?.some((rota) => rota.path.startsWith('atendimento'))).toBe(false);
+  });
+
   it('login, cadastro e esqueci a senha são só para visitantes; definir senha abre para todos', () => {
     const meta = (caminho: string) => routes.find((rota) => rota.path === caminho)?.meta;
     expect(meta('/login')).toEqual({ visitante: true });
     expect(meta('/cadastro')).toEqual({ visitante: true });
     expect(meta('/esqueci-senha')).toEqual({ visitante: true });
     expect(meta('/definir-senha')).toBeUndefined();
+  });
+
+  it('minhas ocorrências fica na barra inferior e é só para cidadão', () => {
+    const minhas = routes[0]?.children?.find((rota) => rota.path === 'minhas-ocorrencias');
+    expect(minhas?.meta).toEqual({ auth: true, papeis: ['CIDADAO'] });
+  });
+
+  it('o detalhe da ocorrência abre sem login, para o link compartilhado', () => {
+    const detalhe = routes[0]?.children?.find((rota) => rota.path === 'ocorrencias/:id');
+    expect(detalhe).toBeDefined();
+    expect(detalhe?.meta).toBeUndefined();
   });
 
   it('deixa a rota coringa (404) por último', () => {

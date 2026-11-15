@@ -15,6 +15,7 @@ const aoRecusar = new Set<() => void>();
 export async function carregarMaps(): Promise<{
   Map: typeof google.maps.Map;
   AdvancedMarkerElement: typeof google.maps.marker.AdvancedMarkerElement;
+  PinElement: typeof google.maps.marker.PinElement;
 }> {
   const chave = import.meta.env.GOOGLE_MAPS_API_KEY as string | undefined;
   if (!chave || chaveRecusada) throw new MapaIndisponivel('Mapa indisponível');
@@ -30,13 +31,29 @@ export async function carregarMaps(): Promise<{
   }
 
   try {
-    const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
+    const [{ Map }, { AdvancedMarkerElement, PinElement }] = await Promise.all([
       importLibrary('maps'),
       importLibrary('marker'),
     ]);
-    return { Map, AdvancedMarkerElement };
+    return { Map, AdvancedMarkerElement, PinElement };
   } catch {
     throw new MapaIndisponivel('Mapa indisponível');
+  }
+}
+
+/**
+ * Carrega a busca de lugares (Places). Chame depois de `carregarMaps`. Se o Places não estiver
+ * liberado para a chave, lança MapaIndisponivel e o mapa segue sem a busca.
+ */
+export async function carregarBuscaDeLugares(): Promise<{
+  PlaceAutocompleteElement: typeof google.maps.places.PlaceAutocompleteElement;
+}> {
+  if (!configurado || chaveRecusada) throw new MapaIndisponivel('Busca indisponível');
+  try {
+    const { PlaceAutocompleteElement } = await importLibrary('places');
+    return { PlaceAutocompleteElement };
+  } catch {
+    throw new MapaIndisponivel('Busca indisponível');
   }
 }
 

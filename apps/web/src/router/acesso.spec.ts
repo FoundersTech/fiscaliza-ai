@@ -6,6 +6,8 @@ import routes from './routes';
 const DESLOGADO = { logado: false, papel: null };
 const CIDADAO = { logado: true, papel: 'CIDADAO' as const };
 const AGENTE = { logado: true, papel: 'AGENTE_ORGAO' as const };
+const GESTOR = { logado: true, papel: 'ADMIN_MUNICIPIO' as const };
+const ADMIN = { logado: true, papel: 'ADMIN_PLATAFORMA' as const };
 
 /** O meta de uma rota, dentro do layout ou fora dele, como o router vai ver. */
 function metaDe(caminho: string) {
@@ -31,7 +33,7 @@ describe('decidirAcesso', () => {
     });
   });
 
-  it.each(['', 'mapa', 'score'])('a rota pública "/%s" abre sem login', (caminho) => {
+  it.each(['', 'mapa', 'score', 'painel'])('a rota pública "/%s" abre sem login', (caminho) => {
     expect(decidirAcesso({ fullPath: `/${caminho}`, meta: metaDe(caminho) }, DESLOGADO)).toBe(true);
   });
 
@@ -43,6 +45,19 @@ describe('decidirAcesso', () => {
     expect(decidirAcesso({ fullPath: '/alertas', meta: metaDe('alertas') }, AGENTE)).toEqual({
       path: '/acesso-negado',
       query: { de: '/alertas' },
+    });
+  });
+
+  it('o atendimento abre para o agente; o cidadão vai para "Acesso negado"', () => {
+    const fila = { fullPath: '/atendimento', meta: metaDe('atendimento') };
+    expect(decidirAcesso(fila, AGENTE)).toBe(true);
+    expect(decidirAcesso(fila, CIDADAO)).toEqual({
+      path: '/acesso-negado',
+      query: { de: '/atendimento' },
+    });
+    expect(decidirAcesso(fila, DESLOGADO)).toEqual({
+      path: '/login',
+      query: { voltar: '/atendimento' },
     });
   });
 
@@ -61,6 +76,45 @@ describe('decidirAcesso', () => {
     );
     expect(decidirAcesso({ ...login, query: { voltar: 'https://fora.test' } }, CIDADAO)).toBe('/');
     expect(decidirAcesso({ fullPath: '/login', meta: { visitante: true } }, CIDADAO)).toBe('/');
+  });
+});
+
+describe('telas de administração', () => {
+  const DO_GESTOR = ['admin/orgao', 'admin/agentes'];
+  const DO_ADMIN = ['admin/categorias', 'admin/gestores', 'admin/fotos'];
+  const abrir = (caminho: string, sessao: Parameters<typeof decidirAcesso>[1]) =>
+    decidirAcesso({ fullPath: `/${caminho}`, meta: metaDe(caminho) }, sessao);
+
+  it.each(DO_GESTOR)('o gestor do município abre /%s', (caminho) => {
+    expect(abrir(caminho, GESTOR)).toBe(true);
+  });
+
+  it.each(DO_ADMIN)('o admin da plataforma abre /%s', (caminho) => {
+    expect(abrir(caminho, ADMIN)).toBe(true);
+  });
+
+  type Sessao = Parameters<typeof decidirAcesso>[1];
+  const negados: [string, Sessao][] = [
+    ...DO_GESTOR.flatMap((caminho) =>
+      [CIDADAO, AGENTE, ADMIN].map((sessao): [string, Sessao] => [caminho, sessao]),
+    ),
+    ...DO_ADMIN.flatMap((caminho) =>
+      [CIDADAO, AGENTE, GESTOR].map((sessao): [string, Sessao] => [caminho, sessao]),
+    ),
+  ];
+
+  it.each(negados)('/%s com %o mostra "Acesso negado"', (caminho, sessao) => {
+    expect(abrir(caminho, sessao)).toEqual({
+      path: '/acesso-negado',
+      query: { de: `/${caminho}` },
+    });
+  });
+
+  it.each([...DO_GESTOR, ...DO_ADMIN])('/%s sem login pede o login e volta', (caminho) => {
+    expect(abrir(caminho, DESLOGADO)).toEqual({
+      path: '/login',
+      query: { voltar: `/${caminho}` },
+    });
   });
 });
 

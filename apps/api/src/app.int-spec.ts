@@ -59,6 +59,33 @@ describe('API com Postgres e Redis reais', () => {
     expect(resposta.json<{ paths: object }>().paths).toHaveProperty(`/${PREFIXO_API}/health`);
   });
 
+  it('as respostas, inclusive as de erro, saem com os headers de segurança', async () => {
+    for (const url of [`/${PREFIXO_API}/health`, `/${PREFIXO_API}/nao-existe`]) {
+      const resposta = await app.inject({ method: 'GET', url });
+
+      expect(resposta.headers['content-security-policy']).toContain("default-src 'self'");
+      expect(resposta.headers['content-security-policy']).toContain("frame-ancestors 'self'");
+      expect(resposta.headers['content-security-policy']).not.toContain(
+        'upgrade-insecure-requests',
+      );
+      expect(resposta.headers).toMatchObject({
+        'x-content-type-options': 'nosniff',
+        'x-frame-options': 'SAMEORIGIN',
+        'cross-origin-resource-policy': 'same-site',
+        'strict-transport-security': expect.stringContaining('max-age=') as string,
+      });
+      expect(resposta.headers).not.toHaveProperty('x-powered-by');
+    }
+  });
+
+  it('a UI do Swagger carrega os scripts da própria origem, que a CSP libera', async () => {
+    const resposta = await app.inject({ method: 'GET', url: `/${CAMINHO_DOCS}` });
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.headers['content-security-policy']).toContain("script-src 'self'");
+    expect(resposta.body).not.toMatch(/<script>(?!\s*<\/script>)/);
+  });
+
   it('o CORS libera só o PWA (WEB_URL), com cookies', async () => {
     function preflight(origem: string) {
       return app.inject({
@@ -82,6 +109,21 @@ describe('API com Postgres e Redis reais', () => {
 
     const deFora = await preflight('https://site-malicioso.test');
     expect(deFora.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it.each(['PATCH', 'DELETE'])('o CORS libera o %s do PWA', async (metodo) => {
+    const resposta = await app.inject({
+      method: 'OPTIONS',
+      url: `/${PREFIXO_API}/admin/categorias/1`,
+      headers: {
+        origin: 'http://localhost:9000',
+        'access-control-request-method': metodo,
+        'access-control-request-headers': 'authorization,content-type',
+      },
+    });
+
+    expect(resposta.statusCode).toBe(204);
+    expect(String(resposta.headers['access-control-allow-methods'])).toContain(metodo);
   });
 
   it('o BullMQ conecta no Redis e enfileira jobs', async () => {

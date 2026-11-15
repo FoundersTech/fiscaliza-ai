@@ -7,15 +7,36 @@ import type { Ponto } from '../../territorio/domain/endereco.js';
 import type {
   CandidataDuplicidade,
   CategoriaDoRegistro,
+  NovaAvaliacao,
   NovaOcorrencia,
+  OcorrenciaDoOrgao,
   OcorrenciaGravada,
   RepositorioOcorrencias,
+  ReaberturaGravavel,
   ResultadoGravacao,
+  TransicaoGravavel,
 } from '../application/portas.js';
-import { ABERTAS, type DadosOcorrencia, StatusOcorrencia } from '../domain/ocorrencia.js';
+import {
+  ABERTAS,
+  type DadosOcorrencia,
+  type OriginalDuplicidade,
+  StatusOcorrencia,
+} from '../domain/ocorrencia.js';
 import { Protocolo } from '../domain/protocolo.js';
 
 const CAMPOS = { id: true, autorId: true, protocolo: true, status: true } as const;
+
+const CAMPOS_AGREGADO = {
+  id: true,
+  municipioId: true,
+  autorId: true,
+  status: true,
+  criadaEm: true,
+  triadaEm: true,
+  resolvidaEm: true,
+  duplicadaDeId: true,
+  reaberturas: true,
+} as const;
 
 @Injectable()
 export class RepositorioOcorrenciasPrisma implements RepositorioOcorrencias {
@@ -124,20 +145,91 @@ export class RepositorioOcorrenciasPrisma implements RepositorioOcorrencias {
   }
 
   carregar(id: string): Promise<DadosOcorrencia | null> {
-    return this.prisma.ocorrencia.findUnique({
+    return this.prisma.ocorrencia.findUnique({ where: { id }, select: CAMPOS_AGREGADO });
+  }
+
+  async carregarComOrgao(id: string): Promise<OcorrenciaDoOrgao | null> {
+    const linha = await this.prisma.ocorrencia.findUnique({
       where: { id },
-      select: {
-        id: true,
-        municipioId: true,
-        autorId: true,
-        status: true,
-        criadaEm: true,
-        triadaEm: true,
-        resolvidaEm: true,
-        duplicadaDeId: true,
-        reaberturas: true,
-      },
+      select: { ...CAMPOS_AGREGADO, orgaoId: true },
     });
+    if (!linha) return null;
+    const { orgaoId, ...dados } = linha;
+    return { dados, orgaoId };
+  }
+
+  originalPorProtocolo(protocolo: string): Promise<OriginalDuplicidade | null> {
+    return this.prisma.ocorrencia.findUnique({
+      where: { protocolo },
+      select: { id: true, municipioId: true, status: true },
+    });
+  }
+
+  gravarTransicao({
+    statusEsperado,
+    estado,
+    evento,
+    agenteId,
+    orgaoId,
+  }: TransicaoGravavel): Promise<number | null> {
+    return this.prisma.$transaction(async (tx) => {
+      // O filtro pelo status lido barra a segunda de duas mudanças feitas ao mesmo tempo.
+      const { count } = await tx.ocorrencia.updateMany({
+        where: { id: estado.id, status: statusEsperado },
+        data: {
+          status: estado.status,
+          triadaEm: estado.triadaEm,
+          resolvidaEm: estado.resolvidaEm,
+          duplicadaDeId: estado.duplicadaDeId,
+        },
+      });
+      if (!count) return null;
+      const { id } = await tx.ocorrenciaEvento.create({
+        data: {
+          ocorrenciaId: estado.id,
+          deStatus: evento.deStatus,
+          paraStatus: evento.paraStatus,
+          autorId: agenteId,
+          orgaoId,
+          comentario: evento.comentario,
+          criadoEm: evento.criadoEm,
+        },
+        select: { id: true },
+      });
+      return id;
+    });
+  }
+
+  gravarReabertura({ estado, evento, usuarioId }: ReaberturaGravavel): Promise<number | null> {
+    return this.prisma.$transaction(async (tx) => {
+      // Só reabre se ainda estiver resolvida: uma ação do agente no meio do caminho vence.
+      const { count } = await tx.ocorrencia.updateMany({
+        where: { id: estado.id, status: StatusOcorrencia.RESOLVIDA },
+        data: { status: estado.status, resolvidaEm: null, reaberturas: { increment: 1 } },
+      });
+      if (!count) return null;
+      const { id } = await tx.ocorrenciaEvento.create({
+        data: {
+          ocorrenciaId: estado.id,
+          deStatus: evento.deStatus,
+          paraStatus: evento.paraStatus,
+          autorId: usuarioId,
+          comentario: evento.comentario,
+          criadoEm: evento.criadoEm,
+        },
+        select: { id: true },
+      });
+      return id;
+    });
+  }
+
+  async avaliar(avaliacao: NovaAvaliacao): Promise<boolean> {
+    // A chave (ocorrencia_id, usuario_id) barra a segunda avaliação, mesmo em paralelo.
+    const { count } = await this.prisma.avaliacao.createMany({
+      data: [avaliacao],
+      skipDuplicates: true,
+    });
+    return count > 0;
   }
 
   async confirmar(ocorrenciaId: string, usuarioId: string, criadaEm: Date): Promise<number | null> {

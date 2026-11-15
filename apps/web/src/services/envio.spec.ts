@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { Api } from './api';
-import { confirmarOcorrencia, type DadosEnvio, enviarOcorrencia } from './envio';
+import { confirmarOcorrencia, type DadosEnvio, enviarOcorrencia, erroPassageiro } from './envio';
 
 const ID = '0b9f3c2e-5d1a-4f6b-9c8e-7a6d5c4b3a21';
 const foto = (bytes: number) => new File([new Uint8Array(bytes)], 'f.jpg', { type: 'image/jpeg' });
@@ -186,6 +186,29 @@ describe('enviarOcorrencia', () => {
       tipo: 'ERRO',
       codigo: null,
     });
+  });
+});
+
+describe('pendente enviada depois', () => {
+  it('vai com origem OFFLINE', async () => {
+    const { api, POST, enviarArquivo } = montar();
+
+    await enviarOcorrencia(api, dados(), { enviarArquivo, origem: 'OFFLINE' });
+
+    expect(corpoDoRegistro(POST)).toMatchObject({ origem: 'OFFLINE', forcar_criacao: false });
+  });
+
+  it('falta de conexão e servidor fora do ar passam; recusa do servidor não', () => {
+    const erro = (codigo: string | null) => ({ tipo: 'ERRO' as const, codigo, mensagem: '…' });
+
+    expect(erroPassageiro(erro(null))).toBe(true);
+    expect(erroPassageiro(erro('SERVICO_INDISPONIVEL'))).toBe(true);
+    expect(erroPassageiro(erro('ERRO_INTERNO'))).toBe(true);
+    expect(erroPassageiro(erro('FOTO_NAO_ENVIADA'))).toBe(true);
+    expect(erroPassageiro(erro('NAO_AUTENTICADO'))).toBe(true);
+    expect(erroPassageiro(erro('FORA_DA_AREA'))).toBe(false);
+    expect(erroPassageiro(erro('CATEGORIA_INATIVA'))).toBe(false);
+    expect(erroPassageiro(erro('VALIDACAO'))).toBe(false);
   });
 });
 

@@ -22,8 +22,11 @@ export function chaveDoUpload(ocorrenciaId: string, ordem: OrdemFoto, sufixo: st
   return `${prefixoDaOcorrencia(ocorrenciaId)}${ordem}-${sufixo}.jpg`;
 }
 
+/** Os originais das fotos ficam todos sob este prefixo do bucket de uploads. */
+export const PREFIXO_UPLOADS_FOTOS = 'ocorrencias/';
+
 export function prefixoDaOcorrencia(ocorrenciaId: string): string {
-  return `ocorrencias/${ocorrenciaId}/`;
+  return `${PREFIXO_UPLOADS_FOTOS}${ocorrenciaId}/`;
 }
 
 export const ModeracaoFoto = {

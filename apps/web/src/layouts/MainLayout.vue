@@ -1,4 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
+import { rotuloAcessivelAlertas, rotuloDoIndicador } from '@/services/alertas';
+import { useAlertasStore } from '@/stores/alertas';
+
+const alertas = useAlertasStore();
+const indicador = computed(() => rotuloDoIndicador(alertas.novos));
+
 const ITENS_ESQUERDA = [
   { rotulo: 'Início', icone: 'sym_o_home', rota: '/' },
   { rotulo: 'Mapa', icone: 'sym_o_map', rota: '/mapa' },
@@ -48,8 +56,19 @@ const ITENS_DIREITA = [
           :to="item.rota"
           class="barra__item"
           active-class="barra__item--ativo"
+          :aria-label="item.rota === '/alertas' ? rotuloAcessivelAlertas(alertas.novos) : undefined"
         >
-          <q-icon :name="item.icone" size="24px" />
+          <span class="barra__icone">
+            <q-icon :name="item.icone" size="24px" />
+            <q-badge
+              v-if="item.rota === '/alertas' && indicador"
+              floating
+              rounded
+              color="negative"
+              :label="indicador"
+              data-teste="indicador-alertas"
+            />
+          </span>
           <span>{{ item.rotulo }}</span>
         </router-link>
       </nav>
@@ -89,6 +108,11 @@ const ITENS_DIREITA = [
   &--ativo {
     color: var(--fa-azul);
   }
+}
+
+.barra__icone {
+  position: relative;
+  display: inline-flex;
 }
 
 .barra__centro {

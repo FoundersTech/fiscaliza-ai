@@ -16,6 +16,7 @@ const PRODUCAO = {
   R2_ACCOUNT_ID: 'f'.repeat(32),
   R2_ACCESS_KEY_ID: 'chave-r2',
   R2_SECRET_ACCESS_KEY: 'segredo-r2',
+  R2_URL_PUBLICA: 'https://fotos.exemplo.test/',
 };
 
 describe('validarAmbiente: storage', () => {
@@ -25,7 +26,21 @@ describe('validarAmbiente: storage', () => {
       R2_ACCESS_KEY_ID: 'fiscaliza',
       R2_SECRET_ACCESS_KEY: 'fiscaliza-local',
       R2_BUCKET_UPLOADS: 'fa-uploads',
+      R2_URL_PUBLICA: 'http://localhost:9100/fa-fotos',
+      R2_BUCKET_BACKUP: 'fa-backup',
     });
+  });
+
+  it('o endereço público das fotos vem sem a barra final', () => {
+    expect(validarAmbiente({ ...OBRIGATORIAS, ...PRODUCAO }).R2_URL_PUBLICA).toBe(
+      'https://fotos.exemplo.test',
+    );
+  });
+
+  it('exige o endereço público das fotos em produção', () => {
+    expect(() => validarAmbiente({ ...OBRIGATORIAS, ...PRODUCAO, R2_URL_PUBLICA: '' })).toThrow(
+      /R2_URL_PUBLICA: obrigatória em produção/,
+    );
   });
 
   it('com R2_ACCOUNT_ID, o endpoint é o da conta no R2', () => {
@@ -67,6 +82,15 @@ describe('validarAmbiente: autenticação', () => {
     expect(validarAmbiente({ ...OBRIGATORIAS, PROXY_CONFIAVEL: 'true' }).PROXY_CONFIAVEL).toBe(
       true,
     );
+  });
+});
+
+describe('validarAmbiente: limite de requisições', () => {
+  it('fica ligado, a menos que LIMITE_TAXA_DESLIGADO=true', () => {
+    expect(validarAmbiente(OBRIGATORIAS).LIMITE_TAXA_DESLIGADO).toBe(false);
+    expect(
+      validarAmbiente({ ...OBRIGATORIAS, LIMITE_TAXA_DESLIGADO: 'true' }).LIMITE_TAXA_DESLIGADO,
+    ).toBe(true);
   });
 });
 

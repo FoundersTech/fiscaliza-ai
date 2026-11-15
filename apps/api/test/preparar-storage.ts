@@ -9,12 +9,12 @@ import {
 } from '../src/modules/midia/infrastructure/storage-r2.adapter.js';
 import { validarAmbiente } from '../src/shared/config/ambiente.js';
 
-/** globalSetup dos testes de integração: cria os buckets de uploads e de fotos no S3 local. */
+/** globalSetup dos testes de integração: cria os buckets de uploads, fotos e backup no S3 local. */
 export default async function prepararStorage(project: TestProject): Promise<void> {
   const ambiente = validarAmbiente({ ...process.env, ...project.config.env });
   try {
     const config = configStorage(ambiente);
-    for (const bucket of [config.bucketUploads, config.bucketFotos]) {
+    for (const bucket of [config.bucketUploads, config.bucketFotos, config.bucketBackup]) {
       await criarBucketSeFaltar(config, bucket);
       await aquecer(config, bucket);
     }

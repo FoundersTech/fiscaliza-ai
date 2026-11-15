@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { LoggerModule } from 'nestjs-pino';
 
+import { AdministracaoModule } from './modules/administracao/administracao.module.js';
+import { CategoriasModule } from './modules/categorias/categorias.module.js';
 import { IdentidadeModule } from './modules/identidade/identidade.module.js';
+import { IndicadoresModule } from './modules/indicadores/indicadores.module.js';
 import { ManutencaoModule } from './modules/manutencao/manutencao.module.js';
 import { MidiaModule } from './modules/midia/midia.module.js';
 import { NotificacoesModule } from './modules/notificacoes/notificacoes.module.js';
 import { OcorrenciasModule } from './modules/ocorrencias/ocorrencias.module.js';
+import { PrivacidadeModule } from './modules/privacidade/privacidade.module.js';
 import { TerritorioModule } from './modules/territorio/territorio.module.js';
 import { AMBIENTE, type Ambiente } from './shared/config/ambiente.js';
 import { ConfiguracaoModule } from './shared/config/configuracao.module.js';
@@ -31,7 +35,11 @@ import { SaudeModule } from './shared/saude/saude.module.js';
     TerritorioModule,
     MidiaModule,
     OcorrenciasModule,
+    IndicadoresModule,
+    CategoriasModule,
+    PrivacidadeModule,
     ManutencaoModule,
+    AdministracaoModule,
   ],
 })
 export class AppModule {}

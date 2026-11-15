@@ -5,6 +5,7 @@ import {
   Ocorrencia,
   StatusOcorrencia,
   TRANSICOES_AGENTE,
+  type VinculoUsuario,
 } from './ocorrencia.js';
 
 const { RECEBIDA, EM_ANALISE, EM_EXECUCAO, RESOLVIDA, RECUSADA, DUPLICADA } = StatusOcorrencia;
@@ -230,6 +231,56 @@ describe('Ocorrencia: reabertura', () => {
   });
 });
 
+describe('Ocorrencia: avaliação do atendimento', () => {
+  const resolvidaEm = new Date('2026-10-10T12:00:00Z');
+  const resolvida = () => ocorrencia({ status: RESOLVIDA, triadaEm: CRIADA, resolvidaEm });
+  const avaliar = (
+    alvo: Ocorrencia,
+    mudancas: Partial<Parameters<Ocorrencia['validarAvaliacao']>[0]> = {},
+  ) =>
+    alvo.validarAvaliacao({
+      usuarioId: AUTOR,
+      confirmou: false,
+      agora: new Date(resolvidaEm.getTime() + 3 * UM_DIA),
+      janelaDias: 10,
+      ...mudancas,
+    });
+
+  it('aceita no 10º dia e rejeita no 11º, sem mudar a ocorrência', () => {
+    const limite = new Date(resolvidaEm.getTime() + 10 * UM_DIA);
+    expect(codigo(() => avaliar(resolvida(), { agora: limite }))).toBeUndefined();
+
+    const alvo = resolvida();
+    expect(codigo(() => avaliar(alvo, { agora: new Date(limite.getTime() + 1) }))).toBe(
+      'FORA_DO_PRAZO',
+    );
+    expect(alvo.estado).toMatchObject({ status: RESOLVIDA, resolvidaEm });
+  });
+
+  it('autor e quem confirmou avaliam; outra pessoa não', () => {
+    expect(
+      codigo(() => avaliar(resolvida(), { usuarioId: 'vizinho', confirmou: true })),
+    ).toBeUndefined();
+    expect(codigo(() => avaliar(resolvida(), { usuarioId: 'vizinho' }))).toBe('SEM_VINCULO');
+  });
+
+  it.each(TODOS.filter((status) => status !== RESOLVIDA))('%s não pode ser avaliada', (status) => {
+    expect(codigo(() => avaliar(ocorrencia({ status, resolvidaEm })))).toBe('NAO_RESOLVIDA');
+  });
+
+  it('fora do prazo, o erro informa até quando dava', () => {
+    let detalhes: unknown;
+    try {
+      avaliar(resolvida(), { agora: new Date(resolvidaEm.getTime() + 11 * UM_DIA) });
+    } catch (erro) {
+      detalhes = (erro as { detalhes?: unknown }).detalhes;
+    }
+    expect(detalhes).toEqual({
+      prazo: new Date(resolvidaEm.getTime() + 10 * UM_DIA).toISOString(),
+    });
+  });
+});
+
 describe('Ocorrencia: aberta', () => {
   it.each([
     [RECEBIDA, true],
@@ -282,5 +333,72 @@ describe('Ocorrencia: visibilidade', () => {
   it('o autor vê a própria recusada ou duplicada', () => {
     expect(ocorrencia({ status: RECUSADA }).visivelPara(AUTOR)).toBe(true);
     expect(ocorrencia({ status: DUPLICADA }).visivelPara(AUTOR)).toBe(true);
+  });
+});
+
+describe('Ocorrencia: ações de quem está logado', () => {
+  const JANELA = 10;
+  const RESOLVIDA_EM = new Date('2026-10-15T12:00:00Z');
+  const resolvida = () => ocorrencia({ status: RESOLVIDA, resolvidaEm: RESOLVIDA_EM });
+  const cidadao = (mudancas: Partial<VinculoUsuario> = {}): VinculoUsuario => ({
+    usuarioId: 'outra-pessoa',
+    ehCidadao: true,
+    confirmou: false,
+    avaliou: false,
+    ...mudancas,
+  });
+
+  it('outra pessoa pode confirmar uma aberta; depois de confirmar, não', () => {
+    expect(ocorrencia().acoesPara(cidadao(), AGORA, JANELA)).toMatchObject({
+      minhaConfirmacao: false,
+      podeConfirmar: true,
+      podeAvaliar: false,
+      podeReabrir: false,
+      prazoPosResolucaoAte: null,
+    });
+    expect(ocorrencia().acoesPara(cidadao({ confirmou: true }), AGORA, JANELA)).toMatchObject({
+      minhaConfirmacao: true,
+      podeConfirmar: false,
+    });
+  });
+
+  it('o autor não confirma a própria', () => {
+    expect(ocorrencia().acoesPara(cidadao({ usuarioId: AUTOR }), AGORA, JANELA).podeConfirmar).toBe(
+      false,
+    );
+  });
+
+  it('autor e quem confirmou avaliam e reabrem até 10 dias depois da resolução', () => {
+    for (const vinculo of [cidadao({ usuarioId: AUTOR }), cidadao({ confirmou: true })]) {
+      expect(resolvida().acoesPara(vinculo, AGORA, JANELA)).toMatchObject({
+        podeConfirmar: false,
+        podeAvaliar: true,
+        podeReabrir: true,
+        prazoPosResolucaoAte: new Date(RESOLVIDA_EM.getTime() + JANELA * UM_DIA),
+      });
+    }
+  });
+
+  it('sem vínculo, depois do prazo ou já avaliada, o botão de avaliar some', () => {
+    const depois = new Date(RESOLVIDA_EM.getTime() + JANELA * UM_DIA + 1);
+    const autor = cidadao({ usuarioId: AUTOR });
+    expect(resolvida().acoesPara(cidadao(), AGORA, JANELA).podeAvaliar).toBe(false);
+    expect(resolvida().acoesPara(autor, depois, JANELA)).toMatchObject({
+      podeAvaliar: false,
+      podeReabrir: false,
+    });
+    expect(resolvida().acoesPara({ ...autor, avaliou: true }, AGORA, JANELA)).toMatchObject({
+      podeAvaliar: false,
+      podeReabrir: true,
+    });
+  });
+
+  it('quem não é cidadão só lê', () => {
+    const agente = cidadao({ ehCidadao: false });
+    expect(ocorrencia().acoesPara(agente, AGORA, JANELA).podeConfirmar).toBe(false);
+    expect(resolvida().acoesPara({ ...agente, confirmou: true }, AGORA, JANELA)).toMatchObject({
+      podeAvaliar: false,
+      podeReabrir: false,
+    });
   });
 });

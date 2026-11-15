@@ -1,4 +1,5 @@
 import fastifyCookie from '@fastify/cookie';
+import fastifyHelmet from '@fastify/helmet';
 import type { INestApplication } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -25,10 +26,23 @@ export function criarDocumentoOpenApi(app: INestApplication, versao: string): Op
 export async function configurarApp(app: NestFastifyApplication): Promise<void> {
   const ambiente = app.get<Ambiente>(AMBIENTE);
 
+  // Headers de segurança em todas as respostas. A CSP padrão do helmet serve para o JSON e para a
+  // UI do Swagger (scripts da própria origem e estilos inline). Sem upgrade-insecure-requests,
+  // que quebraria o /docs em http://localhost; fora dele, o Caddy já redireciona para HTTPS.
+  // O PWA e as fotos ficam em subdomínios do mesmo site, então same-site basta.
+  await app.register(fastifyHelmet, {
+    contentSecurityPolicy: { directives: { upgradeInsecureRequests: null } },
+    crossOriginResourcePolicy: { policy: 'same-site' },
+  });
   // Lê e grava cookies (o refresh token da sessão).
   await app.register(fastifyCookie);
-  // O navegador só deixa o PWA do próprio ambiente chamar a API, com os cookies.
-  app.enableCors({ origin: [ambiente.WEB_URL], credentials: true });
+  // O navegador só deixa o PWA do próprio ambiente chamar a API, com os cookies. Os métodos vão
+  // explícitos: o padrão do @fastify/cors libera só GET, HEAD e POST, e o PWA usa PATCH e DELETE.
+  app.enableCors({
+    origin: [ambiente.WEB_URL],
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  });
 
   app.setGlobalPrefix(PREFIXO_API);
   app.useGlobalPipes(criarPipeValidacao());

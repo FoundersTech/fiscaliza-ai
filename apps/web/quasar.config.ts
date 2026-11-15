@@ -5,7 +5,7 @@ import { defineConfig } from '#q-app';
 export default defineConfig(() => {
   return {
     // O tema é aplicado antes de montar o app, para não piscar claro antes do escuro.
-    boot: ['tema', 'api'],
+    boot: ['tema', 'api', 'pendentes', 'alertas'],
 
     css: ['app.scss'],
 
@@ -52,6 +52,10 @@ export default defineConfig(() => {
     // InjectManifest: o service worker próprio recebe o handler de push.
     pwa: {
       workboxMode: 'InjectManifest',
+      // O _headers é configuração do Cloudflare Pages, não um arquivo servido: fora do cache.
+      extendPWAInjectManifestOptions(opcoes) {
+        opcoes.globIgnores = [...(opcoes.globIgnores ?? []), '_headers'];
+      },
     },
   };
 });

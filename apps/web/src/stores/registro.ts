@@ -6,6 +6,7 @@ import {
   type Candidata,
   confirmarOcorrencia,
   enviarOcorrencia,
+  type DadosEnvio,
   type ResultadoConfirmacao,
   type ResultadoEnvio,
 } from '@/services/envio';
@@ -21,6 +22,7 @@ import {
   TOTAL_PASSOS,
   type ValoresAtributos,
 } from '@/services/registro';
+import { usePendentesStore } from '@/stores/pendentes';
 
 export interface FotoRegistro {
   id: string;
@@ -33,7 +35,21 @@ export interface FotoRegistro {
 
 export type Conclusao =
   | { tipo: 'CRIADA'; protocolo: string }
-  | { tipo: 'CONFIRMADA'; protocolo: string; confirmacoes: number | null };
+  | { tipo: 'CONFIRMADA'; protocolo: string; confirmacoes: number | null }
+  /** Sem conexão: ficou guardada no aparelho e vai sozinha quando a conexão voltar. */
+  | { tipo: 'PENDENTE' };
+
+export type ResultadoRegistro = ResultadoEnvio | { tipo: 'PENDENTE' };
+
+/** Sem conexão ou com o servidor/storage fora do ar, a ocorrência fica guardada no aparelho. */
+const CODIGOS_DE_PENDENTE = new Set(['SERVICO_INDISPONIVEL', 'ERRO_INTERNO', 'FOTO_NAO_ENVIADA']);
+
+function viraPendente(resultado: ResultadoEnvio): boolean {
+  return (
+    resultado.tipo === 'ERRO' &&
+    (resultado.codigo === null || CODIGOS_DE_PENDENTE.has(resultado.codigo))
+  );
+}
 
 /** O registro em andamento. Fica na store, e não na URL: sair e voltar não perde as fotos. */
 export const useRegistroStore = defineStore('registro', () => {
@@ -116,9 +132,10 @@ export const useRegistroStore = defineStore('registro', () => {
     fotos.value.forEach((foto) => delete foto.uploadKey);
   }
 
-  async function enviar(api: Api, forcarCriacao = false): Promise<ResultadoEnvio> {
+  async function enviar(api: Api, forcarCriacao = false): Promise<ResultadoRegistro> {
     enviando.value = true;
     try {
+      if (navigator.onLine === false) return await guardarNoAparelho(null);
       let resultado = await tentarEnvio(api, forcarCriacao);
       if (resultado.tipo === 'ID_EM_USO') {
         trocarId();
@@ -130,37 +147,59 @@ export const useRegistroStore = defineStore('registro', () => {
       if (resultado.tipo === 'ERRO' && resultado.codigo === 'FOTO_NAO_ENVIADA') {
         fotos.value.forEach((foto) => delete foto.uploadKey);
       }
+      if (viraPendente(resultado)) return await guardarNoAparelho(resultado);
       return resultado;
     } finally {
       enviando.value = false;
     }
   }
 
+  /** Se nem o aparelho consegue guardar (ex.: navegação privada), fica o erro do envio. */
+  async function guardarNoAparelho(erro: ResultadoEnvio | null): Promise<ResultadoRegistro> {
+    try {
+      await usePendentesStore().guardar({
+        categoriaNome: categoria.value!.nome,
+        endereco: endereco.value,
+        dados: dadosDoEnvio(),
+      });
+      conclusao.value = { tipo: 'PENDENTE' };
+      return { tipo: 'PENDENTE' };
+    } catch {
+      return (
+        erro ?? {
+          tipo: 'ERRO',
+          codigo: null,
+          mensagem: 'Sem conexão, e não foi possível guardar a ocorrência no aparelho.',
+        }
+      );
+    }
+  }
+
+  function dadosDoEnvio(): DadosEnvio {
+    return {
+      id: id.value,
+      categoriaId: categoria.value!.id,
+      descricao: descricao.value,
+      atributos: atributosParaEnvio(categoria.value!, atributos.value),
+      ponto: ponto.value!,
+      precisaoM: precisaoM.value,
+      publicarAutor: publicarAutor.value,
+      fotos: fotos.value.map((foto, indice) => ({
+        arquivo: foto.arquivo,
+        ordem: (indice + 1) as 1 | 2,
+        uploadKey: foto.uploadKey,
+      })),
+    };
+  }
+
   function tentarEnvio(api: Api, forcarCriacao: boolean): Promise<ResultadoEnvio> {
-    return enviarOcorrencia(
-      api,
-      {
-        id: id.value,
-        categoriaId: categoria.value!.id,
-        descricao: descricao.value,
-        atributos: atributosParaEnvio(categoria.value!, atributos.value),
-        ponto: ponto.value!,
-        precisaoM: precisaoM.value,
-        publicarAutor: publicarAutor.value,
-        fotos: fotos.value.map((foto, indice) => ({
-          arquivo: foto.arquivo,
-          ordem: (indice + 1) as 1 | 2,
-          uploadKey: foto.uploadKey,
-        })),
+    return enviarOcorrencia(api, dadosDoEnvio(), {
+      forcarCriacao,
+      aoEnviarFoto: (ordem, uploadKey) => {
+        const foto = fotos.value[ordem - 1];
+        if (foto) foto.uploadKey = uploadKey;
       },
-      {
-        forcarCriacao,
-        aoEnviarFoto: (ordem, uploadKey) => {
-          const foto = fotos.value[ordem - 1];
-          if (foto) foto.uploadKey = uploadKey;
-        },
-      },
-    );
+    });
   }
 
   /** "Também vi": confirma a existente em vez de criar outra. */

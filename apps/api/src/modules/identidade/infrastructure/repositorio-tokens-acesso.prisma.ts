@@ -38,4 +38,11 @@ export class RepositorioTokensAcessoPrisma implements RepositorioTokensAcesso {
       return true;
     });
   }
+
+  async apagarExpiradosAntes(antesDe: Date): Promise<number> {
+    const { count } = await this.prisma.tokenAcesso.deleteMany({
+      where: { expiraEm: { lt: antesDe } },
+    });
+    return count;
+  }
 }
