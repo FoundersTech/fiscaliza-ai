@@ -276,6 +276,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ocorrencias/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ConsultasController_detalhe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/ocorrencias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MinhasOcorrenciasController_minhas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/exportacoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PrivacidadeController_exportacoes"];
+        put?: never;
+        post: operations["PrivacidadeController_exportar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/exportacoes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PrivacidadeController_exportacao"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/categorias": {
         parameters: {
             query?: never;
@@ -366,38 +430,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["GestoresController_convidar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/me/exportacoes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PrivacidadeController_exportacoes"];
-        put?: never;
-        post: operations["PrivacidadeController_exportar"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/me/exportacoes/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PrivacidadeController_exportacao"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -766,6 +798,182 @@ export interface components {
             /** @description Havia mais pontos na área: o PWA pede para aproximar o mapa */
             truncado: boolean;
         };
+        OriginalResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @example FA-2026-SOR-000101 */
+            protocolo: string;
+        };
+        FotoDetalheResposta: {
+            url: string;
+            miniatura_url: string | null;
+        };
+        EtapaResposta: {
+            /**
+             * @description REABERTO marca cada vez que alguém disse "Não foi resolvido"
+             * @enum {string}
+             */
+            etapa: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "REABERTO" | "RECUSADO" | "DUPLICADO";
+            /** Format: date-time */
+            data: string;
+        };
+        RespostaOficialResposta: {
+            /** @example Prefeitura de Sorocaba */
+            orgao: string;
+            comentario: string;
+            /** Format: date-time */
+            data: string;
+        };
+        ReaberturaResposta: {
+            justificativa: string;
+            /** Format: date-time */
+            data: string;
+        };
+        DetalheResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @example FA-2026-SOR-000123 */
+            protocolo: string;
+            categoria: components["schemas"]["CategoriaCardResposta"];
+            /** @description Até 120 caracteres da descrição */
+            resumo: string;
+            /**
+             * @description Null enquanto o endereço não foi preenchido
+             * @example Rua Quinze de Novembro, 482 · Centro
+             */
+            endereco: string | null;
+            /**
+             * @description Quantas pessoas disseram "também vi"
+             * @example 4
+             */
+            confirmacoes: number;
+            /** @description Atingiu o limiar de confirmações do selo URGENTE */
+            urgente: boolean;
+            /**
+             * @description Dias desde o registro, ou até a resolução
+             * @example 3
+             */
+            dias_em_aberto: number;
+            /** @description Miniatura da primeira foto aprovada */
+            miniatura_url: string | null;
+            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
+            foto_em_analise: boolean;
+            /** Format: date-time */
+            criada_em: string;
+            /**
+             * @description RECUSADO e DUPLICADO só aparecem para o autor
+             * @enum {string}
+             */
+            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "RECUSADO" | "DUPLICADO";
+            /** @description Motivo dado pelo órgão; preenchido só quando foi recusada */
+            justificativa_recusa: string | null;
+            /** @description Ocorrência que já tratava do problema; preenchida só quando foi duplicada */
+            original: components["schemas"]["OriginalResposta"] | null;
+            descricao: string;
+            /** @description Campos extras da categoria */
+            atributos: {
+                [key: string]: string | number;
+            };
+            /** @description Só as fotos aprovadas */
+            fotos: components["schemas"]["FotoDetalheResposta"][];
+            /** @description Da mais antiga para a mais recente */
+            linha_do_tempo: components["schemas"]["EtapaResposta"][];
+            /** @description "Resposta da prefeitura" */
+            respostas: components["schemas"]["RespostaOficialResposta"][];
+            reaberturas: components["schemas"]["ReaberturaResposta"][];
+            /** @description Só quando o autor escolheu mostrar o apelido */
+            autor_apelido?: string;
+            /** @description Com token: a pessoa já disse "também vi" */
+            minha_confirmacao?: boolean;
+            /** @description Com token: mostrar o botão "Também vi" */
+            pode_confirmar?: boolean;
+            /** @description Com token: mostrar "Avaliar atendimento" */
+            pode_avaliar?: boolean;
+            /** @description Com token: mostrar "Não foi resolvido" */
+            pode_reabrir?: boolean;
+            /**
+             * Format: date-time
+             * @description Com token: até quando dá para avaliar ou reabrir; null se não está resolvida
+             */
+            prazo_pos_resolucao_ate?: string | null;
+        };
+        MinhaOcorrenciaResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @example FA-2026-SOR-000123 */
+            protocolo: string;
+            categoria: components["schemas"]["CategoriaCardResposta"];
+            /** @description Até 120 caracteres da descrição */
+            resumo: string;
+            /**
+             * @description Null enquanto o endereço não foi preenchido
+             * @example Rua Quinze de Novembro, 482 · Centro
+             */
+            endereco: string | null;
+            /**
+             * @description Quantas pessoas disseram "também vi"
+             * @example 4
+             */
+            confirmacoes: number;
+            /** @description Atingiu o limiar de confirmações do selo URGENTE */
+            urgente: boolean;
+            /**
+             * @description Dias desde o registro, ou até a resolução
+             * @example 3
+             */
+            dias_em_aberto: number;
+            /** @description Miniatura da primeira foto aprovada */
+            miniatura_url: string | null;
+            /** @description Nenhuma foto aprovada ainda: mostrar "foto em análise" */
+            foto_em_analise: boolean;
+            /** Format: date-time */
+            criada_em: string;
+            /**
+             * @description RECUSADO e DUPLICADO só aparecem para o autor
+             * @enum {string}
+             */
+            status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "RECUSADO" | "DUPLICADO";
+            /** @description Motivo dado pelo órgão; preenchido só quando foi recusada */
+            justificativa_recusa: string | null;
+            /** @description Ocorrência que já tratava do problema; preenchida só quando foi duplicada */
+            original: components["schemas"]["OriginalResposta"] | null;
+        };
+        MinhasResposta: {
+            itens: components["schemas"]["MinhaOcorrenciaResposta"][];
+            /** @description Passe em ?cursor= para a página seguinte; null na última */
+            proximo_cursor: string | null;
+        };
+        /** @enum {string} */
+        StatusExportacao: "PROCESSANDO" | "PRONTA" | "FALHOU" | "EXPIRADA";
+        ExportacaoCriadaResposta: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["StatusExportacao"];
+        };
+        ExportacaoResposta: {
+            /** Format: uuid */
+            id: string;
+            /** @description Pronta com o prazo vencido já aparece como EXPIRADA */
+            status: components["schemas"]["StatusExportacao"];
+            /** Format: date-time */
+            solicitada_em: string;
+            /** Format: date-time */
+            pronta_em?: string;
+            /**
+             * Format: date-time
+             * @description O arquivo some 7 dias depois de pronto
+             */
+            expira_em?: string;
+            /** @description Só quando PRONTA. Link do arquivo JSON, válido por 15 minutos. */
+            download_url?: string;
+        };
+        ExcluirContaDto: {
+            /**
+             * Format: password
+             * @description Senha atual, para confirmar a exclusão
+             */
+            senha: string;
+        };
         CategoriaAdminResposta: {
             id: number;
             /** @example iluminacao */
@@ -873,37 +1081,6 @@ export interface components {
             nome: string;
             email: string;
             municipio_id: number;
-        };
-        /** @enum {string} */
-        StatusExportacao: "PROCESSANDO" | "PRONTA" | "FALHOU" | "EXPIRADA";
-        ExportacaoCriadaResposta: {
-            /** Format: uuid */
-            id: string;
-            status: components["schemas"]["StatusExportacao"];
-        };
-        ExportacaoResposta: {
-            /** Format: uuid */
-            id: string;
-            /** @description Pronta com o prazo vencido já aparece como EXPIRADA */
-            status: components["schemas"]["StatusExportacao"];
-            /** Format: date-time */
-            solicitada_em: string;
-            /** Format: date-time */
-            pronta_em?: string;
-            /**
-             * Format: date-time
-             * @description O arquivo some 7 dias depois de pronto
-             */
-            expira_em?: string;
-            /** @description Só quando PRONTA. Link do arquivo JSON, válido por 15 minutos. */
-            download_url?: string;
-        };
-        ExcluirContaDto: {
-            /**
-             * Format: password
-             * @description Senha atual, para confirmar a exclusão
-             */
-            senha: string;
         };
     };
     responses: never;
@@ -1286,6 +1463,13 @@ export interface operations {
                     "application/json": components["schemas"]["ConfigPublicaResposta"];
                 };
             };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description MUNICIPIO_NAO_CONFIGURADO */
             503: {
                 headers: {
@@ -1331,6 +1515,13 @@ export interface operations {
             };
             /** @description VALIDACAO */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 30 tentativas em 60 s. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1593,6 +1784,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Mais de 60 tentativas em 3600 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     OcorrenciasController_confirmar: {
@@ -1691,6 +1889,204 @@ export interface operations {
             };
             /** @description Mais de 120 tentativas em 60 s. */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ConsultasController_detalhe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Com token, vêm também os campos pessoais (pode_confirmar, pode_avaliar…) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalheResposta"];
+                };
+            };
+            /** @description Token enviado, mas inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description NAO_ENCONTRADA: id inexistente, inválido, ou recusada/duplicada de outra pessoa */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MinhasOcorrenciasController_minhas: {
+        parameters: {
+            query?: {
+                /** @description O proximo_cursor da página anterior */
+                cursor?: string;
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Da mais recente para a mais antiga */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinhasResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO (limite ou cursor inválido) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PrivacidadeController_exportacoes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description As últimas exportações do usuário, das mais recentes para as mais antigas. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportacaoResposta"][];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PrivacidadeController_exportar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exportação dos dados pedida; o arquivo é gerado em segundo plano. Se já há uma em andamento ou pronta para baixar, devolve essa mesma. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportacaoCriadaResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PrivacidadeController_exportacao: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportacaoResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description EXPORTACAO_NAO_ENCONTRADA (inclusive a de outra pessoa) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2126,116 +2522,6 @@ export interface operations {
             };
             /** @description VALIDACAO ou MUNICIPIO_INEXISTENTE */
             422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PrivacidadeController_exportacoes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description As últimas exportações do usuário, das mais recentes para as mais antigas. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExportacaoResposta"][];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PrivacidadeController_exportar: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Exportação dos dados pedida; o arquivo é gerado em segundo plano. Se já há uma em andamento ou pronta para baixar, devolve essa mesma. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExportacaoCriadaResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PrivacidadeController_exportacao: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ExportacaoResposta"];
-                };
-            };
-            /** @description Sem token, ou token inválido ou expirado. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description EXPORTACAO_NAO_ENCONTRADA (inclusive a de outra pessoa) */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };

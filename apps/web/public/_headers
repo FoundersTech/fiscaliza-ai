@@ -1,0 +1,11 @@
+# Headers do Cloudflare Pages para todas as respostas do PWA.
+# A CSP libera a própria origem, a API e as fotos (subdomínios de fiscalizaai.app), o envio das
+# fotos direto ao R2 pela URL pré-assinada e os domínios que o Maps JavaScript API usa. O Maps
+# exige 'unsafe-eval', blob: e estilos inline. As fontes e os ícones saem do próprio build.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-eval' blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://*.fiscalizaai.app https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://*.googleusercontent.com; connect-src 'self' https://*.fiscalizaai.app https://*.r2.cloudflarestorage.com https://*.googleapis.com https://*.google.com https://*.gstatic.com data: blob:; frame-src https://*.google.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(self), microphone=(), payment=(), usb=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains

@@ -6,7 +6,7 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
-import { LimiteTaxa, type RegraLimiteTaxa } from '../../../shared/limite-taxa/limite-taxa.js';
+import { LEITURA_PUBLICA, LimiteTaxa } from '../../../shared/limite-taxa/limite-taxa.js';
 import type { DadosToken } from '../../identidade/application/portas.js';
 import { Papel } from '../../identidade/domain/papel.js';
 import {
@@ -30,14 +30,6 @@ import {
   MinhasQuery,
   MinhasResposta,
 } from './dto-consultas.js';
-
-/** Leituras públicas: 120 por minuto por IP. */
-const LEITURA_PUBLICA: RegraLimiteTaxa = {
-  nome: 'leitura-publica',
-  maximo: 120,
-  janelaSegundos: 60,
-  chave: ({ ip }) => ip,
-};
 
 /** Feed, mapa e detalhe: abertos a visitantes, só com ocorrências visíveis ao público. */
 @ApiTags('ocorrencias')
