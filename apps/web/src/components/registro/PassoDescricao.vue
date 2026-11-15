@@ -2,13 +2,8 @@
 import { onMounted, ref } from 'vue';
 
 import { useApi } from '@/boot/api';
-import {
-  type CampoAtributo,
-  DESCRICAO_MAX,
-  DESCRICAO_MIN,
-  problemaDaDescricao,
-  problemaDoAtributo,
-} from '@/services/registro';
+import CamposAtributos from '@/components/CamposAtributos.vue';
+import { DESCRICAO_MAX, DESCRICAO_MIN, problemaDaDescricao } from '@/services/registro';
 import { useConfigStore } from '@/stores/config';
 import { useRegistroStore } from '@/stores/registro';
 
@@ -26,19 +21,6 @@ async function carregarCategorias(): Promise<void> {
 }
 
 onMounted(carregarCategorias);
-
-function regra(campo: CampoAtributo) {
-  return (valor: string | number | null) => problemaDoAtributo(campo, valor) ?? true;
-}
-
-function rotulo(campo: CampoAtributo): string {
-  return campo.obrigatorio ? campo.rotulo : `${campo.rotulo} (opcional)`;
-}
-
-/** O campo de número devolve texto; vazio vira null, como "não informado". */
-function atualizarNumero(chave: string, valor: string | number | null): void {
-  registro.atributos[chave] = valor === null || valor === '' ? null : Number(valor);
-}
 </script>
 
 <template>
@@ -73,40 +55,7 @@ function atualizarNumero(chave: string, valor: string | number | null): void {
 
     <div v-if="registro.categoria?.schema_atributos.length" class="passo-descricao__bloco">
       <h2 class="passo-descricao__titulo">Detalhes de {{ registro.categoria.nome }}</h2>
-      <template v-for="campo in registro.categoria.schema_atributos" :key="campo.chave">
-        <q-select
-          v-if="campo.tipo === 'opcao'"
-          v-model="registro.atributos[campo.chave]"
-          :options="campo.opcoes ?? []"
-          :label="rotulo(campo)"
-          outlined
-          clearable
-          lazy-rules
-          :rules="[regra(campo)]"
-        />
-        <q-input
-          v-else-if="campo.tipo === 'numero'"
-          :model-value="registro.atributos[campo.chave] ?? null"
-          type="number"
-          inputmode="numeric"
-          :min="campo.min"
-          :max="campo.max"
-          :label="rotulo(campo)"
-          outlined
-          lazy-rules
-          :rules="[regra(campo)]"
-          @update:model-value="atualizarNumero(campo.chave, $event)"
-        />
-        <q-input
-          v-else
-          v-model="registro.atributos[campo.chave]"
-          :label="rotulo(campo)"
-          :maxlength="campo.max"
-          outlined
-          lazy-rules
-          :rules="[regra(campo)]"
-        />
-      </template>
+      <CamposAtributos v-model="registro.atributos" :campos="registro.categoria.schema_atributos" />
     </div>
 
     <div class="passo-descricao__bloco">

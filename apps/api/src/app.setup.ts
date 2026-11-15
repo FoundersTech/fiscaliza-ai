@@ -27,8 +27,13 @@ export async function configurarApp(app: NestFastifyApplication): Promise<void> 
 
   // Lê e grava cookies (o refresh token da sessão).
   await app.register(fastifyCookie);
-  // O navegador só deixa o PWA do próprio ambiente chamar a API, com os cookies.
-  app.enableCors({ origin: [ambiente.WEB_URL], credentials: true });
+  // O navegador só deixa o PWA do próprio ambiente chamar a API, com os cookies. Os métodos vão
+  // explícitos: o padrão do @fastify/cors libera só GET, HEAD e POST, e o PWA usa PATCH e DELETE.
+  app.enableCors({
+    origin: [ambiente.WEB_URL],
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  });
 
   app.setGlobalPrefix(PREFIXO_API);
   app.useGlobalPipes(criarPipeValidacao());
