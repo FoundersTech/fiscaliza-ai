@@ -78,6 +78,7 @@ export interface FotoPublicada {
 /** O que o banco entrega para montar o detalhe. */
 export interface DadosDetalhe extends DadosCard {
   municipioId: number;
+  orgaoId: number;
   autorId: string | null;
   /** Já vem null quando o autor não quis aparecer ou a conta foi anonimizada. */
   autorApelido: string | null;
@@ -97,6 +98,20 @@ export interface LinhaDoAutor extends LinhaFeed {
   original: ReferenciaOriginal | null;
 }
 
+/** Filtros da fila de atendimento: só o órgão é obrigatório. */
+export interface FiltroFila {
+  orgaoId: number;
+  /** Status internos; null: todos. */
+  status: StatusOcorrencia[] | null;
+  /** Slugs das categorias; null: todas. */
+  categorias: string[] | null;
+}
+
+/** Uma ocorrência na fila do órgão, com qualquer status. */
+export interface LinhaFila extends LinhaFeed {
+  reaberturas: number;
+}
+
 export interface VinculoGravado {
   confirmou: boolean;
   avaliou: boolean;
@@ -113,4 +128,13 @@ export interface ConsultasOcorrencias {
   vinculo(ocorrenciaId: string, usuarioId: string): Promise<VinculoGravado>;
   /** Até `limite` ocorrências do autor, com todos os status, na ordem do feed. */
   doAutor(autorId: string, depoisDe: PosicaoFeed | null, limite: number): Promise<LinhaDoAutor[]>;
+  /**
+   * Até `limite` ocorrências do órgão, da mais antiga para a mais recente, depois de `depoisDe`
+   * (que aqui marca a última da página anterior nessa ordem).
+   */
+  filaDoOrgao(
+    filtro: FiltroFila,
+    depoisDe: PosicaoFeed | null,
+    limite: number,
+  ): Promise<LinhaFila[]>;
 }

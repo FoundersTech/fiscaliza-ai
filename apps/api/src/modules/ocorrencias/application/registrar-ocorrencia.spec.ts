@@ -38,6 +38,9 @@ function montar() {
     semEnderecoCriadasAntes: vi.fn<RepositorioOcorrencias['semEnderecoCriadasAntes']>(),
     carregar: vi.fn<RepositorioOcorrencias['carregar']>(),
     confirmar: vi.fn<RepositorioOcorrencias['confirmar']>(),
+    carregarComOrgao: vi.fn<RepositorioOcorrencias['carregarComOrgao']>(),
+    originalPorProtocolo: vi.fn<RepositorioOcorrencias['originalPorProtocolo']>(),
+    gravarTransicao: vi.fn<RepositorioOcorrencias['gravarTransicao']>(),
   };
   const territorio = {
     executar: vi

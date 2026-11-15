@@ -2,7 +2,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 
 import { MidiaModule } from '../midia/midia.module.js';
+import { NotificacoesModule } from '../notificacoes/notificacoes.module.js';
 import { TerritorioModule } from '../territorio/territorio.module.js';
+import { ListarFilaOrgao, ObterDetalheAtendimento } from './application/atendimento.js';
 import { MontadorCard } from './application/card.js';
 import { ConfirmarOcorrencia } from './application/confirmar-ocorrencia.js';
 import { CONSULTAS_OCORRENCIAS } from './application/consultas.js';
@@ -18,9 +20,11 @@ import { ListarMinhas } from './application/listar-minhas.js';
 import { ObterDetalhe } from './application/obter-detalhe.js';
 import { REPOSITORIO_OCORRENCIAS } from './application/portas.js';
 import { RegistrarOcorrencia } from './application/registrar-ocorrencia.js';
+import { TransicionarStatus } from './application/transicionar-status.js';
 import { ConsultasOcorrenciasPrisma } from './infrastructure/consultas-ocorrencias.prisma.js';
 import { EnderecoProcessor } from './infrastructure/endereco.processor.js';
 import { RepositorioOcorrenciasPrisma } from './infrastructure/repositorio-ocorrencias.prisma.js';
+import { AtendimentoController } from './presentation/atendimento.controller.js';
 import {
   ConsultasController,
   MinhasOcorrenciasController,
@@ -28,12 +32,22 @@ import {
 import { OcorrenciasController } from './presentation/ocorrencias.controller.js';
 
 /**
- * Registro, confirmação, feed, mapa e detalhe de ocorrências, a lista do autor e o endereço das
- * que nasceram sem ele.
+ * Registro, confirmação, feed, mapa e detalhe de ocorrências, a lista do autor, o atendimento
+ * pelo órgão e o endereço das que nasceram sem ele.
  */
 @Module({
-  imports: [TerritorioModule, MidiaModule, BullModule.registerQueue({ name: FILA_TERRITORIO })],
-  controllers: [OcorrenciasController, ConsultasController, MinhasOcorrenciasController],
+  imports: [
+    TerritorioModule,
+    MidiaModule,
+    NotificacoesModule,
+    BullModule.registerQueue({ name: FILA_TERRITORIO }),
+  ],
+  controllers: [
+    OcorrenciasController,
+    ConsultasController,
+    MinhasOcorrenciasController,
+    AtendimentoController,
+  ],
   providers: [
     RegistrarOcorrencia,
     ConfirmarOcorrencia,
@@ -42,6 +56,9 @@ import { OcorrenciasController } from './presentation/ocorrencias.controller.js'
     ListarMapa,
     ObterDetalhe,
     ListarMinhas,
+    ListarFilaOrgao,
+    ObterDetalheAtendimento,
+    TransicionarStatus,
     FilaEnderecos,
     PreencherEndereco,
     ReconciliarEnderecos,
