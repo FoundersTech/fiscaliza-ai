@@ -20,6 +20,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/alertas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AlertasController_listar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/alertas/novos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AlertasController_novos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/alertas/vistos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AlertasController_vistos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/cadastro": {
         parameters: {
             query?: never;
@@ -343,6 +391,35 @@ export interface components {
             db: "ok" | "erro";
             /** @enum {string} */
             redis: "ok" | "erro";
+        };
+        AlertaResposta: {
+            /** @example 42 */
+            evento_id: number;
+            /** Format: uuid */
+            ocorrencia_id: string;
+            /** @example FA-2026-SOR-000123 */
+            protocolo: string;
+            /**
+             * @description O status depois da mudança; RECUSADO e DUPLICADO só chegam para o autor
+             * @enum {string}
+             */
+            para_status_publico: "RECEBIDO" | "EM_ANDAMENTO" | "RESOLVIDO" | "RECUSADO" | "DUPLICADO";
+            /** @description A ocorrência foi reaberta: voltou de resolvida para em análise */
+            reaberta: boolean;
+            /** Format: date-time */
+            criado_em: string;
+        };
+        AlertasResposta: {
+            itens: components["schemas"]["AlertaResposta"][];
+            /** @description Passe em ?cursor= para a página seguinte; null na última */
+            proximo_cursor: string | null;
+        };
+        AlertasNovosResposta: {
+            /**
+             * @description Alertas desde a última visita à aba
+             * @example 2
+             */
+            quantidade: number;
         };
         CadastroDto: {
             /** @example Maria da Silva */
@@ -1000,6 +1077,116 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RelatorioSaudeResposta"];
                 };
+            };
+        };
+    };
+    AlertasController_listar: {
+        parameters: {
+            query?: {
+                /** @description O proximo_cursor da página anterior */
+                cursor?: string;
+                limite?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Do mais recente para o mais antigo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertasResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO (limite ou cursor inválido) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AlertasController_novos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertasNovosResposta"];
+                };
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AlertasController_vistos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Zera o indicador de alertas novos */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
