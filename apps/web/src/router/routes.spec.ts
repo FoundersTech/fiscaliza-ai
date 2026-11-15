@@ -15,6 +15,14 @@ describe('routes', () => {
     expect(registrar?.meta).toEqual({ auth: true, papeis: ['CIDADAO'] });
   });
 
+  it('a fila e o detalhe do atendimento são só para o agente do órgão, sem a barra inferior', () => {
+    for (const caminho of ['/atendimento', '/atendimento/:id']) {
+      const rota = routes.find((item) => item.path === caminho);
+      expect(rota?.meta).toEqual({ auth: true, papeis: ['AGENTE_ORGAO'] });
+    }
+    expect(routes[0]?.children?.some((rota) => rota.path.startsWith('atendimento'))).toBe(false);
+  });
+
   it('login, cadastro e esqueci a senha são só para visitantes; definir senha abre para todos', () => {
     const meta = (caminho: string) => routes.find((rota) => rota.path === caminho)?.meta;
     expect(meta('/login')).toEqual({ visitante: true });

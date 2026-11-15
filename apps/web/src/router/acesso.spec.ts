@@ -46,6 +46,19 @@ describe('decidirAcesso', () => {
     });
   });
 
+  it('o atendimento abre para o agente; o cidadão vai para "Acesso negado"', () => {
+    const fila = { fullPath: '/atendimento', meta: metaDe('atendimento') };
+    expect(decidirAcesso(fila, AGENTE)).toBe(true);
+    expect(decidirAcesso(fila, CIDADAO)).toEqual({
+      path: '/acesso-negado',
+      query: { de: '/atendimento' },
+    });
+    expect(decidirAcesso(fila, DESLOGADO)).toEqual({
+      path: '/login',
+      query: { voltar: '/atendimento' },
+    });
+  });
+
   it('rota só com auth aceita qualquer papel logado', () => {
     expect(decidirAcesso({ fullPath: '/conta', meta: { auth: true } }, AGENTE)).toBe(true);
   });

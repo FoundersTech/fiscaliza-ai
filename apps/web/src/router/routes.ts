@@ -41,6 +41,18 @@ const routes: RouteRecordRaw[] = [
     meta: { auth: true, papeis: ['CIDADAO'] },
   },
   {
+    path: '/atendimento',
+    name: 'atendimento',
+    component: () => import('@/pages/AtendimentoPage.vue'),
+    meta: { auth: true, papeis: ['AGENTE_ORGAO'] },
+  },
+  {
+    path: '/atendimento/:id',
+    name: 'atendimento-detalhe',
+    component: () => import('@/pages/AtendimentoDetalhePage.vue'),
+    meta: { auth: true, papeis: ['AGENTE_ORGAO'] },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/pages/LoginPage.vue'),
