@@ -1,15 +1,20 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType, PickType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 
 import type { Card } from '../application/card.js';
+import type { ReferenciaOriginal } from '../application/consultas.js';
 import type { PaginaFeed } from '../application/listar-feed.js';
 import type { PontoMapa, ResultadoMapa } from '../application/listar-mapa.js';
-import { StatusPublico } from '../domain/exibicao-publica.js';
+import type { MinhaOcorrencia, PaginaMinhas } from '../application/listar-minhas.js';
+import type { Detalhe } from '../application/obter-detalhe.js';
+import { StatusDoAutor, type StatusExibido, StatusPublico } from '../domain/exibicao-publica.js';
+import { EtapaLinhaDoTempo } from '../domain/historico.js';
 
 export const LIMITE_PADRAO_FEED = 20;
 const LIMITE_MAXIMO_FEED = 50;
 const STATUS_PUBLICOS = Object.values(StatusPublico);
+const STATUS_EXIBIDOS = [...STATUS_PUBLICOS, ...Object.values(StatusDoAutor)];
 
 /** `a,b` ou `?x=a&x=b` viram ['a', 'b']; vazio vira undefined (sem filtro). */
 const lista = Transform(({ value }: { value: unknown }) => {
@@ -116,7 +121,7 @@ export class CardResposta {
   categoria!: CategoriaCardResposta;
 
   @ApiProperty({ enum: STATUS_PUBLICOS })
-  status_publico!: StatusPublico;
+  status_publico!: StatusExibido;
 
   @ApiProperty({ description: 'Até 120 caracteres da descrição' })
   resumo!: string;
@@ -234,6 +239,195 @@ export class MapaResposta {
     return {
       pontos: resultado.pontos.map((ponto) => PontoMapaResposta.de(ponto)),
       truncado: resultado.truncado,
+    };
+  }
+}
+
+/** Paginação de "Minhas ocorrências": a mesma do feed, sem os filtros. */
+export class MinhasQuery extends PickType(FeedQuery, ['cursor', 'limite'] as const) {}
+
+export class OriginalResposta {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'FA-2026-SOR-000101' })
+  protocolo!: string;
+
+  static de(original: ReferenciaOriginal | null): OriginalResposta | null {
+    return original && { id: original.id, protocolo: original.protocolo };
+  }
+}
+
+export class FotoDetalheResposta {
+  @ApiProperty()
+  url!: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  miniatura_url!: string | null;
+}
+
+export class EtapaResposta {
+  @ApiProperty({
+    enum: Object.values(EtapaLinhaDoTempo),
+    description: 'REABERTO marca cada vez que alguém disse "Não foi resolvido"',
+  })
+  etapa!: EtapaLinhaDoTempo;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  data!: string;
+}
+
+export class RespostaOficialResposta {
+  @ApiProperty({ example: 'Prefeitura de Sorocaba' })
+  orgao!: string;
+
+  @ApiProperty()
+  comentario!: string;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  data!: string;
+}
+
+export class ReaberturaResposta {
+  @ApiProperty()
+  justificativa!: string;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  data!: string;
+}
+
+/** Card de uma ocorrência do próprio autor: pode estar recusada ou duplicada. */
+export class MinhaOcorrenciaResposta extends OmitType(CardResposta, ['status_publico'] as const) {
+  @ApiProperty({
+    enum: STATUS_EXIBIDOS,
+    description: 'RECUSADO e DUPLICADO só aparecem para o autor',
+  })
+  status_publico!: StatusExibido;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Motivo dado pelo órgão; preenchido só quando foi recusada',
+  })
+  justificativa_recusa!: string | null;
+
+  @ApiProperty({
+    type: OriginalResposta,
+    nullable: true,
+    description: 'Ocorrência que já tratava do problema; preenchida só quando foi duplicada',
+  })
+  original!: OriginalResposta | null;
+
+  static deMinha(item: MinhaOcorrencia): MinhaOcorrenciaResposta {
+    return {
+      ...CardResposta.de(item),
+      justificativa_recusa: item.justificativaRecusa,
+      original: OriginalResposta.de(item.original),
+    };
+  }
+}
+
+export class MinhasResposta {
+  @ApiProperty({ type: [MinhaOcorrenciaResposta] })
+  itens!: MinhaOcorrenciaResposta[];
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Passe em ?cursor= para a página seguinte; null na última',
+  })
+  proximo_cursor!: string | null;
+
+  static de(pagina: PaginaMinhas): MinhasResposta {
+    return {
+      itens: pagina.itens.map((item) => MinhaOcorrenciaResposta.deMinha(item)),
+      proximo_cursor: pagina.proximoCursor,
+    };
+  }
+}
+
+function iso(item: { data: Date }): string {
+  return item.data.toISOString();
+}
+
+/**
+ * Detalhe: o card e mais o que a tela mostra. O apelido só vem quando o autor quis aparecer, e
+ * os campos pessoais só vêm com token; fora disso, as chaves nem aparecem.
+ */
+export class DetalheResposta extends MinhaOcorrenciaResposta {
+  @ApiProperty()
+  descricao!: string;
+
+  @ApiProperty({
+    type: 'object',
+    additionalProperties: { oneOf: [{ type: 'string' }, { type: 'number' }] },
+    description: 'Campos extras da categoria',
+  })
+  atributos!: Record<string, unknown>;
+
+  @ApiProperty({ type: [FotoDetalheResposta], description: 'Só as fotos aprovadas' })
+  fotos!: FotoDetalheResposta[];
+
+  @ApiProperty({ type: [EtapaResposta], description: 'Da mais antiga para a mais recente' })
+  linha_do_tempo!: EtapaResposta[];
+
+  @ApiProperty({ type: [RespostaOficialResposta], description: '"Resposta da prefeitura"' })
+  respostas!: RespostaOficialResposta[];
+
+  @ApiProperty({ type: [ReaberturaResposta] })
+  reaberturas!: ReaberturaResposta[];
+
+  @ApiPropertyOptional({ description: 'Só quando o autor escolheu mostrar o apelido' })
+  autor_apelido?: string;
+
+  @ApiPropertyOptional({ description: 'Com token: a pessoa já disse "também vi"' })
+  minha_confirmacao?: boolean;
+
+  @ApiPropertyOptional({ description: 'Com token: mostrar o botão "Também vi"' })
+  pode_confirmar?: boolean;
+
+  @ApiPropertyOptional({ description: 'Com token: mostrar "Avaliar atendimento"' })
+  pode_avaliar?: boolean;
+
+  @ApiPropertyOptional({ description: 'Com token: mostrar "Não foi resolvido"' })
+  pode_reabrir?: boolean;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: 'date-time',
+    nullable: true,
+    description: 'Com token: até quando dá para avaliar ou reabrir; null se não está resolvida',
+  })
+  prazo_pos_resolucao_ate?: string | null;
+
+  static deDetalhe(detalhe: Detalhe): DetalheResposta {
+    const { acoes } = detalhe;
+    return {
+      ...MinhaOcorrenciaResposta.deMinha(detalhe),
+      descricao: detalhe.descricao,
+      atributos: detalhe.atributos,
+      fotos: detalhe.fotos.map((foto) => ({ url: foto.url, miniatura_url: foto.miniaturaUrl })),
+      linha_do_tempo: detalhe.linhaDoTempo.map((etapa) => ({
+        etapa: etapa.etapa,
+        data: iso(etapa),
+      })),
+      respostas: detalhe.respostas.map((resposta) => ({
+        orgao: resposta.orgao,
+        comentario: resposta.comentario,
+        data: iso(resposta),
+      })),
+      reaberturas: detalhe.reaberturas.map((reabertura) => ({
+        justificativa: reabertura.justificativa,
+        data: iso(reabertura),
+      })),
+      ...(detalhe.autorApelido === null ? {} : { autor_apelido: detalhe.autorApelido }),
+      ...(acoes && {
+        minha_confirmacao: acoes.minhaConfirmacao,
+        pode_confirmar: acoes.podeConfirmar,
+        pode_avaliar: acoes.podeAvaliar,
+        pode_reabrir: acoes.podeReabrir,
+        prazo_pos_resolucao_ate: acoes.prazoPosResolucaoAte?.toISOString() ?? null,
+      }),
     };
   }
 }
