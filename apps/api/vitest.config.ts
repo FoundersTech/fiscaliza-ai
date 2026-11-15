@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 
 // Os testes de integração usam o docker-compose.yml da raiz (banco, Redis e S3); o CI sobrescreve
 // pelo ambiente. Eles rodam num banco próprio, recriado a cada execução (test/preparar-banco.ts).
-// Com SUFIXO_TESTE (ex.: `t26`), o banco e o bucket de uploads ganham o sufixo, e duas cópias do repositório
+// Com SUFIXO_TESTE (ex.: `t26`), o banco e os buckets de uploads e de backup ganham o sufixo, e duas cópias do repositório
 // podem rodar a suíte ao mesmo tempo; cada uma deve usar também outro banco do Redis (REDIS_URL).
 const sufixo = process.env.SUFIXO_TESTE?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
 const urlBancoTeste = new URL(
@@ -29,6 +29,7 @@ export default defineConfig({
       // O de fotos é o mesmo para todas: só ele tem leitura anônima no S3 local, e as chaves já
       // trazem o id da ocorrência.
       R2_BUCKET_FOTOS: 'fa-fotos-teste',
+      R2_BUCKET_BACKUP: sufixo ? `fa-backup-teste-${sufixo}` : 'fa-backup-teste',
     },
     projects: [
       { extends: true, test: { name: 'unidade', include: ['src/**/*.spec.ts'] } },

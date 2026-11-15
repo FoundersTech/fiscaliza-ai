@@ -15,6 +15,7 @@ function montar() {
     apagarUpload: vi.fn<StoragePort['apagarUpload']>(),
     publicar: vi.fn<StoragePort['publicar']>(),
     despublicar: vi.fn<StoragePort['despublicar']>(),
+    uploadsGravadosAntes: vi.fn<StoragePort['uploadsGravadosAntes']>(),
   };
   return { criar: new CriarIntencaoUpload(storage), storage };
 }

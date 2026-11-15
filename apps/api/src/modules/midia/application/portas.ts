@@ -23,6 +23,8 @@ export interface StoragePort {
   publicar(chave: string, jpeg: Buffer): Promise<void>;
   /** Apaga do bucket público. Apagar o que já não existe não é erro. */
   despublicar(chave: string): Promise<void>;
+  /** Chaves do bucket de uploads com esse prefixo gravadas antes de `antesDe`, em páginas. */
+  uploadsGravadosAntes(prefixo: string, antesDe: Date): AsyncIterable<string[]>;
 }
 
 export interface Jpeg {
@@ -84,6 +86,8 @@ export interface RepositorioFotos {
   esquecerOriginal(id: string): Promise<void>;
   /** Ids das fotos PENDENTE criadas antes de `antesDe`, das mais antigas para as mais novas. */
   pendentesCriadasAntes(antesDe: Date, limite: number): Promise<string[]>;
+  /** Quais dessas chaves de upload ainda são o original de alguma foto. */
+  uploadsEmUso(chaves: readonly string[]): Promise<Set<string>>;
   /** A foto com as chaves no bucket público, para a revisão do administrador. */
   buscarParaRevisao(id: string): Promise<FotoEmRevisao | null>;
   /** Fotos com essa moderação, das mais novas para as mais antigas, a partir da foto `depoisDe`. */

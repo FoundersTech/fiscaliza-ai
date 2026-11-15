@@ -62,6 +62,8 @@ const esquemaAmbiente = z
       (valor) => (valor === '' ? undefined : valor),
       z.url({ protocol: /^https?$/ }).optional(),
     ),
+    // Bucket privado dos backups diários do banco (pg_dump), guardados por 7 dias.
+    R2_BUCKET_BACKUP: z.string().min(1).default('fa-backup'),
   })
   .superRefine((ambiente, contexto) => {
     if (ambiente.NODE_ENV === 'production' && !ambiente.JWT_SECRET) {

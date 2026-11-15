@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   NoSuchKey,
   NotFound,
   PutObjectCommand,
@@ -22,6 +23,8 @@ export interface ConfigStorage {
   segredo: string;
   bucketUploads: string;
   bucketFotos: string;
+  /** Bucket privado dos backups do banco. */
+  bucketBackup: string;
 }
 
 // Uma foto rejeitada depois de publicada sai do cache da CDN em até 10 min.
@@ -34,6 +37,7 @@ export function configStorage(ambiente: Ambiente): ConfigStorage {
     segredo: ambiente.R2_SECRET_ACCESS_KEY,
     bucketUploads: ambiente.R2_BUCKET_UPLOADS,
     bucketFotos: ambiente.R2_BUCKET_FOTOS,
+    bucketBackup: ambiente.R2_BUCKET_BACKUP,
   };
 }
 
@@ -119,9 +123,33 @@ export class StorageR2Adapter implements StoragePort, OnModuleDestroy {
     await this.s3.send(new DeleteObjectCommand({ Bucket: this.config.bucketFotos, Key: chave }));
   }
 
+  async *uploadsGravadosAntes(prefixo: string, antesDe: Date): AsyncIterable<string[]> {
+    for await (const pagina of listarObjetos(this.s3, this.config.bucketUploads, prefixo)) {
+      yield pagina.flatMap(({ Key, LastModified }) =>
+        Key && LastModified && LastModified < antesDe ? [Key] : [],
+      );
+    }
+  }
+
   onModuleDestroy(): void {
     this.s3.destroy();
   }
+}
+
+/** Os objetos de um prefixo do bucket, página por página (até 1000 por página). */
+export async function* listarObjetos(
+  s3: S3Client,
+  bucket: string,
+  prefixo: string,
+): AsyncIterable<{ Key?: string; LastModified?: Date }[]> {
+  let continuacao: string | undefined;
+  do {
+    const resposta = await s3.send(
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefixo, ContinuationToken: continuacao }),
+    );
+    yield resposta.Contents ?? [];
+    continuacao = resposta.IsTruncated ? resposta.NextContinuationToken : undefined;
+  } while (continuacao);
 }
 
 /** Só para o S3 local: no R2, os buckets são criados no painel da Cloudflare. */

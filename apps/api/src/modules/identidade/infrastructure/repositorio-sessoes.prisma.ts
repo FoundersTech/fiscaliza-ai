@@ -49,4 +49,11 @@ export class RepositorioSessoesPrisma implements RepositorioSessoes {
       data: { revogadoEm: agora },
     });
   }
+
+  async apagarExpiradosAntes(antesDe: Date): Promise<number> {
+    const { count } = await this.prisma.refreshToken.deleteMany({
+      where: { expiraEm: { lt: antesDe } },
+    });
+    return count;
+  }
 }

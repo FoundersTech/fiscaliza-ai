@@ -39,6 +39,7 @@ function montar(foto: Partial<FotoParaProcessar> | null = {}) {
     buscarParaRevisao: vi.fn<RepositorioFotos['buscarParaRevisao']>(),
     listarParaRevisao: vi.fn<RepositorioFotos['listarParaRevisao']>(),
     rejeitarAprovada: vi.fn<RepositorioFotos['rejeitarAprovada']>(),
+    uploadsEmUso: vi.fn<RepositorioFotos['uploadsEmUso']>(),
   };
   const storage = {
     urlDeEnvio: vi.fn<StoragePort['urlDeEnvio']>(),
@@ -47,6 +48,7 @@ function montar(foto: Partial<FotoParaProcessar> | null = {}) {
     apagarUpload: vi.fn<StoragePort['apagarUpload']>().mockResolvedValue(),
     publicar: vi.fn<StoragePort['publicar']>().mockResolvedValue(),
     despublicar: vi.fn<StoragePort['despublicar']>(),
+    uploadsGravadosAntes: vi.fn<StoragePort['uploadsGravadosAntes']>(),
   };
   const imagens = {
     preparar: vi.fn<ProcessadorImagem['preparar']>().mockResolvedValue(PREPARADA),

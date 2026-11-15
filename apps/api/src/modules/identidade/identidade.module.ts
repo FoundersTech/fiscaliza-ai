@@ -6,6 +6,7 @@ import { Cadastrar } from './application/cadastrar.js';
 import { AlterarAtivacaoConta, ConvidarUsuario } from './application/contas.js';
 import { CriarAdminPlataforma } from './application/criar-admin.js';
 import { Entrar } from './application/entrar.js';
+import { LimparTokensExpirados } from './application/limpar-tokens-expirados.js';
 import { ObterPerfil } from './application/obter-perfil.js';
 import { AceitarPolitica, ConferirAcesso } from './application/politica.js';
 import {
@@ -48,6 +49,7 @@ import { GuardAutenticacao, GuardAutenticacaoOpcional } from './presentation/aut
     ConvidarUsuario,
     AlterarAtivacaoConta,
     CriarAdminPlataforma,
+    LimparTokensExpirados,
     GuardAutenticacao,
     GuardAutenticacaoOpcional,
     { provide: HASHER_SENHA, useClass: HasherArgon2 },
@@ -68,6 +70,7 @@ import { GuardAutenticacao, GuardAutenticacaoOpcional } from './presentation/aut
     ConvidarUsuario,
     AlterarAtivacaoConta,
     HASHER_SENHA,
+    LimparTokensExpirados,
   ],
 })
 export class IdentidadeModule {}
