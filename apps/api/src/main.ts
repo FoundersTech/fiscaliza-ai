@@ -23,6 +23,9 @@ async function bootstrap(): Promise<void> {
     abortOnError: false,
   });
   app.useLogger(app.get(Logger));
+  if (ambiente.LIMITE_TAXA_DESLIGADO) {
+    app.get(Logger).warn('LIMITE_TAXA_DESLIGADO=true: sem limite de requisições por IP.');
+  }
   app.enableShutdownHooks();
   await configurarApp(app);
 

@@ -13,6 +13,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { ApiTooManyRequestsResponse } from '@nestjs/swagger';
 import type { Redis } from 'ioredis';
+import { AMBIENTE, type Ambiente } from '../config/ambiente.js';
 import { ErroAplicacao } from '../erros/erro-aplicacao.js';
 import { REDIS } from '../redis/redis.module.js';
 
@@ -59,6 +60,7 @@ export function porUsuario(nome: string, maximo: number, janelaSegundos: number)
 /**
  * Limita quantas vezes a mesma chave chama a rota numa janela fixa. Passou do máximo: 429 com
  * Retry-After. Se o Redis cair, a rota segue liberada (com aviso no log) em vez de sair do ar.
+ * Com LIMITE_TAXA_DESLIGADO=true (só no teste de carga), nada é contado.
  */
 @Injectable()
 export class GuardLimiteTaxa implements CanActivate {
@@ -67,9 +69,11 @@ export class GuardLimiteTaxa implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     @Inject(REDIS) private readonly redis: Redis,
+    @Inject(AMBIENTE) private readonly ambiente: Pick<Ambiente, 'LIMITE_TAXA_DESLIGADO'>,
   ) {}
 
   async canActivate(contexto: ExecutionContext): Promise<boolean> {
+    if (this.ambiente.LIMITE_TAXA_DESLIGADO) return true;
     const regra = this.reflector.get<RegraLimiteTaxa | undefined>(REGRA, contexto.getHandler());
     if (!regra) return true;
 

@@ -85,6 +85,15 @@ describe('validarAmbiente: autenticação', () => {
   });
 });
 
+describe('validarAmbiente: limite de requisições', () => {
+  it('fica ligado, a menos que LIMITE_TAXA_DESLIGADO=true', () => {
+    expect(validarAmbiente(OBRIGATORIAS).LIMITE_TAXA_DESLIGADO).toBe(false);
+    expect(
+      validarAmbiente({ ...OBRIGATORIAS, LIMITE_TAXA_DESLIGADO: 'true' }).LIMITE_TAXA_DESLIGADO,
+    ).toBe(true);
+  });
+});
+
 describe('validarAmbiente', () => {
   it('aplica os valores padrão', () => {
     const ambiente = validarAmbiente(OBRIGATORIAS);

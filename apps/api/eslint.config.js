@@ -21,6 +21,11 @@ export default defineConfig(
     files: ['**/*.js'],
     extends: [tseslint.configs.disableTypeChecked],
   },
+  // Scripts do k6 (teste de carga): rodam no k6, não no Node.
+  {
+    files: ['carga/k6/**/*.js'],
+    languageOptions: { globals: { __ENV: 'readonly', __VU: 'readonly', __ITER: 'readonly' } },
+  },
 
   // Design, Segurança: SQL cru só como template tagged ($queryRaw / $executeRaw).
   {

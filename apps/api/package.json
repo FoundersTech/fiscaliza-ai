@@ -28,6 +28,7 @@
     "email:teste": "node dist/cli/email-teste.js",
     "criar-admin": "node dist/cli/criar-admin.js",
     "restaurar-backup": "node dist/cli/restaurar-backup.js",
+    "carga": "node dist/cli/carga-sintetica.js",
     "postinstall": "prisma generate"
   },
   "dependencies": {
