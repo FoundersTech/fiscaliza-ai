@@ -1,12 +1,29 @@
 <script setup lang="ts">
 import CabecalhoPagina from '@/components/CabecalhoPagina.vue';
 import EstadoVazio from '@/components/EstadoVazio.vue';
+import { useAuthStore } from '@/stores/auth';
+
+const auth = useAuthStore();
 </script>
 
 <template>
   <q-page>
     <div class="fa-conteudo">
       <CabecalhoPagina titulo="Ocorrências" com-local />
+
+      <router-link
+        v-if="auth.papel === 'AGENTE_ORGAO'"
+        to="/atendimento"
+        class="atalho fa-card"
+        aria-label="Abrir a fila de atendimento do órgão"
+      >
+        <q-icon name="sym_o_assignment" size="28px" class="atalho__icone" />
+        <div class="selo__texto">
+          <strong>Fila de atendimento</strong>
+          <span class="fa-legenda">As ocorrências do seu órgão, para triar e responder.</span>
+        </div>
+        <q-icon name="sym_o_chevron_right" size="20px" class="selo__seta" />
+      </router-link>
 
       <router-link to="/score" class="selo fa-card" aria-label="Ver a reputação da gestão">
         <div class="selo__nota">
@@ -31,6 +48,19 @@ import EstadoVazio from '@/components/EstadoVazio.vue';
 </template>
 
 <style scoped lang="scss">
+.atalho {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: inherit;
+  text-decoration: none;
+  border-color: var(--fa-azul);
+}
+
+.atalho__icone {
+  color: var(--fa-azul);
+}
+
 .selo {
   display: flex;
   align-items: center;
