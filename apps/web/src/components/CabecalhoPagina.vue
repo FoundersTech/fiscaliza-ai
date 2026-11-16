@@ -24,6 +24,8 @@ const indicador = computed(() => rotuloDoIndicador(alertas.novos));
 const auth = useAuthStore();
 /** Atalho para as telas de administração, só para quem administra. */
 const rotaAdmin = computed(() => inicioAdmin(auth.papel));
+/** Só o cidadão tem a tela Minha conta; o visitante vai por ela até o login. */
+const mostrarConta = computed(() => !auth.logado || auth.papel === 'CIDADAO');
 </script>
 
 <template>
@@ -46,6 +48,16 @@ const rotaAdmin = computed(() => inicioAdmin(auth.papel));
         icon="sym_o_admin_panel_settings"
         :to="rotaAdmin"
         aria-label="Administração"
+      />
+      <q-btn
+        v-if="mostrarConta"
+        round
+        flat
+        class="fa-botao-redondo"
+        icon="sym_o_person"
+        to="/conta"
+        :aria-label="auth.logado ? 'Minha conta' : 'Entrar na conta'"
+        data-teste="atalho-conta"
       />
       <q-btn
         round
@@ -113,5 +125,9 @@ const rotaAdmin = computed(() => inicioAdmin(auth.papel));
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+
+  @media (max-width: 359px) {
+    gap: 4px;
+  }
 }
 </style>

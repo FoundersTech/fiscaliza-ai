@@ -28,6 +28,7 @@ interface Recursos {
   agenteSorocaba: string;
   categoria: number;
   foto: string;
+  ocorrenciaSorocaba: string;
 }
 
 interface Caso {
@@ -36,7 +37,7 @@ interface Caso {
   /** Corpo válido: se o guard sumir, a rota funciona e o teste falha com 200 ou 201. */
   corpo?: object;
   /** Quem NÃO pode chamar a rota, e o código esperado no 403. */
-  negados: Partial<Record<Ator, 'ACESSO_NEGADO' | 'OUTRO_MUNICIPIO'>>;
+  negados: Partial<Record<Ator, 'ACESSO_NEGADO' | 'OUTRO_MUNICIPIO' | 'OUTRO_ORGAO'>>;
 }
 
 const FORA_DO_MUNICIPIO = {
@@ -51,6 +52,13 @@ const FORA_DA_PLATAFORMA = {
   agente: 'ACESSO_NEGADO',
   gestorSorocaba: 'ACESSO_NEGADO',
   gestorOutroMunicipio: 'ACESSO_NEGADO',
+} as const;
+
+const FORA_DO_ATENDIMENTO = {
+  cidadao: 'ACESSO_NEGADO',
+  gestorSorocaba: 'ACESSO_NEGADO',
+  gestorOutroMunicipio: 'ACESSO_NEGADO',
+  adminPlataforma: 'ACESSO_NEGADO',
 } as const;
 
 /**
@@ -120,6 +128,22 @@ const CASOS: Record<string, Caso> = {
     corpo: { motivo: 'Tentativa de quem não pode' },
     negados: FORA_DA_PLATAFORMA,
   },
+  'GET /atendimento/ocorrencias': {
+    metodo: 'GET',
+    rota: () => 'atendimento/ocorrencias',
+    negados: FORA_DO_ATENDIMENTO,
+  },
+  'GET /atendimento/ocorrencias/:id': {
+    metodo: 'GET',
+    rota: ({ ocorrenciaSorocaba }) => `atendimento/ocorrencias/${ocorrenciaSorocaba}`,
+    negados: { ...FORA_DO_ATENDIMENTO, agenteOutroMunicipio: 'OUTRO_ORGAO' },
+  },
+  'POST /atendimento/ocorrencias/:id/transicoes': {
+    metodo: 'POST',
+    rota: ({ ocorrenciaSorocaba }) => `atendimento/ocorrencias/${ocorrenciaSorocaba}/transicoes`,
+    corpo: { status_esperado: 'RECEBIDA', para_status: 'EM_ANALISE' },
+    negados: { ...FORA_DO_ATENDIMENTO, agenteOutroMunicipio: 'OUTRO_ORGAO' },
+  },
 };
 
 describe('Acesso a dados de outro município ou de outro papel', () => {
@@ -164,7 +188,7 @@ describe('Acesso a dados de outro município ou de outro papel', () => {
     await app.getHttpAdapter().getInstance().ready();
     prisma = app.get(PrismaService);
 
-    await prisma.$executeRaw`TRUNCATE usuario RESTART IDENTITY CASCADE`;
+    await prisma.$executeRaw`TRUNCATE ocorrencia, usuario RESTART IDENTITY CASCADE`;
     ({ orgaoId: orgaoSorocaba } = await aplicarCargaInicial(prisma));
     await prisma.$executeRaw`
       INSERT INTO municipio (id, nome, uf, sigla, ativo, area)
@@ -177,7 +201,8 @@ describe('Acesso a dados de outro município ou de outro papel', () => {
       update: {},
     }));
 
-    tokens.cidadao = (await conta(Papel.CIDADAO, null)).token;
+    const cidadao = await conta(Papel.CIDADAO, null);
+    tokens.cidadao = cidadao.token;
     const agente = await conta(Papel.AGENTE_ORGAO, SOROCABA.id, orgaoSorocaba);
     tokens.agente = agente.token;
     tokens.gestorSorocaba = (await conta(Papel.ADMIN_MUNICIPIO, SOROCABA.id)).token;
@@ -189,11 +214,25 @@ describe('Acesso a dados de outro município ou de outro papel', () => {
       where: { ativa: true },
       orderBy: { id: 'asc' },
     });
-    recursos = { agenteSorocaba: agente.id, categoria: categoria.id, foto: randomUUID() };
+    const ocorrenciaSorocaba = randomUUID();
+    await prisma.$executeRaw`
+      INSERT INTO ocorrencia (id, protocolo, autor_id, categoria_id, municipio_id, orgao_id,
+                              descricao, local, status)
+      VALUES (${ocorrenciaSorocaba}::uuid, 'FA-2026-SOR-000777', ${cidadao.id}::uuid,
+              ${categoria.id}, ${SOROCABA.id}, ${orgaoSorocaba},
+              'Poste sem iluminação na esquina da praça',
+              ST_SetSRID(ST_MakePoint(-47.4526::float8, -23.5015::float8), 4326)::geography,
+              'RECEBIDA'::status_ocorrencia)`;
+    recursos = {
+      agenteSorocaba: agente.id,
+      categoria: categoria.id,
+      foto: randomUUID(),
+      ocorrenciaSorocaba,
+    };
   });
 
   afterAll(async () => {
-    await prisma.$executeRaw`TRUNCATE usuario RESTART IDENTITY CASCADE`;
+    await prisma.$executeRaw`TRUNCATE ocorrencia, usuario RESTART IDENTITY CASCADE`;
     await prisma.orgao.deleteMany({ where: { municipioId: OUTRO.id } });
     await prisma.municipio.deleteMany({ where: { id: OUTRO.id } });
     await app.close();
@@ -236,9 +275,12 @@ describe('Acesso a dados de outro município ou de outro papel', () => {
         where: { email: { in: ['intruso@exemplo.test', 'gestor@exemplo.test'] } },
       }),
     ).toBe(0);
+    expect(
+      await prisma.ocorrencia.findUniqueOrThrow({ where: { id: recursos.ocorrenciaSorocaba } }),
+    ).toMatchObject({ status: 'RECEBIDA' });
   });
 
-  it('o gestor de Sorocaba chega às rotas do município, e o admin da plataforma às dele', async () => {
+  it('o gestor de Sorocaba chega às rotas do município, o admin da plataforma às dele e o agente ao atendimento', async () => {
     const pedir = (rota: string, ator: Ator) =>
       app.inject({
         method: 'GET',
@@ -250,5 +292,9 @@ describe('Acesso a dados de outro município ou de outro papel', () => {
     expect((await pedir('admin/agentes', 'gestorSorocaba')).statusCode).toBe(200);
     expect((await pedir('admin/categorias', 'adminPlataforma')).statusCode).toBe(200);
     expect((await pedir('admin/fotos', 'adminPlataforma')).statusCode).toBe(200);
+    expect((await pedir('atendimento/ocorrencias', 'agente')).statusCode).toBe(200);
+    expect(
+      (await pedir(`atendimento/ocorrencias/${recursos.ocorrenciaSorocaba}`, 'agente')).statusCode,
+    ).toBe(200);
   });
 });

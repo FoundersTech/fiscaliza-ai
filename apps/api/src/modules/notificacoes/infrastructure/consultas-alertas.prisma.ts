@@ -98,4 +98,14 @@ export class ConsultasAlertasPrisma implements ConsultasAlertas {
       ORDER BY p.usuario_id`;
     return linhas.map((linha) => linha.usuarioId);
   }
+
+  async mudanca(eventoId: number): Promise<LinhaAlerta | null> {
+    const [linha] = await this.prisma.$queryRaw<LinhaAlerta[]>`
+      SELECT e.id AS "eventoId", e.ocorrencia_id AS "ocorrenciaId", o.protocolo,
+             e.de_status AS "deStatus", e.para_status AS "paraStatus", e.criado_em AS "criadoEm"
+      FROM ocorrencia_evento e
+      JOIN ocorrencia o ON o.id = e.ocorrencia_id
+      WHERE e.id = ${eventoId}::int AND e.de_status IS NOT NULL`;
+    return linha ?? null;
+  }
 }

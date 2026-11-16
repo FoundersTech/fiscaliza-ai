@@ -62,4 +62,24 @@ export class RepositorioExportacoesPrisma implements RepositorioExportacoes {
       data: { status: StatusExportacao.FALHOU },
     });
   }
+
+  // Os dois abaixo atendem a limpeza diária do módulo de manutenção, que recebe esta classe.
+
+  /** Exportações prontas cujo prazo de download passou antes de `agora`. */
+  vencidas(agora: Date, limite: number): Promise<{ id: string; storageKey: string | null }[]> {
+    return this.prisma.exportacaoDados.findMany({
+      where: { status: StatusExportacao.PRONTA, expiraEm: { lt: agora } },
+      select: { id: true, storageKey: true },
+      orderBy: { expiraEm: 'asc' },
+      take: limite,
+    });
+  }
+
+  /** Muda para EXPIRADA e esquece o arquivo. */
+  async marcarExpirada(id: string): Promise<void> {
+    await this.prisma.exportacaoDados.update({
+      where: { id },
+      data: { status: StatusExportacao.EXPIRADA, storageKey: null },
+    });
+  }
 }

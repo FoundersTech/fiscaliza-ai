@@ -27,6 +27,12 @@ const routes: RouteRecordRaw[] = [
         meta: { auth: true, papeis: ['CIDADAO'] },
       },
       {
+        path: 'conta',
+        name: 'conta',
+        component: () => import('@/pages/ContaPage.vue'),
+        meta: { auth: true, papeis: ['CIDADAO'] },
+      },
+      {
         path: 'politica-privacidade',
         name: 'politica-privacidade',
         component: () => import('@/pages/PoliticaPage.vue'),

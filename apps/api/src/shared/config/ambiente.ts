@@ -6,6 +6,12 @@ export const AMBIENTE = Symbol('AMBIENTE');
 
 const booleano = z.enum(['true', 'false']).transform((valor) => valor === 'true');
 
+/** Variável que o deploy pode mandar vazia quando o segredo não existe. */
+const textoOpcional = z.preprocess(
+  (valor) => (valor === '' ? undefined : valor),
+  z.string().min(1).optional(),
+);
+
 /** Só para desenvolvimento e testes; em produção, JWT_SECRET é obrigatório. */
 const JWT_SECRET_DESENVOLVIMENTO = 'segredo-de-desenvolvimento-nao-use-em-producao-0001';
 
@@ -67,6 +73,15 @@ const esquemaAmbiente = z
     ),
     // Bucket privado dos backups diários do banco (pg_dump), guardados por 7 dias.
     R2_BUCKET_BACKUP: z.string().min(1).default('fa-backup'),
+    // Chaves VAPID do Web Push (gere com `npx web-push generate-vapid-keys`). Sem elas, a API
+    // não envia push; a pública vai para o PWA no /config/publica. Vazia conta como ausente.
+    VAPID_PUBLIC_KEY: textoOpcional,
+    VAPID_PRIVATE_KEY: textoOpcional,
+    // Contato que o serviço de push usa se precisar falar com quem envia.
+    VAPID_SUBJECT: z
+      .string()
+      .regex(/^(mailto:|https:\/\/)\S+$/, 'use mailto:endereco ou uma URL https://')
+      .default('mailto:contato@fiscalizaai.app'),
   })
   .superRefine((ambiente, contexto) => {
     if (ambiente.NODE_ENV === 'production' && !ambiente.JWT_SECRET) {
@@ -88,6 +103,13 @@ const esquemaAmbiente = z
         code: 'custom',
         path: ['EMAIL_TRANSPORTE'],
         message: 'use resend em produção; com arquivo, os e-mails não chegam a ninguém',
+      });
+    }
+    if (Boolean(ambiente.VAPID_PUBLIC_KEY) !== Boolean(ambiente.VAPID_PRIVATE_KEY)) {
+      contexto.addIssue({
+        code: 'custom',
+        path: [ambiente.VAPID_PUBLIC_KEY ? 'VAPID_PRIVATE_KEY' : 'VAPID_PUBLIC_KEY'],
+        message: 'informe as duas chaves VAPID, a pública e a privada',
       });
     }
     if (ambiente.NODE_ENV === 'production') {

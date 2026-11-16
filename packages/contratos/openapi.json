@@ -145,6 +145,80 @@
         ]
       }
     },
+    "/api/v1/me/push": {
+      "post": {
+        "operationId": "PushController_criar",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InscricaoPushDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inscrição gravada. Reenviar o mesmo endpoint atualiza as chaves e passa a inscrição para a conta atual."
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO (endpoint ou chaves inválidos)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notificacoes"
+        ]
+      },
+      "delete": {
+        "operationId": "PushController_remover",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelarPushDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Inscrição removida, ou já não existia"
+          },
+          "401": {
+            "description": "Sem token, ou token inválido ou expirado."
+          },
+          "403": {
+            "description": "ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política."
+          },
+          "422": {
+            "description": "VALIDACAO (endpoint inválido)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notificacoes"
+        ]
+      }
+    },
     "/api/v1/auth/cadastro": {
       "post": {
         "operationId": "AuthController_cadastrar",
@@ -1417,6 +1491,47 @@
         ]
       }
     },
+    "/api/v1/indicadores/score": {
+      "get": {
+        "operationId": "IndicadoresController_score",
+        "parameters": [
+          {
+            "name": "municipio",
+            "required": false,
+            "in": "query",
+            "description": "Código IBGE; sem ele, o município atendido",
+            "schema": {
+              "example": 3552205,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreResposta"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NAO_ENCONTRADO (município sem órgão ativo)"
+          },
+          "422": {
+            "description": "VALIDACAO (município)"
+          },
+          "429": {
+            "description": "Mais de 120 tentativas em 60 s."
+          }
+        },
+        "tags": [
+          "indicadores"
+        ]
+      }
+    },
     "/api/v1/admin/categorias": {
       "get": {
         "operationId": "CategoriasController_listar",
@@ -2067,6 +2182,62 @@
           "quantidade"
         ]
       },
+      "ChavesPushDto": {
+        "type": "object",
+        "properties": {
+          "p256dh": {
+            "type": "string",
+            "description": "Chave pública ECDH do navegador (base64url)"
+          },
+          "auth": {
+            "type": "string",
+            "description": "Segredo de autenticação do navegador (base64url)"
+          }
+        },
+        "required": [
+          "p256dh",
+          "auth"
+        ]
+      },
+      "InscricaoPushDto": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "example": "https://fcm.googleapis.com/fcm/send/abc123",
+            "maxLength": 2048,
+            "description": "Endereço do serviço de push do navegador"
+          },
+          "keys": {
+            "$ref": "#/components/schemas/ChavesPushDto"
+          }
+        },
+        "required": [
+          "endpoint",
+          "keys"
+        ]
+      },
+      "CancelarPushDto": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "example": "https://fcm.googleapis.com/fcm/send/abc123",
+            "maxLength": 2048,
+            "description": "Endereço do serviço de push do navegador"
+          },
+          "keys": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Ignorado; aceito para o PWA poder mandar a PushSubscription inteira"
+          }
+        },
+        "required": [
+          "endpoint"
+        ]
+      },
       "CadastroDto": {
         "type": "object",
         "properties": {
@@ -2419,6 +2590,11 @@
           "google_maps_map_id": {
             "type": "string",
             "example": "DEMO_MAP_ID"
+          },
+          "vapid_public_key": {
+            "type": "string",
+            "nullable": true,
+            "description": "Chave pública VAPID (applicationServerKey do pushManager.subscribe); null quando o push está desligado"
           }
         },
         "required": [
@@ -2426,7 +2602,8 @@
           "categorias_ativas",
           "urgente_min_confirmacoes",
           "politica_versao",
-          "google_maps_map_id"
+          "google_maps_map_id",
+          "vapid_public_key"
         ]
       },
       "GeoReversoResposta": {
@@ -3992,6 +4169,88 @@
           "resolvidas_pct",
           "dias_mediana",
           "por_categoria",
+          "calculado_em"
+        ]
+      },
+      "CategoriaScoreResposta": {
+        "type": "object",
+        "properties": {
+          "categoria_id": {
+            "type": "number",
+            "example": 3
+          },
+          "nome": {
+            "type": "string",
+            "example": "Iluminação"
+          },
+          "total": {
+            "type": "number",
+            "example": 12
+          },
+          "resolvidas": {
+            "type": "number",
+            "example": 7
+          }
+        },
+        "required": [
+          "categoria_id",
+          "nome",
+          "total",
+          "resolvidas"
+        ]
+      },
+      "ScoreResposta": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "number",
+            "nullable": true,
+            "example": 7,
+            "description": "De 0 a 10, com uma casa; null sem ocorrências na janela ou ainda não calculado"
+          },
+          "classificacao": {
+            "type": "string",
+            "nullable": true,
+            "example": "Regular"
+          },
+          "resolvidas_pct": {
+            "type": "number",
+            "nullable": true,
+            "example": 68,
+            "description": "Percentual de resolvidas, com uma casa; null sem ocorrências na janela"
+          },
+          "dias_mediana": {
+            "type": "number",
+            "nullable": true,
+            "example": 6.5,
+            "description": "Mediana de dias entre o registro e a resolução; null sem nenhuma resolvida"
+          },
+          "por_categoria": {
+            "description": "Só as categorias com ocorrências, da maior para a menor",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoriaScoreResposta"
+            }
+          },
+          "janela_dias": {
+            "type": "number",
+            "example": 90,
+            "description": "Últimos N dias considerados, pela data de registro"
+          },
+          "calculado_em": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Quando o score foi recalculado pela última vez; null se ainda não foi"
+          }
+        },
+        "required": [
+          "score",
+          "classificacao",
+          "resolvidas_pct",
+          "dias_mediana",
+          "por_categoria",
+          "janela_dias",
           "calculado_em"
         ]
       },

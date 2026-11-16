@@ -1,9 +1,16 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiTags, ApiUnprocessableEntityResponse } from '@nestjs/swagger';
+import {
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiTags,
+  ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
 
 import { LimiteTaxa, type RegraLimiteTaxa } from '../../../shared/limite-taxa/limite-taxa.js';
 import { ObterPainel } from '../application/obter-painel.js';
+import { ObterScore } from '../application/obter-score.js';
 import { PainelQuery, PainelResposta } from './dto-painel.js';
+import { ScoreQuery, ScoreResposta } from './dto-score.js';
 
 /** Leituras públicas: 120 por minuto por IP, no mesmo limite do feed e do mapa. */
 const LEITURA_PUBLICA: RegraLimiteTaxa = {
@@ -17,7 +24,10 @@ const LEITURA_PUBLICA: RegraLimiteTaxa = {
 @ApiTags('indicadores')
 @Controller('indicadores')
 export class IndicadoresController {
-  constructor(private readonly obterPainel: ObterPainel) {}
+  constructor(
+    private readonly obterPainel: ObterPainel,
+    private readonly obterScore: ObterScore,
+  ) {}
 
   @Get('painel')
   @LimiteTaxa(LEITURA_PUBLICA)
@@ -31,5 +41,15 @@ export class IndicadoresController {
         categorias: consulta.categoria ?? null,
       }),
     );
+  }
+
+  /** O último score calculado pelo job; não recalcula na hora. */
+  @Get('score')
+  @LimiteTaxa(LEITURA_PUBLICA)
+  @ApiOkResponse({ type: ScoreResposta })
+  @ApiNotFoundResponse({ description: 'NAO_ENCONTRADO (município sem órgão ativo)' })
+  @ApiUnprocessableEntityResponse({ description: 'VALIDACAO (município)' })
+  async score(@Query() consulta: ScoreQuery): Promise<ScoreResposta> {
+    return ScoreResposta.de(await this.obterScore.executar(consulta.municipio ?? null));
   }
 }

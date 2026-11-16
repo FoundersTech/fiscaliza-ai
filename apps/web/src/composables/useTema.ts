@@ -1,17 +1,30 @@
 import { useQuasar } from 'quasar';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
-import { alternar, modoQuasar, salvarPreferencia } from '@/services/tema';
+import {
+  alternar,
+  lerPreferencia,
+  modoQuasar,
+  type PreferenciaTema,
+  salvarPreferencia,
+} from '@/services/tema';
+
+/** Compartilhada entre o botão do cabeçalho e a tela Minha conta. */
+const preferencia = ref<PreferenciaTema>(lerPreferencia(globalThis.localStorage));
 
 export function useTema() {
   const $q = useQuasar();
   const escuro = computed(() => $q.dark.isActive);
 
-  function alternarTema(): void {
-    const preferencia = alternar($q.dark.isActive);
-    $q.dark.set(modoQuasar(preferencia));
-    salvarPreferencia(globalThis.localStorage, preferencia);
+  function definirTema(nova: PreferenciaTema): void {
+    preferencia.value = nova;
+    $q.dark.set(modoQuasar(nova));
+    salvarPreferencia(globalThis.localStorage, nova);
   }
 
-  return { escuro, alternarTema };
+  function alternarTema(): void {
+    definirTema(alternar($q.dark.isActive));
+  }
+
+  return { escuro, preferencia, alternarTema, definirTema };
 }

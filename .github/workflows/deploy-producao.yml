@@ -1,0 +1,192 @@
+name: Deploy produção
+
+# Publica em produção cada tag de versão (v1.0.0, v1.0.1...). No disparo manual, escolha a tag em
+# "Use workflow from": rodar a partir de uma branch não publica nada.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+# Um deploy por vez; um novo espera o anterior terminar em vez de cancelá-lo no meio.
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Versão publicada: o nome da tag, que o /health devolve depois do deploy.
+  VERSAO: ${{ github.ref_name }}
+  IMAGEM: ghcr.io/founderstech/fiscaliza-api
+
+jobs:
+  imagem-api:
+    name: Imagem da API (arm64)
+    if: startsWith(github.ref, 'refs/tags/v')
+    # Máquina ARM, como a VM da Oracle: a imagem é gerada sem emulação.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGEM }}:${{ env.VERSAO }}
+            ${{ env.IMAGEM }}:production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  api:
+    name: API na VM
+    needs: imagem-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://api.fiscalizaai.app/api/v1/health
+    permissions:
+      contents: read
+      # A VM baixa a imagem do GHCR com o token deste job, que expira quando ele termina.
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Preparar a chave SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          # Só aceita a VM cuja impressão digital foi cadastrada: evita falar com um impostor.
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # Secrets e variables vêm do environment production: banco, buckets e chaves próprios,
+      # sem nada em comum com staging.
+      - name: Gerar o .env do servidor
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          EMAIL_REMETENTE: ${{ vars.EMAIL_REMETENTE }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET_UPLOADS: ${{ vars.R2_BUCKET_UPLOADS }}
+          R2_BUCKET_FOTOS: ${{ vars.R2_BUCKET_FOTOS }}
+          R2_URL_PUBLICA: ${{ vars.R2_URL_PUBLICA }}
+          R2_BUCKET_BACKUP: ${{ vars.R2_BUCKET_BACKUP }}
+          VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
+          VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
+          GOOGLE_MAPS_MAP_ID: ${{ vars.GOOGLE_MAPS_MAP_ID }}
+        run: |
+          umask 077
+          cat > producao.env <<EOF
+          API_IMAGEM=${IMAGEM}:${VERSAO}
+          APP_VERSAO=${VERSAO}
+          NODE_ENV=production
+          LOG_LEVEL=info
+          PORT=3000
+          SWAGGER_HABILITADO=false
+          WEB_URL=https://app.fiscalizaai.app
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          DATABASE_URL=postgresql://fiscaliza:${POSTGRES_PASSWORD}@postgres:5432/fiscaliza
+          REDIS_URL=redis://redis:6379
+          JWT_SECRET=${JWT_SECRET}
+          POLITICA_VERSAO=1
+          PROXY_CONFIAVEL=true
+          EMAIL_TRANSPORTE=resend
+          RESEND_API_KEY=${RESEND_API_KEY}
+          EMAIL_REMETENTE="${EMAIL_REMETENTE}"
+          R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+          R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+          R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+          R2_BUCKET_UPLOADS=${R2_BUCKET_UPLOADS}
+          R2_BUCKET_FOTOS=${R2_BUCKET_FOTOS}
+          R2_URL_PUBLICA=${R2_URL_PUBLICA}
+          R2_BUCKET_BACKUP=${R2_BUCKET_BACKUP}
+          VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+          VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+          VAPID_SUBJECT=${VAPID_SUBJECT}
+          GOOGLE_MAPS_MAP_ID=${GOOGLE_MAPS_MAP_ID}
+          EOF
+
+      - name: Copiar compose, Caddyfile e .env para a VM
+        env:
+          DESTINO: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+        run: |
+          scp -i ~/.ssh/deploy -r deploy/producao/. "$DESTINO:/opt/fiscaliza-producao/"
+          scp -i ~/.ssh/deploy producao.env "$DESTINO:/opt/fiscaliza-producao/.env"
+          rm producao.env
+
+      - name: Subir a versão nova
+        env:
+          DESTINO: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ATOR: ${{ github.actor }}
+        # O token vai pela entrada padrão, e não como argumento visível na lista de processos da VM.
+        run: printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy "$DESTINO" "bash /opt/fiscaliza-producao/subir.sh '$ATOR'"
+
+      - name: Conferir a versão publicada
+        run: |
+          # shellcheck disable=SC2153 # VERSAO vem do env do workflow
+          for tentativa in $(seq 1 30); do
+            versao=$(curl -fsS https://api.fiscalizaai.app/api/v1/health | jq -r .versao || true)
+            if [ "$versao" = "$VERSAO" ]; then
+              echo "No ar: $versao"
+              exit 0
+            fi
+            echo "Tentativa $tentativa: versão no ar '${versao:-nenhuma}', esperando $VERSAO"
+            sleep 5
+          done
+          echo "::error::A API não respondeu com a versão $VERSAO em 2,5 min."
+          exit 1
+
+  web:
+    name: PWA no Cloudflare Pages
+    # Depois da API: o PWA novo não vai ao ar antes da versão da API que ele espera.
+    needs: api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: https://app.fiscalizaai.app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @fiscaliza/web
+      - run: pnpm --filter @fiscaliza/web build
+        env:
+          API_URL: https://api.fiscalizaai.app
+          GOOGLE_MAPS_API_KEY: ${{ vars.GOOGLE_MAPS_API_KEY }}
+          FEEDBACK_URL: ${{ vars.FEEDBACK_URL }}
+      - name: Publicar no Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        # A branch main é a de produção do projeto: é ela que responde em app.fiscalizaai.app.
+        run: >-
+          pnpm dlx wrangler@4 pages deploy apps/web/dist/pwa
+          --project-name fiscaliza-producao
+          --branch main
+          --commit-hash "$GITHUB_SHA"

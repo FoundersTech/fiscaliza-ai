@@ -16,6 +16,8 @@ export interface ConfigPublica {
   urgenteMinConfirmacoes: number;
   politicaVersao: string;
   googleMapsMapId: string;
+  /** Chave pública VAPID para o PWA se inscrever no push; null quando o push está desligado. */
+  vapidPublicKey: string | null;
 }
 
 /** O que o PWA precisa saber ao abrir: a cidade, as categorias e os parâmetros públicos. */
@@ -46,6 +48,7 @@ export class ObterConfigPublica {
       urgenteMinConfirmacoes: this.parametros.urgente_min_confirmacoes,
       politicaVersao: this.ambiente.POLITICA_VERSAO,
       googleMapsMapId: this.ambiente.GOOGLE_MAPS_MAP_ID,
+      vapidPublicKey: this.ambiente.VAPID_PUBLIC_KEY ?? null,
     };
   }
 }

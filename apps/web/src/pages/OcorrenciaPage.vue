@@ -3,6 +3,7 @@ import { computed, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { useApi } from '@/boot/api';
+import SeloReaberta from '@/components/atendimento/SeloReaberta.vue';
 import EstadoVazio from '@/components/EstadoVazio.vue';
 import SeloStatus from '@/components/ocorrencia/SeloStatus.vue';
 import { confirmarOcorrencia } from '@/services/envio';
@@ -15,6 +16,19 @@ import {
   estadoTambemVi,
   montarLinhaDoTempo,
 } from '@/services/ocorrencia';
+import {
+  aplicarAvaliacao,
+  avaliarOcorrencia,
+  COMENTARIO_AVALIACAO_MAX,
+  type ErroPosResolucao,
+  estaReaberta,
+  JUSTIFICATIVA_REABERTURA_MAX,
+  NOTA_MAX,
+  problemaDaJustificativa,
+  problemasDaAvaliacao,
+  reabrirOcorrencia,
+  textoDoPrazo,
+} from '@/services/pos-resolucao';
 import { useAuthStore } from '@/stores/auth';
 import { useConfigStore } from '@/stores/config';
 import { dataCurta, textoDosDiasVisivel } from '@/utils/status-ocorrencia';
@@ -32,6 +46,24 @@ const erro = ref<string | null>(null);
 const confirmando = ref(false);
 const avisoConfirmacao = ref<string | null>(null);
 const avisoCompartilhar = ref<string | null>(null);
+/** Confirmação de avaliação ou reabertura, e a recusa que fez a tela recarregar. */
+const avisoPosResolucao = ref<string | null>(null);
+const erroPosResolucao = ref<string | null>(null);
+
+const avaliacaoAberta = ref(false);
+const nota = ref<number | null>(null);
+const comentario = ref('');
+const tentouAvaliar = ref(false);
+const avaliando = ref(false);
+const erroAvaliacao = ref<string | null>(null);
+const camposAvaliacao = ref<Record<string, string>>({});
+
+const reaberturaAberta = ref(false);
+const justificativa = ref('');
+const tentouReabrir = ref(false);
+const reabrindo = ref(false);
+const erroReabertura = ref<string | null>(null);
+const camposReabertura = ref<Record<string, string>>({});
 
 const id = computed(() => String(rota.params['id'] ?? ''));
 
@@ -52,6 +84,10 @@ watch(id, () => {
   detalhe.value = null;
   avisoConfirmacao.value = null;
   avisoCompartilhar.value = null;
+  avisoPosResolucao.value = null;
+  erroPosResolucao.value = null;
+  avaliacaoAberta.value = false;
+  reaberturaAberta.value = false;
   void carregar();
 });
 // Entrar ou sair muda o que a API devolve para quem está vendo (botões e campos pessoais).
@@ -126,6 +162,124 @@ async function compartilharOcorrencia(): Promise<void> {
         ? `Copie o link para compartilhar: ${url}`
         : null;
 }
+
+// Depois de resolvida: só o autor e quem confirmou avaliam ou reabrem, até o prazo.
+const podeAvaliar = computed(() => auth.logado && !!detalhe.value?.pode_avaliar);
+const podeReabrir = computed(() => auth.logado && !!detalhe.value?.pode_reabrir);
+const textoPrazo = computed(() =>
+  podeAvaliar.value || podeReabrir.value
+    ? textoDoPrazo(detalhe.value?.prazo_pos_resolucao_ate)
+    : null,
+);
+const reaberta = computed(() => (detalhe.value ? estaReaberta(detalhe.value) : false));
+const estrelas = Array.from({ length: NOTA_MAX }, (_, indice) => indice + 1);
+
+const problemasAvaliacao = computed(() =>
+  tentouAvaliar.value
+    ? problemasDaAvaliacao({ nota: nota.value, comentario: comentario.value })
+    : {},
+);
+const problemaComentario = computed(
+  () => problemasAvaliacao.value.comentario ?? camposAvaliacao.value['comentario'] ?? null,
+);
+const problemaJustificativa = computed(() =>
+  tentouReabrir.value
+    ? (problemaDaJustificativa(justificativa.value) ??
+      camposReabertura.value['justificativa'] ??
+      null)
+    : null,
+);
+
+function rotuloEstrela(valor: number): string {
+  return valor === 1 ? '1 estrela' : `${valor} estrelas`;
+}
+
+function abrirAvaliacao(): void {
+  nota.value = null;
+  comentario.value = '';
+  tentouAvaliar.value = false;
+  erroAvaliacao.value = null;
+  camposAvaliacao.value = {};
+  avaliacaoAberta.value = true;
+}
+
+function abrirReabertura(): void {
+  justificativa.value = '';
+  tentouReabrir.value = false;
+  erroReabertura.value = null;
+  camposReabertura.value = {};
+  reaberturaAberta.value = true;
+}
+
+/** A recusa vem de uma mudança que a tela não viu: fecha o formulário e traz o detalhe de novo. */
+function recusaDesatualizada(resultado: ErroPosResolucao): void {
+  avaliacaoAberta.value = false;
+  reaberturaAberta.value = false;
+  erroPosResolucao.value = resultado.mensagem;
+  void carregar();
+}
+
+async function enviarAvaliacao(): Promise<void> {
+  const atual = detalhe.value;
+  if (!atual || avaliando.value) return;
+  tentouAvaliar.value = true;
+  camposAvaliacao.value = {};
+  erroAvaliacao.value = null;
+  if (Object.keys(problemasAvaliacao.value).length > 0 || nota.value === null) return;
+
+  avaliando.value = true;
+  const resultado = await avaliarOcorrencia(api, atual.id, {
+    nota: nota.value,
+    comentario: comentario.value,
+  });
+  avaliando.value = false;
+  if (detalhe.value?.id !== atual.id) return;
+
+  if (resultado.tipo === 'ERRO') {
+    if (resultado.recarregar) recusaDesatualizada(resultado);
+    else {
+      erroAvaliacao.value = resultado.mensagem;
+      camposAvaliacao.value = resultado.campos;
+    }
+    return;
+  }
+  detalhe.value = aplicarAvaliacao(detalhe.value);
+  avaliacaoAberta.value = false;
+  erroPosResolucao.value = null;
+  avisoPosResolucao.value =
+    resultado.tipo === 'AVALIADA'
+      ? 'Avaliação registrada. Obrigado por avaliar o atendimento.'
+      : 'Você já tinha avaliado este atendimento.';
+}
+
+async function enviarReabertura(): Promise<void> {
+  const atual = detalhe.value;
+  if (!atual || reabrindo.value) return;
+  tentouReabrir.value = true;
+  camposReabertura.value = {};
+  erroReabertura.value = null;
+  if (problemaDaJustificativa(justificativa.value)) return;
+
+  reabrindo.value = true;
+  const resultado = await reabrirOcorrencia(api, atual.id, justificativa.value);
+  reabrindo.value = false;
+  if (detalhe.value?.id !== atual.id) return;
+
+  if (resultado.tipo === 'ERRO') {
+    if (resultado.recarregar) recusaDesatualizada(resultado);
+    else {
+      erroReabertura.value = resultado.mensagem;
+      camposReabertura.value = resultado.campos;
+    }
+    return;
+  }
+  reaberturaAberta.value = false;
+  erroPosResolucao.value = null;
+  avisoPosResolucao.value = 'Ocorrência reaberta e devolvida para análise da prefeitura.';
+  // Os botões somem já; o status e a linha do tempo vêm da API, com a reabertura.
+  detalhe.value = { ...detalhe.value, pode_avaliar: false, pode_reabrir: false };
+  await carregar();
+}
 </script>
 
 <template>
@@ -194,6 +348,7 @@ async function compartilharOcorrencia(): Promise<void> {
           <div class="resumo__selos">
             <SeloStatus :status="detalhe.status_publico" />
             <span v-if="detalhe.urgente" class="urgente" data-teste="urgente">Urgente</span>
+            <SeloReaberta v-if="reaberta" data-teste="reaberta" />
           </div>
           <span class="fa-sobrelinha">{{ detalhe.categoria.nome }}</span>
           <p class="resumo__descricao">{{ detalhe.descricao }}</p>
@@ -269,11 +424,45 @@ async function compartilharOcorrencia(): Promise<void> {
             {{ avisoConfirmacao }}
           </p>
 
-          <!--
-            Avaliar o atendimento e "Não foi resolvido" entram aqui: aparecem para o autor e para
-            quem confirmou (detalhe.pode_avaliar e detalhe.pode_reabrir), até
-            detalhe.prazo_pos_resolucao_ate.
-          -->
+          <div v-if="podeAvaliar || podeReabrir" class="pos-resolucao" data-teste="pos-resolucao">
+            <q-btn
+              v-if="podeAvaliar"
+              unelevated
+              no-caps
+              color="primary"
+              icon="sym_o_star"
+              label="Avaliar atendimento"
+              class="fa-botao-largo"
+              data-teste="avaliar"
+              @click="abrirAvaliacao"
+            />
+            <q-btn
+              v-if="podeReabrir"
+              outline
+              no-caps
+              color="primary"
+              icon="sym_o_replay"
+              label="Não foi resolvido"
+              class="fa-botao-largo"
+              data-teste="reabrir"
+              @click="abrirReabertura"
+            />
+            <p v-if="textoPrazo" class="fa-legenda pos-resolucao__prazo" data-teste="prazo">
+              <q-icon name="sym_o_schedule" size="16px" />
+              {{ textoPrazo }}
+            </p>
+          </div>
+          <p v-if="avisoPosResolucao" class="aviso" role="status" data-teste="aviso-pos-resolucao">
+            {{ avisoPosResolucao }}
+          </p>
+          <p
+            v-if="erroPosResolucao"
+            class="fa-mensagem fa-mensagem--erro"
+            role="alert"
+            data-teste="erro-pos-resolucao"
+          >
+            {{ erroPosResolucao }}
+          </p>
         </section>
 
         <section class="secao" aria-labelledby="titulo-linha">
@@ -316,6 +505,128 @@ async function compartilharOcorrencia(): Promise<void> {
         </section>
       </template>
     </div>
+
+    <q-dialog v-model="avaliacaoAberta" position="bottom" :persistent="avaliando">
+      <q-card class="formulario" data-teste="dialogo-avaliacao">
+        <h2 id="titulo-avaliacao" class="formulario__titulo">Avaliar atendimento</h2>
+        <p class="formulario__texto">
+          Como foi a solução da prefeitura para este problema? A avaliação entra no score do órgão.
+        </p>
+        <div
+          class="estrelas"
+          role="radiogroup"
+          aria-labelledby="titulo-avaliacao"
+          data-teste="estrelas"
+        >
+          <button
+            v-for="valor in estrelas"
+            :key="valor"
+            type="button"
+            role="radio"
+            class="estrelas__item"
+            :class="{ 'estrelas__item--ativa': nota !== null && valor <= nota }"
+            :aria-checked="nota === valor"
+            :aria-label="rotuloEstrela(valor)"
+            :disabled="avaliando"
+            :data-teste="`estrela-${valor}`"
+            @click="nota = valor"
+          >
+            <q-icon name="sym_o_star" size="36px" />
+          </button>
+        </div>
+        <p
+          v-if="problemasAvaliacao.nota"
+          class="fa-mensagem fa-mensagem--erro"
+          role="alert"
+          data-teste="erro-nota"
+        >
+          {{ problemasAvaliacao.nota }}
+        </p>
+        <span v-else class="fa-legenda estrelas__legenda" aria-live="polite">
+          {{ nota ? `Sua nota: ${rotuloEstrela(nota)}` : 'Toque nas estrelas para dar uma nota.' }}
+        </span>
+        <q-input
+          v-model="comentario"
+          type="textarea"
+          autogrow
+          outlined
+          counter
+          :maxlength="COMENTARIO_AVALIACAO_MAX"
+          label="Comentário (opcional)"
+          :disable="avaliando"
+          :error="!!problemaComentario"
+          :error-message="problemaComentario ?? undefined"
+          data-teste="comentario-avaliacao"
+        />
+        <p v-if="erroAvaliacao" class="fa-mensagem fa-mensagem--erro" role="alert">
+          {{ erroAvaliacao }}
+        </p>
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          class="fa-botao-largo"
+          label="Enviar avaliação"
+          :loading="avaliando"
+          data-teste="confirmar-avaliacao"
+          @click="enviarAvaliacao"
+        />
+        <q-btn
+          flat
+          no-caps
+          class="fa-botao-largo"
+          label="Cancelar"
+          :disable="avaliando"
+          @click="avaliacaoAberta = false"
+        />
+      </q-card>
+    </q-dialog>
+
+    <q-dialog v-model="reaberturaAberta" position="bottom" :persistent="reabrindo">
+      <q-card class="formulario" data-teste="dialogo-reabertura">
+        <h2 class="formulario__titulo">Não foi resolvido</h2>
+        <p class="formulario__texto">
+          A ocorrência volta para a análise da prefeitura, e quem acompanha é avisado. Conte o que
+          ainda está errado.
+        </p>
+        <q-input
+          v-model="justificativa"
+          type="textarea"
+          autogrow
+          outlined
+          autofocus
+          counter
+          :maxlength="JUSTIFICATIVA_REABERTURA_MAX"
+          label="Justificativa"
+          hint="De 10 a 500 caracteres. Fica visível no andamento da ocorrência."
+          :disable="reabrindo"
+          :error="!!problemaJustificativa"
+          :error-message="problemaJustificativa ?? undefined"
+          data-teste="justificativa-reabertura"
+        />
+        <p v-if="erroReabertura" class="fa-mensagem fa-mensagem--erro" role="alert">
+          {{ erroReabertura }}
+        </p>
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          class="fa-botao-largo"
+          label="Reabrir ocorrência"
+          :loading="reabrindo"
+          data-teste="confirmar-reabertura"
+          @click="enviarReabertura"
+        />
+        <q-btn
+          flat
+          no-caps
+          class="fa-botao-largo"
+          label="Cancelar"
+          :disable="reabrindo"
+          @click="reaberturaAberta = false"
+        />
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -575,5 +886,89 @@ async function compartilharOcorrencia(): Promise<void> {
   display: flex;
   justify-content: space-between;
   gap: 8px;
+}
+
+.pos-resolucao {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--fa-borda);
+}
+
+.pos-resolucao__prazo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.formulario {
+  width: 100%;
+  max-width: 560px;
+  padding: var(--fa-card);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--fa-superficie);
+  border-radius: var(--fa-raio-lg) var(--fa-raio-lg) 0 0;
+
+  p {
+    margin: 0;
+  }
+}
+
+.formulario__titulo {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.formulario__texto {
+  font-size: 13px;
+  color: var(--fa-texto-2);
+}
+
+.estrelas {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.estrelas__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fa-borda-forte);
+  cursor: pointer;
+  transition: color 0.15s;
+
+  &:focus-visible {
+    outline: 2px solid var(--fa-azul);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+// Estrela preenchida: o ícone com preenchimento e a cor âmbar dos selos.
+.estrelas__item--ativa {
+  color: var(--fa-recebido-texto);
+
+  .q-icon {
+    font-variation-settings: 'FILL' 1;
+  }
+}
+
+.estrelas__legenda {
+  text-align: center;
 }
 </style>

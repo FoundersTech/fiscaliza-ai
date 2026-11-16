@@ -68,6 +68,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PushController_criar"];
+        delete: operations["PushController_remover"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/cadastro": {
         parameters: {
             query?: never;
@@ -452,6 +468,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/indicadores/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["IndicadoresController_score"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/categorias": {
         parameters: {
             query?: never;
@@ -629,6 +661,31 @@ export interface components {
              */
             quantidade: number;
         };
+        ChavesPushDto: {
+            /** @description Chave pública ECDH do navegador (base64url) */
+            p256dh: string;
+            /** @description Segredo de autenticação do navegador (base64url) */
+            auth: string;
+        };
+        InscricaoPushDto: {
+            /**
+             * @description Endereço do serviço de push do navegador
+             * @example https://fcm.googleapis.com/fcm/send/abc123
+             */
+            endpoint: string;
+            keys: components["schemas"]["ChavesPushDto"];
+        };
+        CancelarPushDto: {
+            /**
+             * @description Endereço do serviço de push do navegador
+             * @example https://fcm.googleapis.com/fcm/send/abc123
+             */
+            endpoint: string;
+            /** @description Ignorado; aceito para o PWA poder mandar a PushSubscription inteira */
+            keys?: {
+                [key: string]: string;
+            };
+        };
         CadastroDto: {
             /** @example Maria da Silva */
             nome: string;
@@ -757,6 +814,8 @@ export interface components {
             politica_versao: string;
             /** @example DEMO_MAP_ID */
             google_maps_map_id: string;
+            /** @description Chave pública VAPID (applicationServerKey do pushManager.subscribe); null quando o push está desligado */
+            vapid_public_key: string | null;
         };
         GeoReversoResposta: {
             /**
@@ -1342,6 +1401,47 @@ export interface components {
              */
             calculado_em: string;
         };
+        CategoriaScoreResposta: {
+            /** @example 3 */
+            categoria_id: number;
+            /** @example Iluminação */
+            nome: string;
+            /** @example 12 */
+            total: number;
+            /** @example 7 */
+            resolvidas: number;
+        };
+        ScoreResposta: {
+            /**
+             * @description De 0 a 10, com uma casa; null sem ocorrências na janela ou ainda não calculado
+             * @example 7
+             */
+            score: number | null;
+            /** @example Regular */
+            classificacao: string | null;
+            /**
+             * @description Percentual de resolvidas, com uma casa; null sem ocorrências na janela
+             * @example 68
+             */
+            resolvidas_pct: number | null;
+            /**
+             * @description Mediana de dias entre o registro e a resolução; null sem nenhuma resolvida
+             * @example 6.5
+             */
+            dias_mediana: number | null;
+            /** @description Só as categorias com ocorrências, da maior para a menor */
+            por_categoria: components["schemas"]["CategoriaScoreResposta"][];
+            /**
+             * @description Últimos N dias considerados, pela data de registro
+             * @example 90
+             */
+            janela_dias: number;
+            /**
+             * Format: date-time
+             * @description Quando o score foi recalculado pela última vez; null se ainda não foi
+             */
+            calculado_em: string | null;
+        };
         CategoriaAdminResposta: {
             id: number;
             /** @example iluminacao */
@@ -1622,6 +1722,92 @@ export interface operations {
             };
             /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PushController_criar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InscricaoPushDto"];
+            };
+        };
+        responses: {
+            /** @description Inscrição gravada. Reenviar o mesmo endpoint atualiza as chaves e passa a inscrição para a conta atual. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO (endpoint ou chaves inválidos) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PushController_remover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelarPushDto"];
+            };
+        };
+        responses: {
+            /** @description Inscrição removida, ou já não existia */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sem token, ou token inválido ou expirado. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description ACESSO_NEGADO: só para CIDADAO. POLITICA_PENDENTE: falta aceitar a versão vigente da política. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO (endpoint inválido) */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2812,6 +2998,49 @@ export interface operations {
                 };
             };
             /** @description VALIDACAO (período, município ou categoria) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 120 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IndicadoresController_score: {
+        parameters: {
+            query?: {
+                /** @description Código IBGE; sem ele, o município atendido */
+                municipio?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScoreResposta"];
+                };
+            };
+            /** @description NAO_ENCONTRADO (município sem órgão ativo) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDACAO (município) */
             422: {
                 headers: {
                     [name: string]: unknown;

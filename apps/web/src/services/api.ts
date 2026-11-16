@@ -38,7 +38,9 @@ export function criarApi(baseUrl: string, sessao: GanchosSessao) {
     if (
       resposta.status === 401 &&
       token &&
-      !new URL(requisicao.url).pathname.startsWith(ROTAS_AUTH)
+      !new URL(requisicao.url).pathname.startsWith(ROTAS_AUTH) &&
+      // Senha errada (ex.: ao excluir a conta) não é token vencido: renovar e repetir não muda nada.
+      (await codigoDoErro(resposta)) !== 'SENHA_INCORRETA'
     ) {
       const renovada = sessao.lerToken() !== token || (await sessao.renovar());
       const novo = sessao.lerToken();
