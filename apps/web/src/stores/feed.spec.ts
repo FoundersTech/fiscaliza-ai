@@ -75,13 +75,20 @@ describe('store do feed', () => {
     expect(feed.vazio).toBe(false);
   });
 
-  it('filtra pelo município da configuração pública', async () => {
-    useConfigStore().config = { municipio: { id: 3552205 } } as ConfigPublica;
-    buscar.mockResolvedValueOnce(pagina([]));
+  it('filtra pela cidade escolhida e, trocando de cidade, recarrega com a nova', async () => {
+    const config = useConfigStore();
+    config.config = {
+      municipios: [{ id: 3545308 }, { id: 3552205 }],
+    } as ConfigPublica;
+    buscar.mockResolvedValue(pagina([]));
+    const feed = useFeedStore();
 
-    await useFeedStore().abrir(API);
+    await feed.abrir(API);
+    config.selecionarMunicipio(3552205);
+    await feed.recarregar(API);
 
-    expect(pedido(0).municipio).toBe(3552205);
+    expect(pedido(0).municipio).toBe(3545308);
+    expect(pedido(1).municipio).toBe(3552205);
   });
 
   it('categoria e status combinam e recomeçam a lista do início', async () => {

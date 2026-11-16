@@ -29,9 +29,10 @@ onMounted(carregarConfig);
     </div>
 
     <MapaOcorrencias
-      v-if="config.config"
+      v-if="config.config && config.municipio"
+      :key="config.municipio.id"
       :map-id="config.config.google_maps_map_id"
-      :municipio="config.config.municipio"
+      :municipio="config.municipio"
       :categorias="config.config.categorias_ativas"
     />
     <div v-else class="pagina-mapa__espera" role="status">

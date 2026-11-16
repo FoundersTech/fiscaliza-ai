@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Api } from '@/services/api';
 import type { Score } from '@/services/score';
+import { type ConfigPublica, useConfigStore } from '@/stores/config';
 
 import { useScoreStore } from './score';
 
@@ -44,6 +45,27 @@ describe('useScoreStore', () => {
     expect(GET).toHaveBeenCalledTimes(1);
     expect(loja.score).toEqual(score);
     expect(loja.erro).toBeNull();
+  });
+
+  it('pede a nota da cidade escolhida e, trocando de cidade, garantir busca a da nova', async () => {
+    const config = useConfigStore();
+    config.config = { municipios: [{ id: 3545308 }, { id: 3552205 }] } as ConfigPublica;
+    const GET = vi.fn(() => resposta(exemplo(7)));
+    const api = { GET } as unknown as Api;
+    const loja = useScoreStore();
+
+    await loja.garantir(api);
+    await loja.garantir(api);
+    config.selecionarMunicipio(3552205);
+    await loja.garantir(api);
+
+    expect(GET).toHaveBeenCalledTimes(2);
+    expect(GET).toHaveBeenNthCalledWith(1, '/api/v1/indicadores/score', {
+      params: { query: { municipio: 3545308 } },
+    });
+    expect(GET).toHaveBeenNthCalledWith(2, '/api/v1/indicadores/score', {
+      params: { query: { municipio: 3552205 } },
+    });
   });
 
   it('carregar força nova busca e descarta resposta atrasada de pedido anterior', async () => {

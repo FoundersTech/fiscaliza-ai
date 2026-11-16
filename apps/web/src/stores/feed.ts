@@ -45,7 +45,7 @@ export const useFeedStore = defineStore('feed', () => {
     erro.value = null;
     const resultado = await buscarPagina(api, {
       ...filtros.value,
-      municipio: useConfigStore().config?.municipio.id,
+      municipio: useConfigStore().municipio?.id,
       cursor,
     });
     if (minha !== consulta) return;

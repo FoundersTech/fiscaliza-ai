@@ -2,7 +2,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { PrismaClient } from '../../generated/prisma/client.js';
-import { aplicarCargaInicial, SOROCABA } from './carga-inicial.js';
+import { aplicarCargaInicial, MUNICIPIOS, SOROCABA } from './carga-inicial.js';
 import { HasherArgon2 } from '../../modules/identidade/infrastructure/hasher-argon2.js';
 import { aplicarDadosDev, SENHA_DEV, TOTAL_OCORRENCIAS_DEV, USUARIOS_DEV } from './dados-dev.js';
 
@@ -35,7 +35,11 @@ describe('Seed (carga inicial e dados de desenvolvimento)', () => {
     await aplicarCargaInicial(prisma);
     await aplicarCargaInicial(prisma);
 
-    expect(await contar()).toEqual({ municipios: 1, orgaos: 1, categorias: 4 });
+    expect(await contar()).toEqual({
+      municipios: MUNICIPIOS.length,
+      orgaos: MUNICIPIOS.length,
+      categorias: 4,
+    });
   });
 
   it('não sobrescreve o que o administrador editou', async () => {

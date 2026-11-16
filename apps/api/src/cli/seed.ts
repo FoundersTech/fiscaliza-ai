@@ -1,5 +1,5 @@
 /**
- * Carga inicial do banco: Sorocaba, o órgão do município e as categorias.
+ * Carga inicial do banco: os municípios atendidos, o órgão de cada um e as categorias.
  * Pode rodar em qualquer ambiente e mais de uma vez, sem duplicar nada.
  *
  * Uso: pnpm db:seed (na raiz do monorepo).
@@ -10,7 +10,7 @@ import { executarComPrisma } from './seed/prisma-cli.js';
 executarComPrisma(async (prisma) => {
   const resumo = await aplicarCargaInicial(prisma);
   console.log(
-    `Carga inicial aplicada: município ${resumo.municipioId}, órgão ${resumo.orgaoId}, ` +
+    `Carga inicial aplicada: ${resumo.municipios} municípios com órgão, ` +
       `${resumo.categorias} categorias.`,
   );
 }).catch((erro: unknown) => {

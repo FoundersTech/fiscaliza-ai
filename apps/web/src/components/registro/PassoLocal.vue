@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useApi } from '@/boot/api';
 import MapaPino from '@/components/registro/MapaPino.vue';
 import { type FalhaGps, lerGps, type Ponto, precisaoBaixa } from '@/services/localizacao';
+import { consultarMunicipioPorPonto, limitesDeTodos, rotuloMunicipio } from '@/services/municipio';
 import { useAuthStore } from '@/stores/auth';
 import { useConfigStore } from '@/stores/config';
 import { useRegistroStore } from '@/stores/registro';
@@ -33,10 +34,9 @@ const falhaEndereco = ref(false);
 let consulta = 0;
 let espera: ReturnType<typeof setTimeout> | undefined;
 
-const municipio = computed(() => config.config?.municipio ?? null);
-const local = computed(() =>
-  municipio.value ? `${municipio.value.nome} · ${municipio.value.uf}` : '',
-);
+const municipio = computed(() => config.municipio);
+const local = computed(() => (municipio.value ? rotuloMunicipio(municipio.value) : ''));
+const limites = computed(() => limitesDeTodos(config.municipios));
 
 const textoEndereco = computed(() => {
   if (registro.consultandoEndereco) return 'Buscando o endereço…';
@@ -59,6 +59,12 @@ async function localizar(): Promise<void> {
   if (leitura.ok) {
     falhaGps.value = null;
     registro.posicionar(leitura.ponto, 'GPS', leitura.precisaoM);
+    // A cidade acompanha o GPS em segundo plano, sem segurar o pino.
+    void consultarMunicipioPorPonto(api, leitura.ponto).then((id) => {
+      if (id !== null && id !== config.municipio?.id && config.origemEscolha !== 'MANUAL') {
+        config.selecionarMunicipio(id, 'LOCALIZACAO');
+      }
+    });
     return;
   }
   falhaGps.value = leitura.falha;
@@ -107,10 +113,10 @@ onBeforeUnmount(() => clearTimeout(espera));
 <template>
   <section class="passo-local">
     <MapaPino
-      v-if="registro.ponto && config.config"
+      v-if="registro.ponto && config.config && limites"
       :ponto="registro.ponto"
       :map-id="config.config.google_maps_map_id"
-      :limites="config.config.municipio.bbox"
+      :limites="limites"
       @mover="registro.posicionar($event, 'MAPA')"
     />
     <div v-else class="passo-local__espera">

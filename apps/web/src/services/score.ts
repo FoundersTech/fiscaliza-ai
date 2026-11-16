@@ -11,9 +11,13 @@ export const SEM_DADOS_SUFICIENTES = 'Sem dados suficientes';
 
 export type ResultadoScore = { ok: true; score: Score } | { ok: false; mensagem: string };
 
-export async function buscarScore(api: Api): Promise<ResultadoScore> {
+/** Sem a cidade, a API responde pela atendida de menor código IBGE. */
+export async function buscarScore(api: Api, municipio?: number): Promise<ResultadoScore> {
   try {
-    const { data, error } = await api.GET('/api/v1/indicadores/score');
+    const { data, error } =
+      municipio === undefined
+        ? await api.GET('/api/v1/indicadores/score')
+        : await api.GET('/api/v1/indicadores/score', { params: { query: { municipio } } });
     if (data) return { ok: true, score: data };
     return {
       ok: false,

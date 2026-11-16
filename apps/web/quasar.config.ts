@@ -45,7 +45,7 @@ export default defineConfig(() => {
       config: {},
       lang: 'pt-BR',
       iconSet: 'material-symbols-outlined',
-      plugins: [],
+      plugins: ['Notify'],
     },
 
     animations: [],

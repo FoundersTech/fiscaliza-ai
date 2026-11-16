@@ -37,9 +37,9 @@ export class RepositorioTerritorioPrisma implements RepositorioTerritorio {
     return territorio ?? null;
   }
 
-  async municipioAtendido(): Promise<MunicipioAtendido | null> {
+  async municipiosAtendidos(): Promise<MunicipioAtendido[]> {
     // O centroide de um polígono côncavo pode cair fora dele; aí vale um ponto da superfície.
-    const [linha] = await this.prisma.$queryRaw<LinhaMunicipio[]>`
+    const linhas = await this.prisma.$queryRaw<LinhaMunicipio[]>`
       SELECT id, nome, uf, ST_Y(centro) AS lat, ST_X(centro) AS lng,
              ST_YMin(area) AS sul, ST_XMin(area) AS oeste, ST_YMax(area) AS norte, ST_XMax(area) AS leste
       FROM (
@@ -48,13 +48,16 @@ export class RepositorioTerritorioPrisma implements RepositorioTerritorio {
         FROM municipio m
         JOIN orgao o ON o.municipio_id = m.id
         WHERE m.ativo
-        ORDER BY m.id
-        LIMIT 1
-      ) atendido`;
-    if (!linha) return null;
+      ) atendido
+      ORDER BY nome`;
 
-    const { id, nome, uf, lat, lng, sul, oeste, norte, leste } = linha;
-    return { id, nome, uf, centro: { lat, lng }, bbox: { sul, oeste, norte, leste } };
+    return linhas.map(({ id, nome, uf, lat, lng, sul, oeste, norte, leste }) => ({
+      id,
+      nome,
+      uf,
+      centro: { lat, lng },
+      bbox: { sul, oeste, norte, leste },
+    }));
   }
 
   async categoriasAtivas(): Promise<CategoriaAtiva[]> {

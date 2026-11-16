@@ -35,6 +35,6 @@ export interface CategoriaAtiva {
 
 export interface RepositorioTerritorio {
   localizar(ponto: Ponto): Promise<Territorio | null>;
-  municipioAtendido(): Promise<MunicipioAtendido | null>;
+  municipiosAtendidos(): Promise<MunicipioAtendido[]>;
   categoriasAtivas(): Promise<CategoriaAtiva[]>;
 }

@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 
 import { useApi } from '@/boot/api';
 import { formatarDias, formatarPercentual } from '@/services/painel';
 import { formatarNotaScore, SEM_DADOS_SUFICIENTES } from '@/services/score';
+import { useConfigStore } from '@/stores/config';
 import { useScoreStore } from '@/stores/score';
 
 const api = useApi();
 const loja = useScoreStore();
+const config = useConfigStore();
 
 const dados = computed(() => loja.score);
 const temNota = computed(() => dados.value?.score != null);
@@ -33,9 +35,18 @@ const rotuloAcessivel = computed(() =>
     : 'Ver a reputação da gestão',
 );
 
-onMounted(() => {
-  void loja.garantir(api);
+onMounted(async () => {
+  await config.carregar(api);
+  await loja.garantir(api);
 });
+
+// Trocar de cidade no cabeçalho traz a nota da nova.
+watch(
+  () => config.municipio?.id,
+  (nova, antiga) => {
+    if (antiga !== undefined && nova !== antiga) void loja.carregar(api);
+  },
+);
 </script>
 
 <template>

@@ -6,6 +6,7 @@ import { useApi } from '@/boot/api';
 import CamposConvite from '@/components/admin/CamposConvite.vue';
 import PaginaAdmin from '@/components/admin/PaginaAdmin.vue';
 import { convidarGestor, type Gestor } from '@/services/administracao';
+import { rotuloMunicipio } from '@/services/municipio';
 import { useConfigStore } from '@/stores/config';
 
 const api = useApi();
@@ -20,8 +21,8 @@ const erro = ref<string | null>(null);
 const erros = ref<Record<string, string>>({});
 const convidado = ref<Gestor | null>(null);
 
-/** No piloto há um município só: ele vem preenchido, pelo /config/publica. */
-const municipio = computed(() => config.config?.municipio ?? null);
+/** Vem preenchido com a cidade escolhida no app; o código pode ser de outra. */
+const municipio = computed(() => config.municipio);
 
 onMounted(async () => {
   await config.carregar(api);
@@ -65,11 +66,10 @@ function atualizarMunicipio(valor: string | number | null): void {
   editou('municipio_id');
 }
 
-const dicaMunicipio = computed(() =>
-  municipio.value && municipioId.value === municipio.value.id
-    ? `${municipio.value.nome} · ${municipio.value.uf}`
-    : 'Código IBGE, com 7 dígitos',
-);
+const dicaMunicipio = computed(() => {
+  const atendido = config.municipios.find((opcao) => opcao.id === municipioId.value);
+  return atendido ? rotuloMunicipio(atendido) : 'Código IBGE, com 7 dígitos';
+});
 </script>
 
 <template>
