@@ -7,6 +7,7 @@ import BotaoSair from '@/components/BotaoSair.vue';
 import CabecalhoPagina from '@/components/CabecalhoPagina.vue';
 import CampoSenha from '@/components/CampoSenha.vue';
 import { useTema } from '@/composables/useTema';
+import { inicioAdmin } from '@/services/administracao';
 import {
   cancelarPushNoNavegador,
   consultarExportacao,
@@ -15,6 +16,7 @@ import {
   type Exportacao,
   INTERVALO_EXPORTACAO_MS,
   listarExportacoes,
+  rotuloPapel,
   rotuloStatusExportacao,
   solicitarExportacao,
   urlFeedbackPiloto,
@@ -32,6 +34,10 @@ const router = useRouter();
 const auth = useAuthStore();
 const config = useConfigStore();
 const pendentes = usePendentesStore();
+
+/** Notificações, exportação e exclusão de conta existem só para o cidadão na API. */
+const ehCidadao = computed(() => auth.papel === 'CIDADAO');
+const rotaAdmin = computed(() => inicioAdmin(auth.papel));
 
 // Tema
 const { preferencia, definirTema } = useTema();
@@ -200,7 +206,6 @@ async function confirmarExclusao(): Promise<void> {
     else erroExclusao.value = resultado.mensagem;
     return;
   }
-  // As pendentes são do usuário que está saindo; o id dele ainda está na sessão aqui.
   try {
     await pendentes.descartarDoUsuario();
   } catch {
@@ -215,6 +220,7 @@ async function confirmarExclusao(): Promise<void> {
 }
 
 onMounted(() => {
+  if (!ehCidadao.value) return;
   void consultarPush();
   void carregarExportacao();
 });
@@ -244,11 +250,25 @@ onUnmounted(() => {
             <dt>E-mail</dt>
             <dd class="dados__email">{{ auth.usuario.email }}</dd>
           </div>
+          <div v-if="auth.papel && !ehCidadao" data-teste="papel-conta">
+            <dt>Papel</dt>
+            <dd>{{ rotuloPapel(auth.papel) }}</dd>
+          </div>
         </dl>
         <nav class="atalhos" aria-label="Atalhos da conta">
-          <router-link to="/minhas-ocorrencias" class="atalho">
+          <router-link v-if="ehCidadao" to="/minhas-ocorrencias" class="atalho">
             <q-icon name="sym_o_assignment" size="20px" />
             <span>Minhas ocorrências</span>
+            <q-icon name="sym_o_chevron_right" size="20px" class="atalho__seta" />
+          </router-link>
+          <router-link v-if="auth.papel === 'AGENTE_ORGAO'" to="/atendimento" class="atalho">
+            <q-icon name="sym_o_assignment_ind" size="20px" />
+            <span>Fila de atendimento</span>
+            <q-icon name="sym_o_chevron_right" size="20px" class="atalho__seta" />
+          </router-link>
+          <router-link v-if="rotaAdmin" :to="rotaAdmin" class="atalho">
+            <q-icon name="sym_o_admin_panel_settings" size="20px" />
+            <span>Administração</span>
             <q-icon name="sym_o_chevron_right" size="20px" class="atalho__seta" />
           </router-link>
           <router-link to="/politica-privacidade" class="atalho">
@@ -274,7 +294,12 @@ onUnmounted(() => {
         />
       </section>
 
-      <section class="fa-card secao" aria-labelledby="conta-push" data-teste="push">
+      <section
+        v-if="ehCidadao"
+        class="fa-card secao"
+        aria-labelledby="conta-push"
+        data-teste="push"
+      >
         <h2 id="conta-push" class="secao__titulo">Notificações</h2>
 
         <div v-if="push === null" class="carregando"><q-spinner size="24px" /></div>
@@ -333,7 +358,12 @@ onUnmounted(() => {
         <p v-if="erroPush" class="fa-mensagem fa-mensagem--erro" role="alert">{{ erroPush }}</p>
       </section>
 
-      <section class="fa-card secao" aria-labelledby="conta-exportar" data-teste="exportacao">
+      <section
+        v-if="ehCidadao"
+        class="fa-card secao"
+        aria-labelledby="conta-exportar"
+        data-teste="exportacao"
+      >
         <h2 id="conta-exportar" class="secao__titulo">Exportar meus dados</h2>
         <p class="secao__texto">
           Gere um arquivo com seus dados de cadastro, ocorrências, confirmações e avaliações.
@@ -413,7 +443,12 @@ onUnmounted(() => {
 
       <BotaoSair @sair="sair" />
 
-      <section class="fa-card secao perigo" aria-labelledby="conta-excluir" data-teste="excluir">
+      <section
+        v-if="ehCidadao"
+        class="fa-card secao perigo"
+        aria-labelledby="conta-excluir"
+        data-teste="excluir"
+      >
         <h2 id="conta-excluir" class="secao__titulo">Excluir conta</h2>
         <p class="secao__texto">
           A exclusão anonimiza seus dados e encerra suas sessões. As ocorrências que você registrou
