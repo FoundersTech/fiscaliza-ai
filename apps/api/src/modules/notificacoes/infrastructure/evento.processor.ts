@@ -3,27 +3,38 @@ import { Logger } from '@nestjs/common';
 import type { Job } from 'bullmq';
 
 import { registrarFalha } from '../../../shared/filas/registrar-falha.js';
-import { DestinatariosDoEvento } from '../application/alertas.js';
 import { FILA_NOTIFICACOES, type JobNotificacaoEvento } from '../application/fila-notificacoes.js';
+import { EnviarPushEvento } from '../application/push.js';
 
 /**
- * Worker da fila `notificacoes`. Por enquanto só calcula quem seria avisado e registra no log: o
- * envio do web push entra junto com as inscrições de push. Os destinatários seguem a mesma regra
- * da aba Alertas.
+ * Worker da fila `notificacoes`: manda o push da mudança de status para quem a vê na aba Alertas.
+ * Se algum navegador falhar por um motivo passageiro, o job falha e a nova tentativa vai só para
+ * esses navegadores, sem repetir o push para quem já recebeu.
  */
 @Processor(FILA_NOTIFICACOES)
 export class EventoProcessor extends WorkerHost {
   private readonly logger = new Logger(EventoProcessor.name);
 
-  constructor(private readonly destinatarios: DestinatariosDoEvento) {
+  constructor(private readonly enviarPush: EnviarPushEvento) {
     super();
   }
 
   async process(job: Job<JobNotificacaoEvento>): Promise<void> {
-    const destinatarios = await this.destinatarios.executar(job.data.eventoId);
-    this.logger.log(
-      `Evento ${job.data.eventoId} da ocorrência ${job.data.ocorrenciaId}: ${destinatarios.length} destinatário(s); push ainda não enviado`,
-    );
+    const { eventoId, ocorrenciaId, inscricoesPendentes } = job.data;
+    const resultado = await this.enviarPush.executar({
+      eventoId,
+      ...(inscricoesPendentes ? { somenteInscricoes: inscricoesPendentes } : {}),
+    });
+
+    if (resultado.enviados || resultado.expirados || resultado.falharam.length) {
+      this.logger.log(
+        `Push do evento ${eventoId} da ocorrência ${ocorrenciaId}: ${resultado.enviados} enviado(s), ${resultado.expirados} inscrição(ões) expirada(s) apagada(s), ${resultado.falharam.length} falha(s)`,
+      );
+    }
+    if (resultado.falharam.length) {
+      await job.updateData({ ...job.data, inscricoesPendentes: resultado.falharam });
+      throw new Error(`${resultado.falharam.length} inscrição(ões) sem o push; nova tentativa`);
+    }
   }
 
   @OnWorkerEvent('failed')

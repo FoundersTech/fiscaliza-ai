@@ -10,6 +10,8 @@ export const JOB_EVENTO = 'evento';
 export interface JobNotificacaoEvento {
   eventoId: number;
   ocorrenciaId: string;
+  /** Gravado pelo worker antes de uma nova tentativa: só estas inscrições recebem o push de novo. */
+  inscricoesPendentes?: string[];
 }
 
 export const TENTATIVAS_NOTIFICACAO = 3;

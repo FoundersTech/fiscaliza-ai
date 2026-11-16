@@ -32,7 +32,8 @@ export interface Painel {
   porCategoria: CategoriaContada[];
 }
 
-function umaCasa(valor: number): number {
+/** Arredonda para uma casa, sem o ruído do ponto flutuante (6,75 guardado como 6,7499…). */
+export function umaCasa(valor: number): number {
   return Math.round(Number((valor * 10).toPrecision(12))) / 10;
 }
 

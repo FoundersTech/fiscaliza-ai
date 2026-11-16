@@ -30,6 +30,8 @@ export interface ConsultasAlertas {
   marcarVistos(usuarioId: string, quando: Date): Promise<void>;
   /** Quem recebe o aviso do evento; vazio para o evento de criação ou evento inexistente. */
   destinatarios(eventoId: number): Promise<string[]>;
+  /** A mudança de status e o protocolo da ocorrência; null para o evento de criação ou inexistente. */
+  mudanca(eventoId: number): Promise<LinhaAlerta | null>;
 }
 
 export interface Alerta {

@@ -31,9 +31,11 @@ describe('routes', () => {
     expect(meta('/definir-senha')).toBeUndefined();
   });
 
-  it('minhas ocorrências fica na barra inferior e é só para cidadão', () => {
+  it('minhas ocorrências e minha conta ficam na barra inferior e são só para cidadão', () => {
     const minhas = routes[0]?.children?.find((rota) => rota.path === 'minhas-ocorrencias');
+    const conta = routes[0]?.children?.find((rota) => rota.path === 'conta');
     expect(minhas?.meta).toEqual({ auth: true, papeis: ['CIDADAO'] });
+    expect(conta?.meta).toEqual({ auth: true, papeis: ['CIDADAO'] });
   });
 
   it('o detalhe da ocorrência abre sem login, para o link compartilhado', () => {

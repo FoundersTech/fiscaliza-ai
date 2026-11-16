@@ -1,13 +1,58 @@
+<script setup lang="ts">
+import { computed, onMounted } from 'vue';
+
+import { useApi } from '@/boot/api';
+import { formatarDias, formatarPercentual } from '@/services/painel';
+import { formatarNotaScore, SEM_DADOS_SUFICIENTES } from '@/services/score';
+import { useScoreStore } from '@/stores/score';
+
+const api = useApi();
+const loja = useScoreStore();
+
+const dados = computed(() => loja.score);
+const temNota = computed(() => dados.value?.score != null);
+
+const nota = computed(() => formatarNotaScore(dados.value?.score ?? null));
+const titulo = computed(() =>
+  temNota.value ? (dados.value?.classificacao ?? '') : SEM_DADOS_SUFICIENTES,
+);
+const legenda = computed(() => {
+  if (temNota.value && dados.value) {
+    const resolvidas = `${formatarPercentual(dados.value.resolvidas_pct)} resolvidas`;
+    return dados.value.dias_mediana === null
+      ? resolvidas
+      : `${resolvidas} · mediana ${formatarDias(dados.value.dias_mediana)}`;
+  }
+  if (loja.carregando) return 'Carregando a nota da gestão…';
+  if (loja.erro) return 'Não foi possível carregar a nota agora.';
+  return 'A nota aparece com as primeiras ocorrências.';
+});
+const rotuloAcessivel = computed(() =>
+  temNota.value
+    ? `Reputação da gestão: nota ${nota.value} de 10, ${titulo.value}. Ver detalhes`
+    : 'Ver a reputação da gestão',
+);
+
+onMounted(() => {
+  void loja.garantir(api);
+});
+</script>
+
 <template>
-  <router-link to="/score" class="selo fa-card" aria-label="Ver a reputação da gestão">
-    <div class="selo__nota">
-      <span class="selo__valor">–</span>
+  <router-link
+    to="/score"
+    class="selo fa-card"
+    :aria-label="rotuloAcessivel"
+    :aria-busy="loja.carregando"
+  >
+    <div class="selo__nota" aria-hidden="true">
+      <span class="selo__valor">{{ nota }}</span>
       <span class="selo__escala">/10</span>
     </div>
     <div class="selo__texto">
       <span class="fa-sobrelinha">Reputação da gestão</span>
-      <strong>Sem dados suficientes</strong>
-      <span class="fa-legenda">A nota aparece com as primeiras ocorrências.</span>
+      <strong>{{ titulo }}</strong>
+      <span class="fa-legenda">{{ legenda }}</span>
     </div>
     <q-icon name="sym_o_chevron_right" size="20px" class="selo__seta" />
   </router-link>
@@ -38,6 +83,7 @@
   font-size: 20px;
   font-weight: 700;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .selo__escala {

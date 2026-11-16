@@ -145,6 +145,14 @@ export class ConfigPublicaResposta {
   @ApiProperty({ example: 'DEMO_MAP_ID' })
   google_maps_map_id!: string;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'Chave pública VAPID (applicationServerKey do pushManager.subscribe); null quando o push está desligado',
+  })
+  vapid_public_key!: string | null;
+
   static de(config: ConfigPublica): ConfigPublicaResposta {
     return {
       municipio: config.municipio,
@@ -154,6 +162,7 @@ export class ConfigPublicaResposta {
       urgente_min_confirmacoes: config.urgenteMinConfirmacoes,
       politica_versao: config.politicaVersao,
       google_maps_map_id: config.googleMapsMapId,
+      vapid_public_key: config.vapidPublicKey,
     };
   }
 }

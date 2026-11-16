@@ -144,6 +144,20 @@ describe('cliente da API', () => {
     },
   );
 
+  it('um 401 SENHA_INCORRETA não dispara renovação nem repete a requisição', async () => {
+    const enviadas = responderCom(erro(401, 'SENHA_INCORRETA'));
+    const { ganchos, renovar } = sessaoCom('token');
+
+    const { response, error } = await criarApi(URL_API, ganchos).DELETE('/api/v1/me', {
+      body: { senha: 'errada' },
+    });
+
+    expect(response.status).toBe(401);
+    expect(error).toMatchObject({ codigo: 'SENHA_INCORRETA' });
+    expect(renovar).not.toHaveBeenCalled();
+    expect(enviadas).toHaveLength(1);
+  });
+
   it('um 403 POLITICA_PENDENTE avisa a sessão; outro 403 não', async () => {
     responderCom(erro(403, 'ACESSO_NEGADO'), erro(403, 'POLITICA_PENDENTE'));
     const { ganchos, exigirPolitica } = sessaoCom('token');

@@ -11,8 +11,7 @@ const LOTE = 500;
 
 /**
  * Exportações de dados pessoais cujo prazo de download passou: o arquivo sai do bucket e a
- * exportação fica EXPIRADA. Quando o módulo de privacidade existir, este caso de uso pode ir
- * para ele, como os outros que a limpeza chama.
+ * exportação fica EXPIRADA. O repositório é o mesmo do módulo de privacidade.
  */
 @Injectable()
 export class ExpirarExportacoes {

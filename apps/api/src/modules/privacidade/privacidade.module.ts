@@ -42,7 +42,9 @@ import { PrivacidadeController } from './presentation/privacidade.controller.js'
     },
     { provide: COLETOR_DADOS, useClass: ColetorDadosPrisma },
     { provide: REPOSITORIO_CONTAS, useClass: RepositorioContasPrisma },
-    { provide: REPOSITORIO_EXPORTACOES, useClass: RepositorioExportacoesPrisma },
+    RepositorioExportacoesPrisma,
+    { provide: REPOSITORIO_EXPORTACOES, useExisting: RepositorioExportacoesPrisma },
   ],
+  exports: [RepositorioExportacoesPrisma],
 })
 export class PrivacidadeModule {}

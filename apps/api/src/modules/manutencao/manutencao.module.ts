@@ -19,11 +19,17 @@ import { AgendaManutencao } from './infrastructure/agenda-manutencao.js';
 import { BucketS3 } from './infrastructure/bucket-s3.adapter.js';
 import { ManutencaoProcessor } from './infrastructure/manutencao.processor.js';
 import { PgDump } from './infrastructure/pg-dump.adapter.js';
-import { RepositorioExportacoesPrisma } from './infrastructure/repositorio-exportacoes.prisma.js';
+import { RepositorioExportacoesPrisma } from '../privacidade/infrastructure/repositorio-exportacoes.prisma.js';
+import { PrivacidadeModule } from '../privacidade/privacidade.module.js';
 
 /** Jobs agendados: reconciliação das filas, limpeza diária e backup diário do banco. */
 @Module({
-  imports: [MidiaModule, OcorrenciasModule, BullModule.registerQueue({ name: FILA_MANUTENCAO })],
+  imports: [
+    MidiaModule,
+    OcorrenciasModule,
+    PrivacidadeModule,
+    BullModule.registerQueue({ name: FILA_MANUTENCAO }),
+  ],
   providers: [
     Reconciliar,
     Limpeza,
@@ -31,7 +37,7 @@ import { RepositorioExportacoesPrisma } from './infrastructure/repositorio-expor
     FazerBackup,
     ManutencaoProcessor,
     AgendaManutencao,
-    { provide: REPOSITORIO_EXPORTACOES, useClass: RepositorioExportacoesPrisma },
+    { provide: REPOSITORIO_EXPORTACOES, useExisting: RepositorioExportacoesPrisma },
     {
       provide: ARQUIVOS_EXPORTACAO,
       inject: [AMBIENTE],
