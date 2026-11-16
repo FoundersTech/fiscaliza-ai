@@ -1,5 +1,7 @@
 import type { components } from '@fiscaliza/contratos';
 
+import type { Papel } from '@/stores/auth';
+
 import type { Api } from './api';
 import { errosDosCampos, lerErroApi, MENSAGEM_SEM_CONEXAO, mensagemDoErro } from './erros';
 import { type AmbientePush, ambienteDoNavegador } from './push';
@@ -121,6 +123,19 @@ export function rotuloStatusExportacao(status: StatusExportacao): string {
       return 'Expirada';
     case 'FALHOU':
       return 'Não foi possível gerar';
+  }
+}
+
+export function rotuloPapel(papel: Papel): string {
+  switch (papel) {
+    case 'CIDADAO':
+      return 'Cidadão';
+    case 'AGENTE_ORGAO':
+      return 'Agente do órgão';
+    case 'ADMIN_MUNICIPIO':
+      return 'Gestor do município';
+    case 'ADMIN_PLATAFORMA':
+      return 'Administrador da plataforma';
   }
 }
 

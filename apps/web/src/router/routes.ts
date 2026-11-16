@@ -30,7 +30,7 @@ const routes: RouteRecordRaw[] = [
         path: 'conta',
         name: 'conta',
         component: () => import('@/pages/ContaPage.vue'),
-        meta: { auth: true, papeis: ['CIDADAO'] },
+        meta: { auth: true },
       },
       {
         path: 'politica-privacidade',

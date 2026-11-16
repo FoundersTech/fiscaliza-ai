@@ -27,8 +27,6 @@ const indicador = computed(() => rotuloDoIndicador(alertas.novos));
 const auth = useAuthStore();
 /** Atalho para as telas de administração, só para quem administra. */
 const rotaAdmin = computed(() => inicioAdmin(auth.papel));
-/** Só o cidadão tem a tela Minha conta; o visitante vai por ela até o login. */
-const mostrarConta = computed(() => !auth.logado || auth.papel === 'CIDADAO');
 const config = useConfigStore();
 const local = computed(() => (config.municipio ? rotuloMunicipio(config.municipio) : ''));
 const podeTrocar = computed(() => config.municipios.length > 1);
@@ -123,8 +121,8 @@ async function usarLocalizacao(): Promise<void> {
         :to="rotaAdmin"
         aria-label="Administração"
       />
+      <!-- O visitante passa pela tela Minha conta até o login. -->
       <q-btn
-        v-if="mostrarConta"
         round
         flat
         class="fa-botao-redondo"
@@ -178,6 +176,7 @@ async function usarLocalizacao(): Promise<void> {
 
 .cabecalho__texto {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .cabecalho__local {
@@ -217,7 +216,8 @@ async function usarLocalizacao(): Promise<void> {
   gap: 8px;
   flex-shrink: 0;
 
-  @media (max-width: 359px) {
+  // Com o atalho de administração, são quatro botões: em telas estreitas o título precisa de espaço.
+  @media (max-width: 399px) {
     gap: 4px;
   }
 }
