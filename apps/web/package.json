@@ -23,13 +23,13 @@
     "idb": "^8.0.4",
     "openapi-fetch": "^0.17.0",
     "pinia": "^4.1.0",
-    "quasar": "^2.35.2",
-    "vue": "^3.5.44",
-    "vue-router": "^5.4.0"
+    "quasar": "^2.35.4",
+    "vue": "^3.5.45",
+    "vue-router": "^5.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@quasar/app-vite": "^3.10.3",
+    "@quasar/app-vite": "^3.10.4",
     "@types/google.maps": "^3.66.9",
     "@types/node": "^24.19.2",
     "@vitest/browser-playwright": "^5.0.5",
