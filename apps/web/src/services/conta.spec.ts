@@ -7,6 +7,7 @@ import {
   ehLinkExterno,
   excluirConta,
   listarExportacoes,
+  rotuloPapel,
   rotuloStatusExportacao,
   solicitarExportacao,
   urlFeedbackPiloto,
@@ -128,7 +129,7 @@ describe('cancelarPushNoNavegador', () => {
   });
 });
 
-describe('feedback do piloto', () => {
+describe('feedback do piloto e papel', () => {
   it('usa a URL configurada ou cai no mailto padrão e distingue links externos', () => {
     expect(urlFeedbackPiloto('  https://forms.exemplo.test/piloto  ')).toBe(
       'https://forms.exemplo.test/piloto',
@@ -136,5 +137,12 @@ describe('feedback do piloto', () => {
     expect(urlFeedbackPiloto('')).toMatch(/^mailto:/);
     expect(ehLinkExterno('https://forms.exemplo.test/piloto')).toBe(true);
     expect(ehLinkExterno('mailto:contato@fiscalizaai.app')).toBe(false);
+  });
+
+  it('traduz cada papel da conta para português', () => {
+    expect(rotuloPapel('CIDADAO')).toBe('Cidadão');
+    expect(rotuloPapel('AGENTE_ORGAO')).toBe('Agente do órgão');
+    expect(rotuloPapel('ADMIN_MUNICIPIO')).toBe('Gestor do município');
+    expect(rotuloPapel('ADMIN_PLATAFORMA')).toBe('Administrador da plataforma');
   });
 });

@@ -22,6 +22,15 @@ const { escuro, alternarTema } = useTema();
         :aria-label="escuro ? 'Usar tema claro' : 'Usar tema escuro'"
         @click="alternarTema"
       />
+      <q-btn
+        round
+        flat
+        class="fa-botao-redondo"
+        icon="sym_o_person"
+        to="/conta"
+        aria-label="Minha conta"
+        data-teste="atalho-conta"
+      />
     </div>
   </q-header>
 </template>
