@@ -32,23 +32,23 @@ Dar aos cidadãos uma ferramenta simples para reportar problemas urbanos e, ao m
 - [x] Painel público de acompanhamento
 - [x] Administração do órgão, dos agentes, das categorias e das fotos
 - [x] Exportação dos dados e exclusão da conta
-- [ ] Avaliação do atendimento e reabertura no app (a API já está pronta)
-- [ ] Notificações push
-- [ ] Cálculo e exibição do score da gestão municipal
-- [ ] Tela "Minha conta"
-- [ ] Ambiente de produção
+- [x] Avaliação do atendimento e reabertura no app
+- [x] Notificações push (Web Push / VAPID)
+- [x] Cálculo e exibição do score da gestão municipal
+- [x] Tela "Minha conta" e política de privacidade v1
+- [ ] Ambiente de produção (arquivos de deploy e workflow prontos; falta provisionamento e tag `v0.9.0`)
 
 > O andamento detalhado está na lista de tarefas do projeto.
 
 ### Telas do app
 
-| Tela                                                   | Quem usa                    |
-| ------------------------------------------------------ | --------------------------- |
-| Início (feed), `/mapa`, `/painel`, `/ocorrencias/:id`  | Qualquer pessoa, sem login  |
-| `/registrar`, `/minhas-ocorrencias`, `/alertas`        | Cidadão                     |
-| `/atendimento`, `/atendimento/:id`                     | Agente do órgão             |
-| `/admin/orgao`, `/admin/agentes`                       | Gestor do município         |
-| `/admin/categorias`, `/admin/gestores`, `/admin/fotos` | Administrador da plataforma |
+| Tela                                                                                     | Quem usa                    |
+| ---------------------------------------------------------------------------------------- | --------------------------- |
+| Início (feed), `/mapa`, `/score`, `/painel`, `/ocorrencias/:id`, `/politica-privacidade` | Qualquer pessoa, sem login  |
+| `/registrar`, `/minhas-ocorrencias`, `/alertas`, `/conta`                                | Cidadão                     |
+| `/atendimento`, `/atendimento/:id`                                                       | Agente do órgão             |
+| `/admin/orgao`, `/admin/agentes`                                                         | Gestor do município         |
+| `/admin/categorias`, `/admin/gestores`, `/admin/fotos`                                   | Administrador da plataforma |
 
 ## 🛠️ Stack
 
@@ -199,11 +199,23 @@ O `--nome` é opcional. No container da API, rode `node dist/cli/criar-admin.js 
 
 Depois de entrar, o administrador da plataforma convida os gestores de cada município em `/admin/gestores`, e cada gestor convida os agentes do seu órgão em `/admin/agentes`. Os convites seguem o mesmo caminho: e-mail com link para definir a senha.
 
+### Notificações push (Web Push / VAPID)
+
+As notificações push usam Web Push com chaves VAPID:
+
+- **API:** `POST` e `DELETE /api/v1/me/push` gravam e removem a inscrição do navegador (`push_inscricao`). A cada mudança de status ou reabertura, o job `notificacoes.evento` envia o push para os mesmos destinatários da aba Alertas e apaga automaticamente inscrições que respondam `404` ou `410`.
+- **PWA:** o service worker customizado (`apps/web/src-pwa/sw/custom-sw.ts`) exibe a notificação e abre `/ocorrencias/:id` ao clicar. A aba Alertas e `/conta` oferecem ativar/desativar. No iPhone/iPad (iOS 16.4+), o push funciona apenas quando o PWA está instalado na Tela de Início.
+- **Chaves:** gere um par com `npx web-push generate-vapid-keys` e defina `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` (padrão `mailto:contato@fiscalizaai.app`). Sem as chaves em desenvolvimento, a API não envia push e o PWA oculta/desabilita a inscrição sem quebrar o restante do app. A chave pública chega ao PWA em `GET /api/v1/config/publica`.
+
+### Score de reputação
+
+O job agendado `indicadores.recalcular-score` (cron configurável em `apps/api/config/parametros.json`, padrão de hora em hora no fuso `America/Sao_Paulo`) agrega por órgão as ocorrências na janela móvel (sem contar `DUPLICADA`), aplica a fórmula parametrizada em `CalculoScore` e faz upsert em `desempenho_orgao`. Se o recálculo falhar, o último valor válido continua visível com o `calculado_em` anterior. O endpoint público `GET /api/v1/indicadores/score` alimenta o selo no topo do feed e a tela `/score`.
+
 ### Segurança
 
 - **CSP do PWA:** `apps/web/public/_headers` vai junto com cada publicação no Cloudflare Pages e define a Content-Security-Policy e outros cabeçalhos de segurança. Um recurso novo de outro domínio (outro serviço de mapas, uma fonte externa) precisa entrar nessa lista, ou o navegador o bloqueia.
 - **API:** cabeçalhos do `@fastify/helmet` em todas as respostas; CORS só para o `WEB_URL` de cada ambiente, com GET, HEAD, POST, PUT, PATCH e DELETE.
-- **Limites de uso** (no Redis, `429` ao passar): leituras públicas (feed, mapa, detalhe, painel e configuração) 120 por minuto por IP, somadas; `/geo/reverso` 30 por minuto e registro de ocorrência 60 por hora por usuário; exclusão de conta 5 a cada 15 minutos por IP. `LIMITE_TAXA_DESLIGADO=true` desliga todos os limites e existe só para o teste de carga.
+- **Limites de uso** (no Redis, `429` ao passar): leituras públicas (feed, mapa, detalhe, score, painel e configuração) 120 por minuto por IP, somadas; `/geo/reverso` 30 por minuto e registro de ocorrência 60 por hora por usuário; exclusão de conta 5 a cada 15 minutos por IP. `LIMITE_TAXA_DESLIGADO=true` desliga todos os limites e existe só para o teste de carga.
 - **Logs:** não guardam senha, e-mail, tokens, cookies nem o IP de quem fez a requisição.
 
 ### Teste de carga
@@ -230,14 +242,30 @@ pnpm db:migrar --create-only --name descricao-da-mudanca
 
 O Prisma não gera CHECKs, índices de expressão (como o de `lower(email)`) nem colunas geradas. Se a mudança envolver uma dessas regras, escreva o SQL à mão no `migration.sql` gerado e depois rode `pnpm db:migrar` para aplicar. Os testes de integração falham se o `schema.prisma` e as migrations divergirem.
 
-### Staging
+### Staging e Produção
 
-Todo merge na `main` que passa no CI é publicado sozinho pelo workflow **Deploy staging**:
+#### Staging
+
+Todo merge na `main` que passa no CI é publicado sozinho pelo workflow **Deploy staging** (`.github/workflows/deploy-staging.yml`):
 
 - API: <https://api-staging.fiscalizaai.app/api/v1/health> (o campo `versao` mostra o commit no ar) e Swagger em `/docs`;
-- PWA: <https://app-staging.fiscalizaai.app>.
+- PWA: <https://app-staging.fiscalizaai.app> (projeto `fiscaliza-staging` no Cloudflare Pages).
 
-A API roda numa VM ARM do Oracle Cloud com o Docker Compose de `deploy/staging` (API, PostgreSQL com PostGIS, Redis e Caddy). As migrations rodam antes de a API nova subir; se falharem, a versão anterior continua no ar. Para publicar de novo sem um merge, use **Actions → Deploy staging → Run workflow**. Os segredos ficam no environment `staging` do GitHub; nenhum vai para o repositório.
+A API roda numa VM ARM do Oracle Cloud (`/opt/fiscaliza`) com o Docker Compose de `deploy/staging` (API, PostgreSQL com PostGIS, Redis e Caddy). As migrations rodam antes de a API nova subir; se falharem, a versão anterior continua no ar. Para publicar de novo sem um merge, use **Actions → Deploy staging → Run workflow**. Os segredos ficam no environment `staging` do GitHub; nenhum vai para o repositório.
+
+#### Produção
+
+Publicada pelo workflow **Deploy produção** (`.github/workflows/deploy-producao.yml`) ao criar uma tag `v*` (por exemplo, `v0.9.0` ou `v1.0.0`):
+
+- API: <https://api.fiscalizaai.app/api/v1/health> (`SWAGGER_HABILITADO=false`);
+- PWA: <https://app.fiscalizaai.app> (projeto `fiscaliza-producao` no Cloudflare Pages, publicado somente após a API responder com a versão da tag).
+
+Usa o Compose de `deploy/producao` (nome de projeto `fiscaliza-producao`, pasta `/opt/fiscaliza-producao` na VM) e lê secrets/variables do environment `production` do GitHub — separados dos de `staging`:
+
+- **Secrets (`production`):** `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, `SSH_KNOWN_HOSTS`, `POSTGRES_PASSWORD`, `JWT_SECRET`, `RESEND_API_KEY`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `VAPID_PRIVATE_KEY`, `CLOUDFLARE_API_TOKEN`.
+- **Variables (`production`):** `EMAIL_REMETENTE`, `R2_ACCOUNT_ID`, `R2_BUCKET_UPLOADS`, `R2_BUCKET_FOTOS`, `R2_URL_PUBLICA`, `R2_BUCKET_BACKUP`, `VAPID_PUBLIC_KEY`, `VAPID_SUBJECT`, `GOOGLE_MAPS_MAP_ID`, `GOOGLE_MAPS_API_KEY`, `FEEDBACK_URL`, `CLOUDFLARE_ACCOUNT_ID`.
+
+Em `staging`, mantenha também configuradas `R2_BUCKET_BACKUP` e `FEEDBACK_URL` no environment `staging`. Se `staging` e `producao` dividirem a mesma VM da Oracle, apenas um Caddy deve ocupar as portas 80 e 443 do host (conectado aos dois backends por uma rede externa Docker, conforme comentado em `deploy/producao/compose.yml`).
 
 ## 👥 Equipe
 
