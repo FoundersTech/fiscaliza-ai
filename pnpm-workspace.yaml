@@ -24,4 +24,3 @@ auditConfig:
     # picomatch <=4.0.7, ReDoS com extglobs repetidos, ainda sem versão corrigida. Só chega por
     # ferramentas de build e lint, com padrões de glob vindos da configuração, nunca de usuários.
     - GHSA-fc5q-39xc-vjpf
-
