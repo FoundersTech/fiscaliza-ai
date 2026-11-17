@@ -20,19 +20,24 @@ export interface FiltrosPainel {
   periodo: PeriodoPainel;
   /** Slugs; vazio quer dizer todas as categorias. */
   categorias: readonly string[];
+  /** Código IBGE da cidade; sem ele, a API soma todas as atendidas. */
+  municipio?: number | undefined;
 }
 
 export type ResultadoPainel = { ok: true; painel: Painel } | { ok: false; mensagem: string };
 
-/** A consulta da API: a categoria só vai quando há alguma escolhida, em ordem fixa. */
+/** A consulta da API: categoria só quando há alguma, em ordem fixa; cidade só quando há uma. */
 export function consultaDoPainel(filtros: FiltrosPainel): {
   periodo: PeriodoPainel;
   categoria?: string;
+  municipio?: number;
 } {
   const categorias = [...new Set(filtros.categorias)].sort();
-  return categorias.length
-    ? { periodo: filtros.periodo, categoria: categorias.join(',') }
-    : { periodo: filtros.periodo };
+  return {
+    periodo: filtros.periodo,
+    ...(categorias.length ? { categoria: categorias.join(',') } : {}),
+    ...(filtros.municipio === undefined ? {} : { municipio: filtros.municipio }),
+  };
 }
 
 export async function buscarPainel(api: Api, filtros: FiltrosPainel): Promise<ResultadoPainel> {

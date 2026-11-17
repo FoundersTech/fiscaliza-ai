@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 
 import { useApi } from '@/boot/api';
 import EstadoVazio from '@/components/EstadoVazio.vue';
@@ -34,6 +34,14 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => observador?.disconnect());
+
+// Trocar de cidade no cabeçalho recomeça a lista; a primeira carga fica com o onMounted.
+watch(
+  () => config.municipio?.id,
+  (nova, antiga) => {
+    if (antiga !== undefined && nova !== antiga) void feed.recarregar(api);
+  },
+);
 
 // Enquanto o fim da lista estiver à vista, continua buscando (uma tela alta pode caber duas
 // páginas). Um erro para a busca até a pessoa tocar em "Tentar de novo".

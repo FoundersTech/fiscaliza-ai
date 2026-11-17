@@ -20,6 +20,13 @@ describe('consulta do painel', () => {
     expect(consultaDoPainel({ periodo: 90, categorias: [] })).toEqual({ periodo: 90 });
   });
 
+  it('manda a cidade quando há uma', () => {
+    expect(consultaDoPainel({ periodo: 90, categorias: [], municipio: 3552205 })).toEqual({
+      periodo: 90,
+      municipio: 3552205,
+    });
+  });
+
   it('junta as categorias por vírgula, em ordem fixa e sem repetir', () => {
     expect(
       consultaDoPainel({ periodo: 30, categorias: ['pavimentacao', 'iluminacao', 'iluminacao'] }),

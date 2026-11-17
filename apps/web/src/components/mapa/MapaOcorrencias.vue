@@ -22,11 +22,12 @@ import {
   ZOOM_PONTO,
 } from '@/services/mapa-ocorrencias';
 import { carregarBuscaDeLugares, carregarMaps, quandoRecusarChave } from '@/services/mapas';
+import type { Municipio } from '@/services/municipio';
 import type { ConfigPublica } from '@/stores/config';
 
 const props = defineProps<{
   mapId: string;
-  municipio: ConfigPublica['municipio'];
+  municipio: Municipio;
   categorias: ConfigPublica['categorias_ativas'];
 }>();
 

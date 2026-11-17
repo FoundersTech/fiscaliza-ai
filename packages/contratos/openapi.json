@@ -598,6 +598,56 @@
         ]
       }
     },
+    "/api/v1/geo/municipio": {
+      "get": {
+        "operationId": "TerritorioController_geoMunicipio",
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "example": -23.5015,
+              "type": "number"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "example": -47.4526,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeoMunicipioResposta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDACAO"
+          },
+          "429": {
+            "description": "Mais de 120 tentativas em 60 s."
+          }
+        },
+        "tags": [
+          "territorio"
+        ]
+      }
+    },
     "/api/v1/uploads/intencao": {
       "post": {
         "operationId": "UploadsController_intencao",
@@ -2568,8 +2618,11 @@
       "ConfigPublicaResposta": {
         "type": "object",
         "properties": {
-          "municipio": {
-            "$ref": "#/components/schemas/MunicipioResposta"
+          "municipios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MunicipioResposta"
+            }
           },
           "categorias_ativas": {
             "type": "array",
@@ -2598,7 +2651,7 @@
           }
         },
         "required": [
-          "municipio",
+          "municipios",
           "categorias_ativas",
           "urgente_min_confirmacoes",
           "politica_versao",
@@ -2623,6 +2676,20 @@
         "required": [
           "endereco",
           "dentro_da_area"
+        ]
+      },
+      "GeoMunicipioResposta": {
+        "type": "object",
+        "properties": {
+          "municipio_id": {
+            "type": "number",
+            "nullable": true,
+            "example": 3552205,
+            "description": "Código IBGE do município que contém o ponto; null fora dos municípios atendidos"
+          }
+        },
+        "required": [
+          "municipio_id"
         ]
       },
       "IntencaoUploadDto": {

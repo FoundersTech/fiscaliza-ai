@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/geo/municipio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TerritorioController_geoMunicipio"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/uploads/intencao": {
         parameters: {
             query?: never;
@@ -800,7 +816,7 @@ export interface components {
             schema_atributos: components["schemas"]["CampoAtributoResposta"][];
         };
         ConfigPublicaResposta: {
-            municipio: components["schemas"]["MunicipioResposta"];
+            municipios: components["schemas"]["MunicipioResposta"][];
             categorias_ativas: components["schemas"]["CategoriaResposta"][];
             /**
              * @description Confirmações para uma ocorrência virar urgente
@@ -825,6 +841,13 @@ export interface components {
             endereco: string | null;
             /** @description Falso fora de um município atendido: o envio fica bloqueado */
             dentro_da_area: boolean;
+        };
+        GeoMunicipioResposta: {
+            /**
+             * @description Código IBGE do município que contém o ponto; null fora dos municípios atendidos
+             * @example 3552205
+             */
+            municipio_id: number | null;
         };
         IntencaoUploadDto: {
             /**
@@ -2216,6 +2239,42 @@ export interface operations {
                 content?: never;
             };
             /** @description Mais de 30 tentativas em 60 s. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TerritorioController_geoMunicipio: {
+        parameters: {
+            query: {
+                lat: number;
+                lng: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeoMunicipioResposta"];
+                };
+            };
+            /** @description VALIDACAO */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Mais de 120 tentativas em 60 s. */
             429: {
                 headers: {
                     [name: string]: unknown;

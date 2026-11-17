@@ -3,8 +3,9 @@ import { ref } from 'vue';
 
 import type { Api } from '@/services/api';
 import { buscarPainel, type Painel, PERIODO_PADRAO, type PeriodoPainel } from '@/services/painel';
+import { useConfigStore } from '@/stores/config';
 
-/** Filtros e números do painel público. Cada troca de filtro busca tudo de novo. */
+/** Filtros e números do painel público, da cidade escolhida. Cada troca de filtro busca tudo de novo. */
 export const usePainelStore = defineStore('painel', () => {
   const periodo = ref<PeriodoPainel>(PERIODO_PADRAO);
   const categorias = ref<string[]>([]);
@@ -23,6 +24,7 @@ export const usePainelStore = defineStore('painel', () => {
     const resultado = await buscarPainel(api, {
       periodo: periodo.value,
       categorias: categorias.value,
+      municipio: useConfigStore().municipio?.id,
     });
     if (pedido !== ultimoPedido) return;
 

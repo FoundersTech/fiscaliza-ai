@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue';
 
 import { useApi } from '@/boot/api';
 import CabecalhoPagina from '@/components/CabecalhoPagina.vue';
+import { rotuloMunicipio } from '@/services/municipio';
 import { formatarDias, formatarNumero, formatarPercentual } from '@/services/painel';
 import {
   formatarDataAtualizacao,
@@ -10,10 +11,13 @@ import {
   proporcaoCategoria,
   textoResolucaoCategoria,
 } from '@/services/score';
+import { useConfigStore } from '@/stores/config';
 import { useScoreStore } from '@/stores/score';
 
 const api = useApi();
 const loja = useScoreStore();
+const config = useConfigStore();
+const cidade = computed(() => (config.municipio ? rotuloMunicipio(config.municipio) : ''));
 
 const dados = computed(() => loja.score);
 const medidor = computed(() =>
@@ -30,15 +34,16 @@ const categorias = computed(() =>
   })),
 );
 
-onMounted(() => {
-  void loja.garantir(api);
+onMounted(async () => {
+  await config.carregar(api);
+  await loja.garantir(api);
 });
 </script>
 
 <template>
   <q-page>
     <div class="fa-conteudo">
-      <CabecalhoPagina titulo="Reputação da gestão" subtitulo="Prefeitura de Sorocaba" />
+      <CabecalhoPagina titulo="Reputação da gestão" :subtitulo="cidade" />
 
       <div v-if="loja.carregando && !dados" class="estado">
         <q-spinner size="28px" color="primary" />

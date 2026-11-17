@@ -227,7 +227,7 @@ describe('score de reputação (job e API)', () => {
     }
 
     await recalcular.executar(new Date(agoraMs));
-    const antes = (await consultarScore()).corpo.score!;
+    const antes = (await consultarScore(`?municipio=${SOROCABA}`)).corpo.score!;
 
     const alterados: Parametros = {
       ...parametros,
@@ -237,7 +237,7 @@ describe('score de reputação (job e API)', () => {
       },
     };
     await new RecalcularScore(desempenhos, alterados).executar(new Date(agoraMs));
-    const depois = (await consultarScore()).corpo.score!;
+    const depois = (await consultarScore(`?municipio=${SOROCABA}`)).corpo.score!;
 
     expect(depois).not.toBe(antes);
     expect(depois).toBeGreaterThan(antes);
@@ -273,7 +273,7 @@ describe('score de reputação (job e API)', () => {
   it('órgão sem ocorrências tem score e classificação nulos', async () => {
     await recalcular.executar();
 
-    const { status, corpo } = await consultarScore();
+    const { status, corpo } = await consultarScore(`?municipio=${SOROCABA}`);
     expect(status).toBe(200);
     expect(corpo).toMatchObject({
       score: null,

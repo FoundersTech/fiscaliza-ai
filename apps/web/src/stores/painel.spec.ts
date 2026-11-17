@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Api } from '@/services/api';
 import type { Painel, PeriodoPainel } from '@/services/painel';
+import { type ConfigPublica, useConfigStore } from '@/stores/config';
 
 import { usePainelStore } from './painel';
 
@@ -87,6 +88,15 @@ describe('store do painel', () => {
     expect(painel.periodo).toBe(30);
     expect(painel.painel?.total).toBe(4);
     expect(painel.carregando).toBe(false);
+  });
+
+  it('pede os números da cidade escolhida', async () => {
+    useConfigStore().config = { municipios: [{ id: 3552205 }] } as ConfigPublica;
+    const { api, get } = criarApi();
+
+    await usePainelStore().carregar(api);
+
+    expect(ultimaConsulta(get)).toEqual({ params: { query: { periodo: 30, municipio: 3552205 } } });
   });
 
   it('trocar o período busca de novo e muda todos os números', async () => {

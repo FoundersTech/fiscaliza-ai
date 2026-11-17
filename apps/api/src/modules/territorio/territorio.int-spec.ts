@@ -59,7 +59,7 @@ describe('Território e configuração pública', () => {
   });
 
   beforeEach(async () => {
-    await prisma.municipio.update({ where: { id: SOROCABA.id }, data: { ativo: true } });
+    await prisma.municipio.updateMany({ data: { ativo: true } });
     await prisma.categoria.updateMany({ data: { ativa: true } });
     geocoding.enderecoDe.mockReset();
   });
@@ -73,23 +73,29 @@ describe('Território e configuração pública', () => {
   }
 
   describe('GET /config/publica', () => {
-    it('é pública e traz Sorocaba, as categorias ativas e os parâmetros do PWA', async () => {
+    it('é pública e traz as cidades atendidas, as categorias ativas e os parâmetros do PWA', async () => {
       const resposta = await get('config/publica', false);
 
       expect(resposta.statusCode).toBe(200);
       const config = resposta.json<{
-        municipio: {
+        municipios: {
+          id: number;
+          nome: string;
           centro: { lat: number; lng: number };
           bbox: { sul: number; oeste: number; norte: number; leste: number };
-        };
+        }[];
         categorias_ativas: { slug: string; schema_atributos: unknown[] }[];
       }>();
       expect(config).toMatchObject({
-        municipio: { id: SOROCABA.id, nome: 'Sorocaba', uf: 'SP' },
         urgente_min_confirmacoes: 10,
         politica_versao: '1',
         google_maps_map_id: 'mapa-de-teste',
       });
+      expect(config.municipios.map((municipio) => municipio.nome)).toEqual([
+        'Salto de Pirapora',
+        'Sorocaba',
+        'Votorantim',
+      ]);
       expect(config.categorias_ativas.map((categoria) => categoria.slug)).toEqual([
         'agua-esgoto',
         'iluminacao',
@@ -103,7 +109,7 @@ describe('Território e configuração pública', () => {
         schema_atributos: [],
       });
 
-      const { centro, bbox } = config.municipio;
+      const { centro, bbox } = config.municipios.find((municipio) => municipio.id === SOROCABA.id)!;
       expect(centro.lat).toBeGreaterThan(bbox.sul);
       expect(centro.lat).toBeLessThan(bbox.norte);
       expect(centro.lng).toBeGreaterThan(bbox.oeste);
@@ -126,8 +132,16 @@ describe('Território e configuração pública', () => {
       );
     });
 
-    it('sem município ativo, responde 503', async () => {
+    it('cidade desativada sai da lista', async () => {
       await prisma.municipio.update({ where: { id: SOROCABA.id }, data: { ativo: false } });
+
+      const config = (await get('config/publica', false)).json<{ municipios: { id: number }[] }>();
+
+      expect(config.municipios.map((municipio) => municipio.id)).not.toContain(SOROCABA.id);
+    });
+
+    it('sem município ativo, responde 503', async () => {
+      await prisma.municipio.updateMany({ data: { ativo: false } });
 
       const resposta = await get('config/publica', false);
 
@@ -193,6 +207,51 @@ describe('Território e configuração pública', () => {
       [{ lat: CENTRO.lat, lng: 181 }, 'lng'],
     ])('coordenada inválida %j dá 422 em %s', async (ponto, campo) => {
       const resposta = await reverso(ponto);
+
+      expect(resposta.statusCode).toBe(422);
+      expect(resposta.json()).toMatchObject({
+        codigo: 'VALIDACAO',
+        detalhes: { campos: { [campo]: expect.any(Array) as string[] } },
+      });
+    });
+  });
+
+  describe('GET /geo/municipio', () => {
+    function municipioDoPonto({ lat, lng }: { lat: number | string; lng: number | string }) {
+      return get(`geo/municipio?lat=${lat}&lng=${lng}`, false);
+    }
+
+    it('é pública e identifica Sorocaba no centro sem consultar endereço', async () => {
+      const resposta = await municipioDoPonto(CENTRO);
+
+      expect(resposta.statusCode).toBe(200);
+      expect(resposta.json()).toEqual({ municipio_id: SOROCABA.id });
+      expect(geocoding.enderecoDe).not.toHaveBeenCalled();
+    });
+
+    it('devolve null para ponto fora dos municípios atendidos', async () => {
+      const resposta = await municipioDoPonto(SAO_PAULO);
+
+      expect(resposta.statusCode).toBe(200);
+      expect(resposta.json()).toEqual({ municipio_id: null });
+    });
+
+    it('devolve null quando o município está desativado', async () => {
+      await prisma.municipio.update({ where: { id: SOROCABA.id }, data: { ativo: false } });
+
+      const resposta = await municipioDoPonto(CENTRO);
+
+      expect(resposta.statusCode).toBe(200);
+      expect(resposta.json()).toEqual({ municipio_id: null });
+    });
+
+    it.each([
+      [{ lat: '', lng: CENTRO.lng }, 'lat'],
+      [{ lat: 'abc', lng: CENTRO.lng }, 'lat'],
+      [{ lat: 91, lng: CENTRO.lng }, 'lat'],
+      [{ lat: CENTRO.lat, lng: 181 }, 'lng'],
+    ])('coordenada inválida %j dá 422 em %s', async (ponto, campo) => {
+      const resposta = await municipioDoPonto(ponto);
 
       expect(resposta.statusCode).toBe(422);
       expect(resposta.json()).toMatchObject({

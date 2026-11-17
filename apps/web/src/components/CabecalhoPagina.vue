@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { useQuasar } from 'quasar';
+import { computed, ref } from 'vue';
 
+import { useApi } from '@/boot/api';
 import { useTema } from '@/composables/useTema';
 import { inicioAdmin } from '@/services/administracao';
 import { rotuloAcessivelAlertas, rotuloDoIndicador } from '@/services/alertas';
+import { identificarMunicipioPorGps, rotuloMunicipio } from '@/services/municipio';
 import { useAlertasStore } from '@/stores/alertas';
 import { useAuthStore } from '@/stores/auth';
+import { useConfigStore } from '@/stores/config';
 
 withDefaults(
   defineProps<{
     titulo: string;
     subtitulo?: string;
-    /** Mostra "Sorocaba · SP" acima do título. */
     comLocal?: boolean;
     comAlertas?: boolean;
   }>(),
@@ -24,15 +27,86 @@ const indicador = computed(() => rotuloDoIndicador(alertas.novos));
 const auth = useAuthStore();
 /** Atalho para as telas de administração, só para quem administra. */
 const rotaAdmin = computed(() => inicioAdmin(auth.papel));
+const config = useConfigStore();
+const local = computed(() => (config.municipio ? rotuloMunicipio(config.municipio) : ''));
+const podeTrocar = computed(() => config.municipios.length > 1);
+
+const api = useApi();
+const $q = useQuasar();
+const menuAberto = ref(false);
+const localizando = ref(false);
+
+/** Pedido explícito da pessoa: conta como escolha dela e só avisa quando não dá certo. */
+async function usarLocalizacao(): Promise<void> {
+  if (localizando.value) return;
+  localizando.value = true;
+  try {
+    const resultado = await identificarMunicipioPorGps(api);
+    if (resultado.ok && config.municipios.some((opcao) => opcao.id === resultado.municipioId)) {
+      config.selecionarMunicipio(resultado.municipioId, 'MANUAL');
+    } else if (resultado.ok || resultado.motivo === 'FORA_DA_AREA') {
+      $q.notify({ message: 'Sua localização está fora das cidades atendidas.', timeout: 3000 });
+    } else {
+      $q.notify({ message: 'Não foi possível achar sua localização.', timeout: 3000 });
+    }
+  } catch {
+    $q.notify({ message: 'Não foi possível achar sua localização.', timeout: 3000 });
+  } finally {
+    localizando.value = false;
+    menuAberto.value = false;
+  }
+}
 </script>
 
 <template>
   <header class="cabecalho">
     <div class="cabecalho__texto">
-      <div v-if="comLocal" class="cabecalho__local">
-        <q-icon name="sym_o_location_on" size="16px" />
-        Sorocaba · SP
-      </div>
+      <template v-if="comLocal && local">
+        <button
+          v-if="podeTrocar"
+          type="button"
+          class="cabecalho__local cabecalho__local--botao"
+          :aria-label="`Cidade: ${local}. Trocar de cidade`"
+          data-teste="seletor-cidade"
+        >
+          <q-icon name="sym_o_location_on" size="16px" />
+          {{ local }}
+          <q-icon name="sym_o_expand_more" size="16px" />
+          <q-menu v-model="menuAberto" anchor="bottom left" self="top left">
+            <q-item
+              clickable
+              :disable="localizando"
+              data-teste="usar-localizacao-cidade"
+              @click="usarLocalizacao"
+            >
+              <q-item-section avatar>
+                <q-spinner v-if="localizando" size="16px" />
+                <q-icon v-else name="sym_o_my_location" size="16px" />
+              </q-item-section>
+              <q-item-section>Usar minha localização</q-item-section>
+            </q-item>
+            <q-separator />
+            <q-list role="listbox" aria-label="Cidades atendidas">
+              <q-item
+                v-for="opcao in config.municipios"
+                :key="opcao.id"
+                v-close-popup
+                clickable
+                role="option"
+                :active="opcao.id === config.municipio?.id"
+                :aria-selected="opcao.id === config.municipio?.id"
+                @click="config.selecionarMunicipio(opcao.id, 'MANUAL')"
+              >
+                <q-item-section>{{ rotuloMunicipio(opcao) }}</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
+        </button>
+        <div v-else class="cabecalho__local">
+          <q-icon name="sym_o_location_on" size="16px" />
+          {{ local }}
+        </div>
+      </template>
       <h1 class="fa-titulo">{{ titulo }}</h1>
       <p v-if="subtitulo" class="cabecalho__subtitulo">{{ subtitulo }}</p>
     </div>
@@ -112,6 +186,23 @@ const rotaAdmin = computed(() => inicioAdmin(auth.papel));
   font-size: 13px;
   color: var(--fa-texto-3);
   margin-bottom: 2px;
+}
+
+.cabecalho__local--botao {
+  padding: 2px 4px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--fa-texto-2);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--fa-borda);
+  }
 }
 
 .cabecalho__subtitulo {

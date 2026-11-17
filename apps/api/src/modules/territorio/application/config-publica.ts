@@ -11,7 +11,7 @@ import {
 } from './portas.js';
 
 export interface ConfigPublica {
-  municipio: MunicipioAtendido;
+  municipios: MunicipioAtendido[];
   categoriasAtivas: CategoriaAtiva[];
   urgenteMinConfirmacoes: number;
   politicaVersao: string;
@@ -30,11 +30,11 @@ export class ObterConfigPublica {
   ) {}
 
   async executar(): Promise<ConfigPublica> {
-    const [municipio, categoriasAtivas] = await Promise.all([
-      this.territorios.municipioAtendido(),
+    const [municipios, categoriasAtivas] = await Promise.all([
+      this.territorios.municipiosAtendidos(),
       this.territorios.categoriasAtivas(),
     ]);
-    if (!municipio) {
+    if (municipios.length === 0) {
       throw new ErroAplicacao(
         'MUNICIPIO_NAO_CONFIGURADO',
         'O Fiscaliza Aí! ainda não atende nenhuma cidade.',
@@ -43,7 +43,7 @@ export class ObterConfigPublica {
     }
 
     return {
-      municipio,
+      municipios,
       categoriasAtivas,
       urgenteMinConfirmacoes: this.parametros.urgente_min_confirmacoes,
       politicaVersao: this.ambiente.POLITICA_VERSAO,

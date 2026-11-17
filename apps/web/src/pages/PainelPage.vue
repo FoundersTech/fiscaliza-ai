@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 
 import { useApi } from '@/boot/api';
 import CabecalhoPagina from '@/components/CabecalhoPagina.vue';
@@ -23,11 +23,18 @@ const painel = usePainelStore();
 const dados = computed(() => painel.painel);
 const barras = computed(() => barrasPorCategoria(dados.value?.por_categoria ?? []));
 
-onMounted(() => {
-  // As categorias só servem para os filtros: sem elas, o painel aparece com todas.
-  void config.carregar(api);
-  void painel.carregar(api);
+onMounted(async () => {
+  // A cidade escolhida vem da configuração; sem ela, o painel soma todas as atendidas.
+  await config.carregar(api);
+  await painel.carregar(api);
 });
+
+watch(
+  () => config.municipio?.id,
+  (nova, antiga) => {
+    if (antiga !== undefined && nova !== antiga) void painel.carregar(api);
+  },
+);
 </script>
 
 <template>

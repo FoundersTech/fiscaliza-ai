@@ -3,7 +3,7 @@ import { Transform } from 'class-transformer';
 import { IsLatitude, IsLongitude } from 'class-validator';
 
 import type { ConfigPublica } from '../application/config-publica.js';
-import type { CategoriaAtiva } from '../application/portas.js';
+import type { CategoriaAtiva, Territorio } from '../application/portas.js';
 import type { ConsultaPonto } from '../application/territorio.js';
 
 // Texto vazio continua vazio, para não virar 0 e passar como coordenada.
@@ -37,6 +37,20 @@ export class GeoReversoResposta {
 
   static de(consulta: ConsultaPonto): GeoReversoResposta {
     return { endereco: consulta.endereco, dentro_da_area: consulta.dentroDaArea };
+  }
+}
+
+export class GeoMunicipioResposta {
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    example: 3552205,
+    description: 'Código IBGE do município que contém o ponto; null fora dos municípios atendidos',
+  })
+  municipio_id!: number | null;
+
+  static de(territorio: Territorio | null): GeoMunicipioResposta {
+    return { municipio_id: territorio ? territorio.municipioId : null };
   }
 }
 
@@ -130,8 +144,8 @@ export class CategoriaResposta {
 }
 
 export class ConfigPublicaResposta {
-  @ApiProperty({ type: MunicipioResposta })
-  municipio!: MunicipioResposta;
+  @ApiProperty({ type: [MunicipioResposta] })
+  municipios!: MunicipioResposta[];
 
   @ApiProperty({ type: [CategoriaResposta] })
   categorias_ativas!: CategoriaResposta[];
@@ -155,7 +169,7 @@ export class ConfigPublicaResposta {
 
   static de(config: ConfigPublica): ConfigPublicaResposta {
     return {
-      municipio: config.municipio,
+      municipios: config.municipios,
       categorias_ativas: config.categoriasAtivas.map((categoria) =>
         CategoriaResposta.de(categoria),
       ),
