@@ -70,7 +70,9 @@ async function entrar(): Promise<void> {
         autocomplete="current-password"
         :regras="[obrigatorio('Informe a senha')]"
       />
-      <router-link to="/esqueci-senha" class="fa-link esqueci">Esqueci minha senha</router-link>
+      <router-link replace to="/esqueci-senha" class="fa-link esqueci"
+        >Esqueci minha senha</router-link
+      >
 
       <p v-if="erro" class="fa-mensagem fa-mensagem--erro" role="alert">{{ erro }}</p>
       <q-btn
@@ -87,7 +89,7 @@ async function entrar(): Promise<void> {
     <template #rodape>
       <p class="rodape">
         Ainda não tem conta?
-        <router-link :to="{ path: '/cadastro', query: consultaCadastro }" class="fa-link">
+        <router-link replace :to="{ path: '/cadastro', query: consultaCadastro }" class="fa-link">
           Criar conta
         </router-link>
       </p>

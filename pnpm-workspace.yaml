@@ -17,3 +17,10 @@ allowBuilds:
   '@scarf/scarf': false
   # Aceleração nativa opcional do msgpackr (BullMQ); sem ela, usa a versão em JS.
   msgpackr-extract: false
+
+# Avisos de segurança ignorados no `pnpm audit`, cada um com o motivo. Revise quando sair correção.
+auditConfig:
+  ignoreGhsas:
+    # picomatch <=4.0.7, ReDoS com extglobs repetidos, ainda sem versão corrigida. Só chega por
+    # ferramentas de build e lint, com padrões de glob vindos da configuração, nunca de usuários.
+    - GHSA-fc5q-39xc-vjpf

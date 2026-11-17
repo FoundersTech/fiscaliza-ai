@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { decidirAcesso, destinoSeguro } from './acesso';
+import { decidirAcesso, destinoSeguro, historicoAnteriorSeguro } from './acesso';
 import routes from './routes';
 
 const DESLOGADO = { logado: false, papel: null };
@@ -128,5 +128,23 @@ describe('destinoSeguro', () => {
     [['/a', '/b'], '/'],
   ])('%j vira %s', (voltar, esperado) => {
     expect(destinoSeguro(voltar)).toBe(esperado);
+  });
+});
+
+describe('historicoAnteriorSeguro', () => {
+  it.each([
+    ['/', true],
+    ['/mapa?categoria=buraco', true],
+    ['/minhas-ocorrencias', true],
+    ['/login?voltar=/registrar', false],
+    ['/cadastro?voltar=/registrar', false],
+    ['/esqueci-senha', false],
+    ['/definir-senha?token=abc', false],
+    ['//site-malicioso.test', false],
+    ['https://site-malicioso.test', false],
+    [null, false],
+    [undefined, false],
+  ])('%j -> %s', (back, esperado) => {
+    expect(historicoAnteriorSeguro(back)).toBe(esperado);
   });
 });

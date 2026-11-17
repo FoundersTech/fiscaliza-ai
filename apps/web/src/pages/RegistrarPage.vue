@@ -9,6 +9,7 @@ import PassoFotos from '@/components/registro/PassoFotos.vue';
 import PassoLocal from '@/components/registro/PassoLocal.vue';
 import RegistroConcluido from '@/components/registro/RegistroConcluido.vue';
 import type { Candidata } from '@/services/envio';
+import { historicoAnteriorSeguro } from '@/router/acesso';
 import { TOTAL_PASSOS } from '@/services/registro';
 import { useRegistroStore } from '@/stores/registro';
 
@@ -72,7 +73,7 @@ onBeforeUnmount(() => {
 function voltar(): void {
   if (registro.passo > 1) {
     registro.voltar();
-  } else if (window.history.state?.back) {
+  } else if (historicoAnteriorSeguro(window.history.state?.back)) {
     router.back();
   } else {
     void router.push('/');

@@ -157,7 +157,7 @@ async function criarConta(): Promise<void> {
     <template #rodape>
       <p class="rodape">
         Já tem conta?
-        <router-link :to="{ path: '/login', query: consultaLogin }" class="fa-link">
+        <router-link replace :to="{ path: '/login', query: consultaLogin }" class="fa-link">
           Entrar
         </router-link>
       </p>
