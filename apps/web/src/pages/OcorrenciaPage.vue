@@ -6,6 +6,7 @@ import { useApi } from '@/boot/api';
 import SeloReaberta from '@/components/atendimento/SeloReaberta.vue';
 import EstadoVazio from '@/components/EstadoVazio.vue';
 import SeloStatus from '@/components/ocorrencia/SeloStatus.vue';
+import { historicoAnteriorSeguro } from '@/router/acesso';
 import { confirmarOcorrencia } from '@/services/envio';
 import {
   aplicarConfirmacao,
@@ -119,7 +120,7 @@ const textoConfirmacoes = computed(() => {
 });
 
 function voltar(): void {
-  if (window.history.state?.back) router.back();
+  if (historicoAnteriorSeguro(window.history.state?.back)) router.back();
   else void router.replace('/');
 }
 

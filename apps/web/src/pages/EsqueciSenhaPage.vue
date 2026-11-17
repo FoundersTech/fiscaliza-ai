@@ -80,7 +80,7 @@ async function enviar(): Promise<void> {
     </q-form>
 
     <template #rodape>
-      <router-link to="/login" class="fa-link">Voltar para a entrada</router-link>
+      <router-link replace to="/login" class="fa-link">Voltar para a entrada</router-link>
     </template>
   </CartaoAcesso>
 </template>

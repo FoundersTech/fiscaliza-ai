@@ -45,3 +45,15 @@ export function destinoSeguro(voltar: unknown): string {
     ? voltar
     : '/';
 }
+
+const ROTAS_DE_ACESSO = ['/login', '/cadastro', '/esqueci-senha', '/definir-senha'] as const;
+
+/**
+ * Evita usar router.back() quando a entrada anterior do histórico é uma tela de acesso:
+ * com sessão aberta, o guard redirecionaria de volta para a tela atual em loop.
+ */
+export function historicoAnteriorSeguro(back: unknown): boolean {
+  if (typeof back !== 'string' || !back.startsWith('/') || back.startsWith('//')) return false;
+  const caminho = back.split(/[?#]/, 1)[0] ?? '';
+  return !ROTAS_DE_ACESSO.some((rota) => caminho === rota);
+}
