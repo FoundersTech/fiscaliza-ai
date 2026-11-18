@@ -13,7 +13,11 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
-import { LimiteTaxa, type RequisicaoLimitada } from '../../../shared/limite-taxa/limite-taxa.js';
+import {
+  LimiteTaxa,
+  type RegraLimiteTaxa,
+  type RequisicaoLimitada,
+} from '../../../shared/limite-taxa/limite-taxa.js';
 import { Cadastrar } from '../application/cadastrar.js';
 import { Entrar } from '../application/entrar.js';
 import { erroCsrf } from '../application/erros.js';
@@ -47,6 +51,17 @@ function emailDoCorpo({ body }: RequisicaoLimitada): string {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 }
 
+/**
+ * Contas novas por IP, por hora. Redes compartilhadas (Wi-Fi de faculdade, 4G com CGNAT) saem por
+ * um IP só: com 50, uma turma inteira cria conta na mesma hora, e um robô continua limitado.
+ */
+export const LIMITE_CADASTRO: RegraLimiteTaxa = {
+  nome: 'cadastro',
+  maximo: 50,
+  janelaSegundos: 3600,
+  chave: ({ ip }) => ip,
+};
+
 @ApiTags('autenticacao')
 @Controller('auth')
 export class AuthController {
@@ -60,7 +75,7 @@ export class AuthController {
   ) {}
 
   @Post('cadastro')
-  @LimiteTaxa({ nome: 'cadastro', maximo: 5, janelaSegundos: 3600, chave: ({ ip }) => ip })
+  @LimiteTaxa(LIMITE_CADASTRO)
   @ApiCreatedResponse({
     type: SessaoResposta,
     description: 'Conta de cidadão criada e logada. O refresh vai no cookie fa_refresh.',

@@ -16,6 +16,7 @@ import { ServicoEmail } from '../notificacoes/application/servico-email.js';
 import { CriarAdminPlataforma } from './application/criar-admin.js';
 import { EMISSOR_TOKEN, type EmissorToken } from './application/portas.js';
 import { Papel } from './domain/papel.js';
+import { LIMITE_CADASTRO } from './presentation/auth.controller.js';
 import { Autenticado } from './presentation/autenticacao.js';
 
 /** Rotas para testar o guard antes de existirem as rotas reais. */
@@ -213,18 +214,32 @@ describe('Cadastro, login e autorização', () => {
       });
     });
 
-    it('o 6º cadastro do mesmo IP em 1 hora recebe 429', async () => {
-      for (let i = 1; i <= 5; i++) {
+    it('cadastros válidos do mesmo IP contam no limite', async () => {
+      for (let i = 1; i <= 3; i++) {
         const resposta = await post(
           'auth/cadastro',
           cadastro({ email: `pessoa${i}@exemplo.test` }),
         );
         expect(resposta.statusCode).toBe(201);
       }
-      const sexto = await post('auth/cadastro', cadastro({ email: 'pessoa6@exemplo.test' }));
+      const chaves = await redis.keys('limite:cadastro:*');
 
-      expect(sexto.statusCode).toBe(429);
-      expect(sexto.headers['retry-after']).toBeDefined();
+      expect(chaves).toHaveLength(1);
+      expect(Number(await redis.get(chaves[0]!))).toBe(3);
+    });
+
+    it(`o ${LIMITE_CADASTRO.maximo + 1}º cadastro do mesmo IP em 1 hora recebe 429; outro IP segue`, async () => {
+      // Pedido inválido (422) conta no limite do mesmo jeito, sem gastar o hash de cada senha.
+      for (let i = 0; i < LIMITE_CADASTRO.maximo; i++) {
+        expect((await post('auth/cadastro', cadastro({ senha: '1234567' }))).statusCode).toBe(422);
+      }
+      const excedente = await post('auth/cadastro', cadastro());
+
+      expect(excedente.statusCode).toBe(429);
+      expect(excedente.json()).toMatchObject({ codigo: 'MUITAS_REQUISICOES' });
+      expect(Number(excedente.headers['retry-after'])).toBeGreaterThan(0);
+      expect(Number(excedente.headers['retry-after'])).toBeLessThanOrEqual(3600);
+      expect((await post('auth/cadastro', cadastro(), '192.0.2.60')).statusCode).toBe(201);
     });
   });
 

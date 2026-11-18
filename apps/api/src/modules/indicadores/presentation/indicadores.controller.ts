@@ -6,21 +6,13 @@ import {
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 
-import { LimiteTaxa, type RegraLimiteTaxa } from '../../../shared/limite-taxa/limite-taxa.js';
+import { LEITURA_PUBLICA, LimiteTaxa } from '../../../shared/limite-taxa/limite-taxa.js';
 import { ObterPainel } from '../application/obter-painel.js';
 import { ObterScore } from '../application/obter-score.js';
 import { PainelQuery, PainelResposta } from './dto-painel.js';
 import { ScoreQuery, ScoreResposta } from './dto-score.js';
 
-/** Leituras públicas: 120 por minuto por IP, no mesmo limite do feed e do mapa. */
-const LEITURA_PUBLICA: RegraLimiteTaxa = {
-  nome: 'leitura-publica',
-  maximo: 120,
-  janelaSegundos: 60,
-  chave: ({ ip }) => ip,
-};
-
-/** Indicadores públicos, abertos a visitantes. */
+/** Indicadores públicos, abertos a visitantes, no mesmo limite de leitura do feed e do mapa. */
 @ApiTags('indicadores')
 @Controller('indicadores')
 export class IndicadoresController {

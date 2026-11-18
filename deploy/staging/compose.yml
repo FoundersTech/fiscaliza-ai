@@ -32,8 +32,6 @@ services:
       timeout: 3s
       retries: 20
 
-  # Roda só quando chamado (docker compose run --rm migracao): aplica as migrations e a carga
-  # inicial, que não duplica nada se rodar de novo.
   migracao:
     image: ${API_IMAGEM:?defina API_IMAGEM no .env}
     profiles: [migracao]
@@ -83,6 +81,5 @@ services:
 volumes:
   postgres:
   redis:
-  # Certificados emitidos; sem este volume, cada deploy pediria um novo ao Let's Encrypt.
   caddy_data:
   caddy_config:

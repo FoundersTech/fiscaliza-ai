@@ -33,10 +33,15 @@ export interface RegraLimiteTaxa {
 
 const REGRA = Symbol('REGRA_LIMITE_TAXA');
 
-/** GETs abertos a visitantes: 120 por minuto por IP, somando todas as rotas públicas. */
+/**
+ * GETs abertos a visitantes: 600 por minuto por IP, somando todas as rotas públicas. Numa rede
+ * compartilhada (Wi-Fi de faculdade, 4G com CGNAT), todo mundo sai pelo mesmo IP, e cada abertura
+ * do app já faz algumas leituras. O limite comporta umas dezenas de pessoas usando o app juntas e
+ * ainda segura um robô em 10 leituras por segundo.
+ */
 export const LEITURA_PUBLICA: RegraLimiteTaxa = {
   nome: 'leitura-publica',
-  maximo: 120,
+  maximo: 600,
   janelaSegundos: 60,
   chave: ({ ip }) => ip,
 };
