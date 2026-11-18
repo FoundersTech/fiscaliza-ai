@@ -8,7 +8,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Um deploy por vez; um novo espera o anterior terminar em vez de cancelá-lo no meio.
+# Um deploy por vez;
 concurrency:
   group: deploy-staging
   cancel-in-progress: false
@@ -17,7 +17,6 @@ permissions:
   contents: read
 
 env:
-  # Commit publicado: o do CI que disparou o deploy, ou o atual num disparo manual.
   VERSAO: ${{ github.event.workflow_run.head_sha || github.sha }}
   IMAGEM: ghcr.io/founderstech/fiscaliza-api
 
@@ -25,7 +24,6 @@ jobs:
   imagem-api:
     name: Imagem da API (arm64)
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
-    # Máquina ARM, como a VM da Oracle: a imagem é gerada sem emulação.
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 20
     permissions:
@@ -63,7 +61,6 @@ jobs:
       url: https://api-staging.fiscalizaai.app/api/v1/health
     permissions:
       contents: read
-      # A VM baixa a imagem do GHCR com o token deste job, que expira quando ele termina.
       packages: read
     steps:
       - uses: actions/checkout@v7
@@ -143,7 +140,6 @@ jobs:
           DESTINO: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ATOR: ${{ github.actor }}
-        # O token vai pela entrada padrão, e não como argumento visível na lista de processos da VM.
         run: printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy "$DESTINO" "bash /opt/fiscaliza/subir.sh '$ATOR'"
 
       - name: Conferir a versão publicada

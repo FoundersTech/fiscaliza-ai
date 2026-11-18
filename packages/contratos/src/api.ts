@@ -1874,7 +1874,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Mais de 5 tentativas em 3600 s. */
+            /** @description Mais de 50 tentativas em 3600 s. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -2181,7 +2181,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConfigPublicaResposta"];
                 };
             };
-            /** @description Mais de 120 tentativas em 60 s. */
+            /** @description Mais de 600 tentativas em 60 s. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -2274,7 +2274,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Mais de 120 tentativas em 60 s. */
+            /** @description Mais de 600 tentativas em 60 s. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -2468,7 +2468,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Mais de 120 tentativas em 60 s. */
+            /** @description Mais de 600 tentativas em 60 s. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -2771,7 +2771,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Mais de 120 tentativas em 60 s. */
+            /** @description Mais de 600 tentativas em 60 s. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -2814,7 +2814,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Mais de 120 tentativas em 60 s. */
+            /** @description Mais de 600 tentativas em 60 s. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -3063,7 +3063,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Mais de 120 tentativas em 60 s. */
+            /** @description Mais de 600 tentativas em 60 s. */
             429: {
                 headers: {
                     [name: string]: unknown;
@@ -3106,7 +3106,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Mais de 120 tentativas em 60 s. */
+            /** @description Mais de 600 tentativas em 60 s. */
             429: {
                 headers: {
                     [name: string]: unknown;

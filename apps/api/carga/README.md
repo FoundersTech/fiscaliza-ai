@@ -43,7 +43,7 @@ pnpm build
 DATABASE_URL=postgresql://fiscaliza:fiscaliza@localhost:5432/fiscaliza_carga pnpm carga gerar
 
 # 2. API compilada (não o modo watch) numa porta e num banco do Redis só dela.
-#    Sem o limite por IP: o k6 manda tudo de um IP só, e passaria das 120 leituras por minuto.
+#    Sem o limite por IP: o k6 manda tudo de um IP só, e passaria das 600 leituras por minuto.
 #    LOG_LEVEL=warn para o log de cada requisição não entrar na medição.
 PORT=3148 NODE_ENV=development LOG_LEVEL=warn LIMITE_TAXA_DESLIGADO=true \
   DATABASE_URL=postgresql://fiscaliza:fiscaliza@localhost:5432/fiscaliza_carga \

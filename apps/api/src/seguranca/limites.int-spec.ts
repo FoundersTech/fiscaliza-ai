@@ -10,6 +10,7 @@ import { configurarApp, PREFIXO_API } from '../app.setup.js';
 import { aplicarCargaInicial } from '../cli/seed/carga-inicial.js';
 import { EMISSOR_TOKEN, type EmissorToken } from '../modules/identidade/application/portas.js';
 import { Papel } from '../modules/identidade/domain/papel.js';
+import { LEITURA_PUBLICA } from '../shared/limite-taxa/limite-taxa.js';
 import { PrismaService } from '../shared/prisma/prisma.service.js';
 import { REDIS } from '../shared/redis/redis.module.js';
 
@@ -73,17 +74,19 @@ describe('Limites de requisições', () => {
     });
   }
 
-  describe('GETs públicos: 120 por minuto por IP, somando todas as rotas', () => {
+  describe(`GETs públicos: ${LEITURA_PUBLICA.maximo} por minuto por IP, somando todas as rotas`, () => {
     const ROTAS = [
       'ocorrencias',
       'ocorrencias/mapa?bbox=-47.5,-23.55,-47.4,-23.45',
       `ocorrencias/${randomUUID()}`,
       'config/publica',
+      'indicadores/score',
+      'indicadores/painel',
     ];
 
-    it('a 121ª GET pública no mesmo minuto devolve 429 com Retry-After', async () => {
+    it(`a ${LEITURA_PUBLICA.maximo + 1}ª GET pública no mesmo minuto devolve 429 com Retry-After`, async () => {
       const respostas = [];
-      for (let i = 0; i < 120; i++) {
+      for (let i = 0; i < LEITURA_PUBLICA.maximo; i++) {
         respostas.push(await pedir('GET', ROTAS[i % ROTAS.length]!, { ip: '203.0.113.10' }));
       }
       expect(respostas.filter((resposta) => resposta.statusCode === 429)).toHaveLength(0);
@@ -94,13 +97,25 @@ describe('Limites de requisições', () => {
       expect(excedente.json()).toMatchObject({ codigo: 'MUITAS_REQUISICOES' });
       expect(Number(excedente.headers['retry-after'])).toBeGreaterThan(0);
       expect(Number(excedente.headers['retry-after'])).toBeLessThanOrEqual(60);
-    });
+    }, 60_000);
+
+    it('50 pessoas da mesma rede abrem o app no mesmo minuto', async () => {
+      // Abrir o app lê a configuração, o feed e o score, e numa rede compartilhada tudo sai do
+      // mesmo IP.
+      for (let pessoa = 0; pessoa < 50; pessoa++) {
+        for (const rota of ['config/publica', 'ocorrencias', 'indicadores/score']) {
+          expect((await pedir('GET', rota, { ip: '203.0.113.13' })).statusCode).not.toBe(429);
+        }
+      }
+    }, 60_000);
 
     it('outro IP continua sendo atendido', async () => {
-      for (let i = 0; i < 121; i++) await pedir('GET', 'ocorrencias', { ip: '203.0.113.11' });
+      for (let i = 0; i <= LEITURA_PUBLICA.maximo; i++) {
+        await pedir('GET', 'ocorrencias', { ip: '203.0.113.11' });
+      }
 
       expect((await pedir('GET', 'ocorrencias', { ip: '203.0.113.12' })).statusCode).toBe(200);
-    });
+    }, 60_000);
   });
 
   it('/geo/reverso: a 31ª consulta do mesmo usuário no minuto devolve 429, e outro usuário segue', async () => {

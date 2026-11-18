@@ -251,7 +251,7 @@
             "description": "VALIDACAO ou POLITICA_DESATUALIZADA"
           },
           "429": {
-            "description": "Mais de 5 tentativas em 3600 s."
+            "description": "Mais de 50 tentativas em 3600 s."
           }
         },
         "tags": [
@@ -526,7 +526,7 @@
             }
           },
           "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+            "description": "Mais de 600 tentativas em 60 s."
           },
           "503": {
             "description": "MUNICIPIO_NAO_CONFIGURADO"
@@ -640,7 +640,7 @@
             "description": "VALIDACAO"
           },
           "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+            "description": "Mais de 600 tentativas em 60 s."
           }
         },
         "tags": [
@@ -952,7 +952,7 @@
             "description": "VALIDACAO (filtro, limite ou cursor inválido)"
           },
           "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+            "description": "Mais de 600 tentativas em 60 s."
           }
         },
         "tags": [
@@ -1190,7 +1190,7 @@
             "description": "BBOX_INVALIDA (área ausente ou malformada) ou VALIDACAO (filtro inválido)"
           },
           "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+            "description": "Mais de 600 tentativas em 60 s."
           }
         },
         "tags": [
@@ -1229,7 +1229,7 @@
             "description": "NAO_ENCONTRADA: id inexistente, inválido, ou recusada/duplicada de outra pessoa"
           },
           "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+            "description": "Mais de 600 tentativas em 60 s."
           }
         },
         "security": [
@@ -1533,7 +1533,7 @@
             "description": "VALIDACAO (período, município ou categoria)"
           },
           "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+            "description": "Mais de 600 tentativas em 60 s."
           }
         },
         "tags": [
@@ -1574,7 +1574,7 @@
             "description": "VALIDACAO (município)"
           },
           "429": {
-            "description": "Mais de 120 tentativas em 60 s."
+            "description": "Mais de 600 tentativas em 60 s."
           }
         },
         "tags": [

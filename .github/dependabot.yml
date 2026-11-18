@@ -11,17 +11,20 @@ updates:
     cooldown:
       default-days: 3
     open-pull-requests-limit: 5
-    # Majors que exigem migração planejada. Minor e patch continuam chegando.
+    # Majors que exigem migração planejada: o Dependabot não abre PR para elas. Minor e patch
+    # continuam chegando. A trava de versão em si fica nas faixas do package.json e no lockfile.
     ignore:
-      # BullMQ 5 + ioredis 5 são os suportados pelo @nestjs/bullmq 12.
+      # O @nestjs/bullmq 12 já aceita o BullMQ 6, mas o 6 muda a configuração da conexão com o
+      # Redis, de que dependem as filas, os workers e os agendamentos. Migrar depois da produção,
+      # com teste das filas. O ioredis acompanha o BullMQ, que divide com ele a conexão.
       - dependency-name: bullmq
         update-types: ['version-update:semver-major']
       - dependency-name: ioredis
         update-types: ['version-update:semver-major']
-      # O typescript-eslint e o CLI do Nest ainda não suportam o TypeScript 7.
+      # O typescript-eslint aceita só TypeScript abaixo de 6.1 (por isso o ~6.0 no package.json).
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
-      # Os tipos acompanham o Node em execução (.nvmrc = 24).
+      # Os tipos acompanham o Node em execução (.nvmrc = 24); sobem junto com o Node, não antes.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
     groups:

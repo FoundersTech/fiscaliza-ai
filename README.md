@@ -215,7 +215,7 @@ O job agendado `indicadores.recalcular-score` (cron configurável em `apps/api/c
 
 - **CSP do PWA:** `apps/web/public/_headers` vai junto com cada publicação no Cloudflare Pages e define a Content-Security-Policy e outros cabeçalhos de segurança. Um recurso novo de outro domínio (outro serviço de mapas, uma fonte externa) precisa entrar nessa lista, ou o navegador o bloqueia.
 - **API:** cabeçalhos do `@fastify/helmet` em todas as respostas; CORS só para o `WEB_URL` de cada ambiente, com GET, HEAD, POST, PUT, PATCH e DELETE.
-- **Limites de uso** (no Redis, `429` ao passar): leituras públicas (feed, mapa, detalhe, score, painel e configuração) 120 por minuto por IP, somadas; `/geo/reverso` 30 por minuto e registro de ocorrência 60 por hora por usuário; exclusão de conta 5 a cada 15 minutos por IP. `LIMITE_TAXA_DESLIGADO=true` desliga todos os limites e existe só para o teste de carga.
+- **Limites de uso** (no Redis, `429` ao passar): leituras públicas (feed, mapa, detalhe, score, painel e configuração) 600 por minuto por IP, somadas; cadastro 50 por hora por IP; `/geo/reverso` 30 por minuto e registro de ocorrência 60 por hora por usuário; exclusão de conta 5 a cada 15 minutos por IP. Os limites por IP são folgados porque, numa rede compartilhada (Wi-Fi da faculdade, 4G com CGNAT), todo mundo sai pelo mesmo IP. `LIMITE_TAXA_DESLIGADO=true` desliga todos os limites e existe só para o teste de carga.
 - **Logs:** não guardam senha, e-mail, tokens, cookies nem o IP de quem fez a requisição.
 
 ### Teste de carga
